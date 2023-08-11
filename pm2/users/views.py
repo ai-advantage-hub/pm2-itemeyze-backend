@@ -6,6 +6,9 @@ from .serializers import SignupSerializer
 from rest_framework.authtoken.models import Token
 from core.common_utils import generate_otp, send_forgot_password_email
 from core.response import CustomResponse
+from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
+from rest_framework import status as status_code
+
 
 
 class SignUpViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
@@ -56,8 +59,8 @@ class VerifyOTPViewSet(viewsets.ViewSet):
         user_id=data.get('user_id')
         user = OTP.objects.filter(user_id=user_id).first()
         if user.otp == otp:
+            User.objects.filter(id=user_id).update(is_email_verified=True)
             return CustomResponse({"message" : "OTP Verified, User created Successfully"})
         else:
             return CustomResponse({"message" : "Incorrect OTP"})
         
-
