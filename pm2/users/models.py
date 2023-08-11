@@ -30,9 +30,11 @@ class ActiveUserManager(UserManager):
     def get_queryset(self):
         return super(ActiveUserManager, self).get_queryset().filter(is_active=True, is_deleted=False)
 
+
 class ActiveObjectsManager(UserManager):
     def get_queryset(self):
         return super(ActiveObjectsManager, self).get_queryset().filter(is_deleted=False)
+
 
 class User(AbstractBaseUser, BaseModel):
     ADMIN = 1
@@ -68,6 +70,7 @@ class User(AbstractBaseUser, BaseModel):
         ordering = ['id']
         index_together = ["full_name", "email", "updated_at"]  
 
+
 class OTP(BaseModel):
     """
         Model to save OTP sent to user
@@ -94,12 +97,14 @@ class OTP(BaseModel):
         verbose_name = 'AccountVerification'
         verbose_name_plural = 'AccountVerifications'
 
+
 class Company(models.Model): 
     name = models.CharField(max_length=255)
     # Add more fields if necessary
 
     def __str__(self):
         return self.name
+    
 
 class UserCompany(models.Model):
     company = models.ForeignKey(Company, on_delete=models.CASCADE)
