@@ -1,5 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, UserManager, BaseUserManager
+from django.utils import timezone
+
+
 
 # Assuming core.models contains BaseModel
 from core.models import BaseModel
@@ -91,6 +94,11 @@ class OTP(BaseModel):
     is_used = models.BooleanField(default=False)
     expired_at = models.DateTimeField(
         blank=True, null=True, verbose_name='Expired At')
+    
+    def save(self, *args, **kwargs):
+        if not self.id:
+            self.expired_at = timezone.now() + timezone.timedelta(minutes=1)
+        super().save(*args, **kwargs)
     
     class Meta:
         db_table = "OTP"

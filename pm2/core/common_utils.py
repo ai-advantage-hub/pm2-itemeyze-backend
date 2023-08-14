@@ -22,7 +22,7 @@ def send_signup_verification_email(email, otp):
 def generate_otp():
     digits = [i for i in range(0, 10)]
     random_str = ""
-    for i in range(6):
+    for i in range(4):
         index = math.floor(random.random() * 10)
         random_str += str(digits[index])
     otp = random_str
@@ -52,7 +52,7 @@ def send_html_mail_to_single_user(subject, email, html_template, ctx_dict):
         print("ERROR_IN_SENDING_MAIL")
     return True
 
-def send_forgot_password_email(email, otp):
+def send_verification_email(email, otp):
     """to send verification email"""
     try:
         ctx_dict = {"email": email, "verification_code": otp}
