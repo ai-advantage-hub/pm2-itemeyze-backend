@@ -1,17 +1,28 @@
-import sendgrid
-from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Content, Email, Mail, To
-
-from django.template.loader import render_to_string
-from config.local import FROM_NAME, FROM_EMAIL, SEND_GRID_API_KEY
-from multiprocessing.connection import Client
+import logging
 import math
 import random
+import sendgrid
+from django.template.loader import render_to_string
+from sendgrid.helpers.mail import Content, Email, Mail, To, From
+from config.local import FROM_NAME, FROM_EMAIL, SEND_GRID_API_KEY
+from sendgrid.helpers.mail import Content, Email, Mail, To
+from users.templates import *
+
+def send_signup_verification_email(email, otp):
+    try:
+        logging.info("try")
+        ctx_dict = {"email": email, "otp": otp}
+        html_template = "signup_verification.html"
+        subject = "OTP verification"
+
+    except Exception as e:
+        logging.info("error" + str(e))
+
 
 def generate_otp():
     digits = [i for i in range(0, 10)]
     random_str = ""
-    for i in range(6):
+    for i in range(4):
         index = math.floor(random.random() * 10)
         random_str += str(digits[index])
     otp = random_str
@@ -41,7 +52,7 @@ def send_html_mail_to_single_user(subject, email, html_template, ctx_dict):
         print("ERROR_IN_SENDING_MAIL")
     return True
 
-def send_forgot_password_email(email, otp):
+def send_verification_email(email, otp):
     """to send verification email"""
     try:
         ctx_dict = {"email": email, "verification_code": otp}

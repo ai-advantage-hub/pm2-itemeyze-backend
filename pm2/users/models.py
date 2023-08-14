@@ -1,5 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, UserManager, BaseUserManager
+from django.utils import timezone
+
+
 
 # Assuming core.models contains BaseModel
 from core.models import BaseModel
@@ -30,9 +33,11 @@ class ActiveUserManager(UserManager):
     def get_queryset(self):
         return super(ActiveUserManager, self).get_queryset().filter(is_active=True, is_deleted=False)
 
+
 class ActiveObjectsManager(UserManager):
     def get_queryset(self):
         return super(ActiveObjectsManager, self).get_queryset().filter(is_deleted=False)
+
 
 class User(AbstractBaseUser, BaseModel):
     ADMIN = 1
@@ -68,6 +73,7 @@ class User(AbstractBaseUser, BaseModel):
         ordering = ['id']
         index_together = ["full_name", "email", "updated_at"]  
 
+
 class OTP(BaseModel):
     """
         Model to save OTP sent to user
@@ -89,10 +95,16 @@ class OTP(BaseModel):
     expired_at = models.DateTimeField(
         blank=True, null=True, verbose_name='Expired At')
     
+    def save(self, *args, **kwargs):
+        if not self.id:
+            self.expired_at = timezone.now() + timezone.timedelta(minutes=1)
+        super().save(*args, **kwargs)
+    
     class Meta:
         db_table = "OTP"
         verbose_name = 'AccountVerification'
         verbose_name_plural = 'AccountVerifications'
+
 
 class Company(models.Model): 
     name = models.CharField(max_length=255)
@@ -100,6 +112,7 @@ class Company(models.Model):
 
     def __str__(self):
         return self.name
+    
 
 class UserCompany(models.Model):
     company = models.ForeignKey(Company, on_delete=models.CASCADE)
