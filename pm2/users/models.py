@@ -50,7 +50,7 @@ class User(AbstractBaseUser, BaseModel):
     is_active = models.BooleanField(default=True)
     is_email_verified = models.BooleanField(default=False)
     is_admin_approved = models.BooleanField(default=False)
-    is_deleted = models.BooleanField(default=False)  # Added this field
+    is_deleted = models.BooleanField(default=False)  
     
     objects = ActiveUserManager()
     all_objects = ActiveObjectsManager()
