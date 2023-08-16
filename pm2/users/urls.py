@@ -18,4 +18,8 @@ urlpatterns = [
     path("reset_password", views.ResetPasswordViewSet.as_view(
         {"post" : "create"}, name="reset_password")),
 
+    #Home
+    # path("create_project", views.CreateProjectViewSet.as_view(
+    #     {"post" : "create"}, name="create_project")),
+
 ]

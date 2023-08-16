@@ -120,3 +120,45 @@ class UserCompany(models.Model):
 
     def __str__(self):
         return f"{self.user.email} - {self.company.name}"
+    
+
+# class Project(BaseModel):
+#     """
+#         Project model to save project details
+#     """
+#     user = models.ForeignKey(User, on_delete=models.CASCADE)
+#     project_name = models.CharField(max_length=255, unique=True)
+#     project_description = models.TextField()
+#     is_admin_approved = models.BooleanField(default=False)
+#     is_deleted = models.BooleanField(default = False)
+#     # created_on = models.DateTimeField(auto_now_add=True)
+#     # updated_on = models.DateTimeField(auto_now=True)
+
+#     def __str__(self):
+#         return self.project_name
+
+#     class Meta:
+#         db_table = "Project"
+#         verbose_name = "Project"
+#         verbose_name_plural = "Projects"
+
+
+# class ProjectDetails(models.Model):
+#     """
+#         ProjecDetails model to see the details of the projects
+#     """
+#     user = models.ForeignKey(User, on_delete=models.CASCADE)
+#     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='details')
+#     thumbnail = models.ImageField(upload_to='project_thumbnails/', blank=True, null=True)
+#     manufacturing_number = models.CharField(max_length=255)
+#     #created_on = models.DateTimeField(auto_now_add=True)
+#     location = models.CharField(max_length=255)
+#     # Add other fields as needed
+
+#     def __str__(self):
+#         return f"Details for {self.project.project_name}"
+
+#     class Meta:
+#         db_table = "ProjectDetails"
+#         verbose_name = "Project Details"
+#         verbose_name_plural = "Project Details"
