@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User, Company, UserCompany, OTP, Project
+from .models import User, Company, UserCompany, OTP
 from core.common_utils import generate_otp, send_verification_email
 from django.contrib.auth import authenticate
 import re

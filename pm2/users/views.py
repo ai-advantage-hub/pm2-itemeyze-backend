@@ -1,8 +1,8 @@
 from django.shortcuts import render
 from rest_framework import mixins, viewsets, generics, filters
 from rest_framework.response import Response
-from .models import User, OTP, Project
-from .serializers import SignupSerializer, UserLoginSerializer, ForgotPasswordSerializer, ResetPasswordSerializer, CreateProjectSerializer
+from .models import User, OTP
+from .serializers import SignupSerializer, UserLoginSerializer, ForgotPasswordSerializer, ResetPasswordSerializer
 from rest_framework.authtoken.models import Token
 from core.common_utils import generate_otp, send_verification_email
 from core.response import CustomResponse
