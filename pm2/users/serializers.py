@@ -164,6 +164,17 @@ class ResetPasswordSerializer(serializers.Serializer):
         user.set_password(new_password)
         user.save()
         return user
+    
+
+#Home
+
+# class CreateProjectSerializer(serializers.ModelSerializer):
+#     """
+#         CreateProjectSerializer for project creating project
+#     """
+#     class Meta:
+#         model = Project
+#         fields = ("id", "user", "project_name", "created_on", "updated_on")
 
 
 

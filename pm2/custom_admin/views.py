@@ -48,10 +48,22 @@ class AdminLoginView(viewsets.ViewSet):
 #             return CustomResponse({"message": "Password updated successfully."})
 #         else:
 #             return CustomResponse({"message": "Both passwords are not the same."})
-class AdminResetPasswordView(viewsets.ViewSet):
+
+class AdminProfileViewSet(viewsets.ViewSet):
     """
-    this view is to change password of admin
+    this view is for admin frofile listing,admin prifile updte and admin change password
+
     """
+    def list(self, request):
+        user=User.objects.filter(id=request.user.id).all().values("full_name","email")
+        return CustomResponse(user[0])
+    
+    def update(self, request):
+        data = request.data
+        full_name=data.get("full_name")
+        email=data.get("email")
+        User.objects.filter(id=request.user.id).update(full_name=full_name,email=email)
+        return CustomResponse({"message": "profile updated sucessfully"})
 
     def create(self, request):
         serializer = AdminResetPasswordSerializer(data=request.data, context={'request': request})
@@ -62,35 +74,54 @@ class AdminResetPasswordView(viewsets.ViewSet):
             return CustomResponse(serializer.errors)
 
             
-class TermsandconditionView(viewsets.ViewSet):
+class ContentManagementViewSet(viewsets.ViewSet):
+    """
+    this view is for content management like view content,update content,and delete content
+    """
 
-    def create(self, request):
-        user=TermsAndConditions.objects.all().values()
+    def list(self, request):
+        data = request.data
+        type=data.get("type")
+        user=ContentManagement.objects.filter(content_type=type).all().values("content")
         return CustomResponse(user)
     
+    def update(self, request):
+        data = request.data
+        type=data.get("type")
+        content=data.get("content")
+        c=ContentManagement.objects.filter(content_type=type).update(content=content)
+        if not c:
+            ContentManagement.objects.create(content_type=type,content=content)
+        return CustomResponse({"message": "data successfully."})
+    
+    def delete(self, request):
+        data = request.data
+        type=data.get("type")
+        ContentManagement.objects.filter(content_type=type).delete()
+        return CustomResponse({"message": "data deleted successfully."})
+
+    
+
 class CompanyNameView(viewsets.ViewSet):
 
     def create(self, request):
         user=Company.objects.all().values()
         return CustomResponse(user)
     
-class AdminprofileView(viewsets.ViewSet):
+# class AdminprofileView(viewsets.ViewSet):
 
-    def create(self, request):
-        user=User.objects.filter(id=request.user.id).all().values("full_name","email")
-        return CustomResponse(user[0])
+#     def create(self, request):
+#         user=User.objects.filter(id=request.user.id).all().values("full_name","email")
+#         return CustomResponse(user[0])
     
-class AdminprofileUpdateView(viewsets.ViewSet):
+# class AdminprofileUpdateView(viewsets.ViewSet):
 
-    def create(self, request):
-        data = request.data
-        full_name=data.get("full_name")
-        email=data.get("email")
-        User.objects.filter(id=request.user.id).update(full_name=full_name,email=email)
-        # if User.objects.filter(email=email).first():
-        #     OTP.objects.update_or_create()
-
-        return CustomResponse({"message": "profile updated sucessfully"})
+#     def create(self, request):
+#         data = request.data
+#         full_name=data.get("full_name")
+#         email=data.get("email")
+#         User.objects.filter(id=request.user.id).update(full_name=full_name,email=email)
+#         return CustomResponse({"message": "profile updated sucessfully"})
 
 
 
