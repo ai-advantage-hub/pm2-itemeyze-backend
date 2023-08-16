@@ -1,0 +1,12 @@
+asgiref==3.5.2
+backports.zoneinfo==0.2.1
+Django==4.1.3
+django-cors-headers==4.2.0
+django-extensions==3.2.3
+djangorestframework==3.14.0
+psycopg2-binary==2.9.5
+python-http-client==3.3.7
+pytz==2022.6
+sendgrid==6.9.7
+sqlparse==0.4.3
+starkbank-ecdsa==2.2.0

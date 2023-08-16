@@ -1,8 +1,8 @@
 from django.shortcuts import render
 from rest_framework import mixins, viewsets, generics, filters
 from rest_framework.response import Response
-from .models import User, OTP
-from .serializers import SignupSerializer, UserLoginSerializer, ForgotPasswordSerializer, ResetPasswordSerializer
+from .models import User, OTP, Project
+from .serializers import SignupSerializer, UserLoginSerializer, ForgotPasswordSerializer, ResetPasswordSerializer, CreateProjectSerializer
 from rest_framework.authtoken.models import Token
 from core.common_utils import generate_otp, send_verification_email
 from core.response import CustomResponse
@@ -113,3 +113,27 @@ class ResetPasswordViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
         serializer.update(user, serializer.validated_data)
 
         return CustomResponse({"message": "Password reset successfully."})
+    
+
+#Home
+
+# class CreateProjectViewSet(viewsets.ModelViewSet):
+#     """
+#         CreateProjectViewSet to create project
+#     """
+#     queryset = Project.objects.all()
+#     serializer_class = CreateProjectSerializer
+
+#     def create(self, request, *args, **kwargs):
+#         project_name = request.data.get('project_name')
+#         user = request.user  # Assuming you have user authentication in place
+
+#         # Check if the project name is unique
+#         if Project.objects.filter(project_name=project_name).exists():
+#             return CustomResponse({"message": "Project with this name already exists."})
+
+#         serializer = self.get_serializer(data=request.data)
+#         serializer.is_valid(raise_exception=True)
+#         serializer.save(user=user)
+
+#         return CustomResponse({"message": "Project created successfully."})
