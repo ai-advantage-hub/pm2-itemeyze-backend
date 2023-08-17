@@ -1,14 +1,16 @@
 from django.shortcuts import render
 from rest_framework import mixins, viewsets, generics, filters
 from rest_framework.response import Response
-from .models import User, OTP
-from .serializers import SignupSerializer, UserLoginSerializer, ForgotPasswordSerializer, ResetPasswordSerializer
+from .models import User, OTP, Project
+from .serializers import SignupSerializer, UserLoginSerializer, ForgotPasswordSerializer, ResetPasswordSerializer, CreateProjectSerializer
 from rest_framework.authtoken.models import Token
 from core.common_utils import generate_otp, send_verification_email
 from core.response import CustomResponse
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 from rest_framework import status as status_code
 from django.utils import timezone
+from django_filters.rest_framework import DjangoFilterBackend
+
 
 
 
@@ -117,23 +119,43 @@ class ResetPasswordViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
 
 #Home
 
-# class CreateProjectViewSet(viewsets.ModelViewSet):
-#     """
-#         CreateProjectViewSet to create project
-#     """
-#     queryset = Project.objects.all()
-#     serializer_class = CreateProjectSerializer
+class CreateProjectViewSet(viewsets.ModelViewSet):
+    """
+        CreateProjectViewSet to create project
+    """
+    queryset = Project.objects.all()
+    serializer_class = CreateProjectSerializer
 
-#     def create(self, request, *args, **kwargs):
-#         project_name = request.data.get('project_name')
-#         user = request.user  # Assuming you have user authentication in place
+    def create(self, request, *args, **kwargs):
+        project_name = request.data.get('project_name')
+        user = request.user 
 
-#         # Check if the project name is unique
-#         if Project.objects.filter(project_name=project_name).exists():
-#             return CustomResponse({"message": "Project with this name already exists."})
+        # Check if the project name is unique
+        if Project.objects.filter(project_name=project_name).exists():
+            return CustomResponse({"message": "Project with this name already exists."})
 
-#         serializer = self.get_serializer(data=request.data)
-#         serializer.is_valid(raise_exception=True)
-#         serializer.save(user=user)
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(user=user, created_by=user)
 
-#         return CustomResponse({"message": "Project created successfully."})
+        return CustomResponse({"message": "Project created successfully."})
+    
+
+class ListProjectViewSet(viewsets.ModelViewSet):
+    """
+        ListProjectViewSet to get the list of projects
+    """
+    def list(self, request, *args, **kwargs):
+        user = Project.objects.filter(user_id=request.user.id).all().values()
+        return CustomResponse(user)
+    
+    def search(self, request):
+        project_name = request.GET.get('project_name', None)
+        project = Project.objects.all().values()
+        if project_name:
+            project=project.filter(project_name__icontains=project_name)
+            return CustomResponse(project)
+        else:
+            return CustomResponse(project)
+
+

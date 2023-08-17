@@ -19,7 +19,11 @@ urlpatterns = [
         {"post" : "create"}, name="reset_password")),
 
     #Home
-    # path("create_project", views.CreateProjectViewSet.as_view(
-    #     {"post" : "create"}, name="create_project")),
+    path("create_project", views.CreateProjectViewSet.as_view(
+        {"post" : "create"}, name="create_project")),
+    path("list_project", views.ListProjectViewSet.as_view(
+        {"get" : "list"}, name="list_project")),
+    path("search_project", views.ListProjectViewSet.as_view(
+        {"get" : "search"}, name="search_project")),
 
 ]
