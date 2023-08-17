@@ -1,7 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, UserManager, BaseUserManager
 from django.utils import timezone
-
+from django.contrib.gis.db import models
 
 
 # Assuming core.models contains BaseModel
@@ -115,50 +115,56 @@ class Company(models.Model):
     
 
 class UserCompany(models.Model):
-    company = models.ForeignKey(Company, on_delete=models.CASCADE)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='company')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_company')
 
     def __str__(self):
         return f"{self.user.email} - {self.company.name}"
     
 
-# class Project(BaseModel):
-#     """
-#         Project model to save project details
-#     """
-#     user = models.ForeignKey(User, on_delete=models.CASCADE)
-#     project_name = models.CharField(max_length=255, unique=True)
-#     project_description = models.TextField()
-#     is_admin_approved = models.BooleanField(default=False)
-#     is_deleted = models.BooleanField(default = False)
-#     # created_on = models.DateTimeField(auto_now_add=True)
-#     # updated_on = models.DateTimeField(auto_now=True)
+class Project(BaseModel):
+    """
+        Project model to save project details
+    """
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_project')
+    project_name = models.CharField(max_length=255, unique=True, null=True)
+    project_description = models.TextField(null=True)
+    is_admin_approved = models.BooleanField(default=False, null=True)
+    is_marked_deleted = models.BooleanField(default = False, null=True)
+    project_number = models.TextField(verbose_name="project number", null=True)
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_by_project', null=True)
 
-#     def __str__(self):
-#         return self.project_name
+    def __str__(self):
+        return self.project_name
 
-#     class Meta:
-#         db_table = "Project"
-#         verbose_name = "Project"
-#         verbose_name_plural = "Projects"
+    class Meta:
+        db_table = "Project"
+        verbose_name = "Project"
+        verbose_name_plural = "Projects"
 
 
-# class ProjectDetails(models.Model):
-#     """
-#         ProjecDetails model to see the details of the projects
-#     """
-#     user = models.ForeignKey(User, on_delete=models.CASCADE)
-#     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='details')
-#     thumbnail = models.ImageField(upload_to='project_thumbnails/', blank=True, null=True)
-#     manufacturing_number = models.CharField(max_length=255)
-#     #created_on = models.DateTimeField(auto_now_add=True)
-#     location = models.CharField(max_length=255)
-#     # Add other fields as needed
+class Files(models.Model):
+    """
+        ProjecDetails model to see the details of the projects
+    """
+    manufacturer_name = models.ForeignKey(User, on_delete=models.CASCADE, related_name='name_manufacture')
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='project_files')
+    file_name = models.CharField(blank=True, null=True, max_length=254)
+    thumbnail = models.CharField(blank=True, null=True, max_length=254)
+    manufacturing_number = models.CharField(max_length=254)
+    quantity = models.IntegerField()
+    project_details = models.CharField(max_length=254)
+    additional_details = models.TextField()
+    recording = models.CharField(max_length=254)
+    location = models.CharField(max_length=255, null = True)
+    location_points = models.PointField(blank=True, null=True, verbose_name='User Coordinate')
+    
+    # Add other fields as needed
 
-#     def __str__(self):
-#         return f"Details for {self.project.project_name}"
+    def __str__(self):
+        return f"Details for {self.project.project_name}"
 
-#     class Meta:
-#         db_table = "ProjectDetails"
-#         verbose_name = "Project Details"
-#         verbose_name_plural = "Project Details"
+    class Meta:
+        db_table = "ProjectDetails"
+        verbose_name = "Project Details"
+        verbose_name_plural = "Project Details"

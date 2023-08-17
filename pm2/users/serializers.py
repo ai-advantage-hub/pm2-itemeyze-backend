@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User, Company, UserCompany, OTP
+from .models import User, Company, UserCompany, OTP, Project
 from core.common_utils import generate_otp, send_verification_email
 from django.contrib.auth import authenticate
 import re
@@ -168,13 +168,13 @@ class ResetPasswordSerializer(serializers.Serializer):
 
 #Home
 
-# class CreateProjectSerializer(serializers.ModelSerializer):
-#     """
-#         CreateProjectSerializer for project creating project
-#     """
-#     class Meta:
-#         model = Project
-#         fields = ("id", "user", "project_name", "created_on", "updated_on")
+class CreateProjectSerializer(serializers.ModelSerializer):
+    """
+        CreateProjectSerializer for project creating project
+    """
+    class Meta:
+        model = Project
+        fields = ("id", "project_name", "created_by")
 
 
 
