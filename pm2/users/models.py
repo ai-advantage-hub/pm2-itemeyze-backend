@@ -108,6 +108,7 @@ class OTP(BaseModel):
 
 class Company(models.Model): 
     name = models.CharField(max_length=255)
+    is_active = models.BooleanField(default=True)
     # Add more fields if necessary
 
     def __str__(self):

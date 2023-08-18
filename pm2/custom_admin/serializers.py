@@ -4,6 +4,7 @@ from django.contrib.auth import authenticate
 from rest_framework import serializers
 from rest_framework.authtoken.models import Token
 from django.contrib.auth.hashers import check_password
+from core.common_utils import generate_otp, send_verification_email
 
 class AdminLoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
@@ -17,7 +18,7 @@ class AdminLoginSerializer(serializers.Serializer):
         if user is None:
             raise serializers.ValidationError({"message": "Invalid email or password."})
 
-        if user.user_role != 1 or not user.is_admin_approved:
+        if user.user_role != 1 or  user.is_admin_approved == False or user.is_email_verified == False:
             raise serializers.ValidationError({"message": "User is not an admin."})
 
         data['user'] = user
@@ -30,7 +31,7 @@ class AdminLoginSerializer(serializers.Serializer):
 
 class AdminResetPasswordSerializer(serializers.Serializer):
     """
-    
+    admin reset password
     """
     old_password = serializers.CharField()
     new_password = serializers.CharField()
@@ -58,3 +59,26 @@ class AdminResetPasswordSerializer(serializers.Serializer):
         new_password = self.validated_data.get("new_password")
         user.set_password(new_password)
         user.save()
+
+
+class ForgotPasswordSerializer(serializers.Serializer):
+    """
+       ForgotPasswordSerializer serializer will be used when user forget the password 
+    """
+    email = serializers.EmailField(min_length=5, max_length=50, required=True)
+
+    def create(self, validated_data):
+        instance = User.objects.filter(email=validated_data.get('email')).first()
+        if not instance:
+            raise serializers.ValidationError({"message": "User not found."})
+
+        # Generate forgot password OTP
+        otp = generate_otp()
+        OTP.objects.update_or_create(user=instance,otp=otp,otp_type=3)
+        print(otp,instance.email)
+        try:
+            send_verification_email(instance.email, otp)
+        except BaseException:
+            pass
+        
+        return True
