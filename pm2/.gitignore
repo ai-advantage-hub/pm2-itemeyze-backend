@@ -17,7 +17,6 @@ converge.*
 .DS_Store
 .project
 .pydevproject
-local.py
 celeryconfig.py
 logfile.log
 output.dot
@@ -37,3 +36,4 @@ log/
 # migrations/
 sonar-project.properties
 .scannerwork
+local.py

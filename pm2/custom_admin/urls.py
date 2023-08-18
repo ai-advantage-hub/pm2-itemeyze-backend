@@ -6,10 +6,14 @@ urlpatterns = [
 
     # Onboarding
     path("login", views.AdminLoginView.as_view({"post": "create"}), name="login"),
+    path("forgot_password", views.ForgotPasswordViewSet.as_view({"post": "create"}), name="forgot_password"),
+    path("ConfirmPassword", views.ResetPasswordViewSet.as_view({"post": "create"}), name="ConfirmPassword"),
+
 
     #Admin profile
     path("Adminprofile", views.AdminProfileViewSet.as_view({"get": "list"}), name="Adminprofile"),
     path("AdminprofileUpdate", views.AdminProfileViewSet.as_view({"put": "update"}), name="AdminprofileUpdate"),
+    path("validate_email", views.AdminProfileViewSet.as_view({"post": "validate"}), name="validate_email"),
     path("reset_password", views.AdminProfileViewSet.as_view({"put": "create"}), name="reset_password"),
 
     #Content Management
@@ -20,6 +24,14 @@ urlpatterns = [
     path("CompanyNameView", views.CompanyNameView.as_view({"get": "create"}), name="CompanyNameView"),
     # path("Adminprofile", views.AdminProfileViewSet.as_view({"get": "list"}), name="Adminprofile"),
     # path("AdminprofileUpdate", views.AdminProfileViewSet.as_view({"get": "update"}), name="AdminprofileUpdate")
+
+    #ManageCompany
+    #path("Company", views.ManageCompanyView.as_view({"get": "list"}), name="Company"),
+    path("AddCompany", views.ManageCompanyView.as_view({"post": "create"}), name="AddCompany"),
+    path("UpdateCompany", views.ManageCompanyView.as_view({"put": "update"}), name="UpdateCompany"),
+    path("DeleteCompany", views.ManageCompanyView.as_view({"delete": "delete"}), name="DeleteCompany"),
+    path("SearchCompany", views.ManageCompanyView.as_view({"get": "search"}), name="SearchCompany"),
+
 
 
 ]
