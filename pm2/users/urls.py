@@ -25,5 +25,8 @@ urlpatterns = [
         {"post": "create", "get": "list"}, name="add_files")),
     path("project_details/<int:pk>", views.ProjectDetailsViewSet.as_view(
         {"get": "list"}, name="project_details")),
+    path("edit_file/<int:pk>", views.EditFileViewSet.as_view(
+        {"put": "update", "delete":"destroy"}, name="edit_file")),
+    
 
 ]

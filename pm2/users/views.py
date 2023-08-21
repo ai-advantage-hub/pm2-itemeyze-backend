@@ -10,6 +10,9 @@ from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 from rest_framework import status as status_code
 from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
+from core.messages import SUCCESS_MESSAGES 
+from django.utils.translation import gettext
+
 
 
 class SignUpViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
@@ -27,7 +30,8 @@ class SignUpViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
         serializer.is_valid(raise_exception=True)
 
         user_obj = serializer.save()
-        return CustomResponse({"message": "OTP sent Successfully to your email"})
+        #return CustomResponse({"message": "OTP sent Successfully to your email"})
+        return CustomResponse({"message": gettext(SUCCESS_MESSAGES.get('OTP_SENT'))})
     
 
 class ReSendOtpViewSet(viewsets.ViewSet):
@@ -46,7 +50,8 @@ class ReSendOtpViewSet(viewsets.ViewSet):
             print(e)
         pass
     
-        return CustomResponse({"message":"OTP Send Sucessfully", "otp":otp})
+        #return CustomResponse({"message":"OTP Send Sucessfully", "otp":otp})
+        return CustomResponse({"message": gettext(SUCCESS_MESSAGES.get('RESEND_EMAIL_OTP')), "otp":otp})
     
 
 class VerifyOTPViewSet(viewsets.ViewSet):
@@ -233,4 +238,33 @@ class ProjectDetailsViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(queryset, many=True)
         return CustomResponse(serializer.data)
         
+
+class EditFileViewSet(viewsets.ModelViewSet):
+    """
+        EditFileViewSet to edit the file on Left Swipe and delete on right swipe
+    """      
+    def get_queryset(self):
+        pk = self.kwargs.get('pk')
+        return Files.objects.filter(id=pk)
+    
+    def update(self, request, pk=None):
+        queryset = self.get_queryset()
+        obj = queryset.get(pk=pk)
+        serializer = CreateFileDetailsSerializer(obj, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            #return CustomResponse({'message': 'File details edited successfully.'})
+            return CustomResponse({"message": gettext(SUCCESS_MESSAGES.get('FILE_UPDATED'))})
+        else:
+            return CustomResponse(serializer.errors, status=status_code.HTTP_400_BAD_REQUEST)
         
+    def destroy(self, request, pk=None):
+        queryset = self.get_queryset()
+        obj = queryset.get(pk=pk)
+        obj.delete()
+        #return CustomResponse({'message': 'File deleted successfully.'})
+        return CustomResponse({"message": gettext(SUCCESS_MESSAGES.get('FILE_DELETED'))})
+
+
+
+
