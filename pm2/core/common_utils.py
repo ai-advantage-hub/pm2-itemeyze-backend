@@ -8,7 +8,11 @@ from config.local import FROM_NAME, FROM_EMAIL, SEND_GRID_API_KEY
 from sendgrid.helpers.mail import Content, Email, Mail, To
 from users.templates import *
 
+
 def send_signup_verification_email(email, otp):
+    """
+        function to send the verification email.
+    """
     try:
         logging.info("try")
         ctx_dict = {"email": email, "otp": otp}
@@ -20,6 +24,9 @@ def send_signup_verification_email(email, otp):
 
 
 def generate_otp():
+    """
+        function to generate a 4 digit random OTP.
+    """
     digits = [i for i in range(0, 10)]
     random_str = ""
     for i in range(4):
@@ -27,6 +34,7 @@ def generate_otp():
         random_str += str(digits[index])
     otp = random_str
     return otp
+
 
 def send_html_mail_to_single_user(subject, email, html_template, ctx_dict):
     """
@@ -52,6 +60,7 @@ def send_html_mail_to_single_user(subject, email, html_template, ctx_dict):
         print("ERROR_IN_SENDING_MAIL")
     return True
 
+
 def send_verification_email(email, otp):
     """to send verification email"""
     try:
@@ -60,5 +69,5 @@ def send_verification_email(email, otp):
         subject = "YOUR LOGIN OTP"
         send_html_mail_to_single_user(subject, email, html_template, ctx_dict)
     except Exception as e:
-        print("error",e)
+        print("error", e)
         pass

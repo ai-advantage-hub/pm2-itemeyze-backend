@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User, Company, UserCompany, OTP, Project
+from .models import User, Company, UserCompany, OTP, Project, Files
 from core.common_utils import generate_otp, send_verification_email
 from django.contrib.auth import authenticate
 import re
@@ -34,6 +34,7 @@ class SignupSerializer(serializers.ModelSerializer):
         model = User
         fields = ("full_name", "email", "password", "confirm_password", "company_id")
 
+    @staticmethod
     def validate_email(self, email):
         """
             validate_email method to validate email
@@ -41,7 +42,8 @@ class SignupSerializer(serializers.ModelSerializer):
         if User.objects.filter(email=email).exists():
             raise serializers.ValidationError("This Email already exists.")
         return email
-    
+
+    @staticmethod
     def validate_password(self, password):
         if not re.search(r'[A-Z]', password):
             raise serializers.ValidationError("Password must contain at least 1 uppercase letter.")
@@ -177,9 +179,70 @@ class CreateProjectSerializer(serializers.ModelSerializer):
         fields = ("id", "project_name", "created_by")
 
 
+class CreateFileDetailsSerializer(serializers.ModelSerializer):
+    """
+         CreateFileDetailsSerializer to add the details of files
+    """
+    class Meta:
+        model = Files
+        fields = (
+            "id", "manufacturer_name", "project_id", "file_name", "thumbnail",
+            "manufacturing_number", "quantity", "project_details",
+            "additional_details", "recording", "location", "location_points"
+        )
+        
+    def validate(self, data):
+        manufacturing_number = data.get("manufacturing_number")
+        project_id = data.get("project_id")
+
+        c = Files.objects.filter(manufacturing_number=manufacturing_number).first()
+        if c is not None:
+            a = c.manufacturing_number
+            if Files.objects.filter(manufacturing_number=a).exists():
+                raise serializers.ValidationError("A file with this manufacturing number already exists for the project.")
+            else:
+                print("No Files object found with the given manufacturing number.")
+        return data
+    
+    def create(self, validated_data):
+        # Retrieve the project_id from the context
+        project_id = self.context.get("project_id")
+        
+        # Set the project_id while creating the Files object
+        validated_data["project_id"] = project_id
+        
+        return super().create(validated_data)
+    
+
+class ProjectUserSerializer(serializers.ModelSerializer):
+    """
+        ProjectUserSerializer serializer to serilaize through user model
+    """
+    class Meta:
+        model = User
+        fields = ("full_name",)
 
 
+class FilesSerializer(serializers.ModelSerializer):
+    """
+        FilesSerializer serializer to serialize through files model
+    """
+    class Meta:
+        model = Files
+        fields = ('__all__')
 
+
+class ProjectDetailsViewSerializer(serializers.ModelSerializer):
+    """
+        ProjectDetailsViewSerializer serializer to serialize through project model
+    """
+    project_files = FilesSerializer(many=True)
+    created_by = ProjectUserSerializer()
+
+    class Meta:
+        model = Project
+        fields = ("project_name", "project_number", "created_by", "project_files",)
+    
 
 
 
