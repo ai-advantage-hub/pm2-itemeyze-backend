@@ -34,6 +34,7 @@ class SignupSerializer(serializers.ModelSerializer):
         model = User
         fields = ("full_name", "email", "password", "confirm_password", "company_id")
 
+    @staticmethod
     def validate_email(self, email):
         """
             validate_email method to validate email
@@ -41,7 +42,8 @@ class SignupSerializer(serializers.ModelSerializer):
         if User.objects.filter(email=email).exists():
             raise serializers.ValidationError("This Email already exists.")
         return email
-    
+
+    @staticmethod
     def validate_password(self, password):
         if not re.search(r'[A-Z]', password):
             raise serializers.ValidationError("Password must contain at least 1 uppercase letter.")
@@ -236,6 +238,7 @@ class ProjectDetailsViewSerializer(serializers.ModelSerializer):
     """
     project_files = FilesSerializer(many=True)
     created_by = ProjectUserSerializer()
+
     class Meta:
         model = Project
         fields = ("project_name", "project_number", "created_by", "project_files",)
