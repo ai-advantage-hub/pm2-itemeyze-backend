@@ -4,6 +4,12 @@
 
 """ Add any success messages here. """
 SUCCESS_MESSAGES = {
+    "FILE_DELETED": "File Deleted Successfully.",
+    "FILE_UPDATED": "File Updated Successfully.",
+    "USER_REGISTERED": "User registered successfully.",
+    "EMAIL_VERIFIED": "Your email verified successfully.",
+    "OTP_SENT": "OTP sent Successfully",
+    "RESEND_EMAIL_OTP": "OTP has been resend to your email successfully.",
 
 }
 
