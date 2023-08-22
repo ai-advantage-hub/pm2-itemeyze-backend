@@ -26,11 +26,7 @@ urlpatterns = [
     # path("AdminprofileUpdate", views.AdminProfileViewSet.as_view({"get": "update"}), name="AdminprofileUpdate")
 
     #ManageCompany
-    #path("Company", views.ManageCompanyView.as_view({"get": "list"}), name="Company"),
-    path("AddCompany", views.ManageCompanyView.as_view({"post": "create"}), name="AddCompany"),
-    path("UpdateCompany", views.ManageCompanyView.as_view({"put": "update"}), name="UpdateCompany"),
-    path("DeleteCompany", views.ManageCompanyView.as_view({"delete": "delete"}), name="DeleteCompany"),
-    path("SearchCompany", views.ManageCompanyView.as_view({"get": "search"}), name="SearchCompany"),
+    path("company", views.ManageCompanyView.as_view({"post": "create", "get": "search", "put": "update", "delete": "delete"}), name="AddCompany"),
 
 
 

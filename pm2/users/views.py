@@ -12,6 +12,7 @@ from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 from core.messages import SUCCESS_MESSAGES 
 from django.utils.translation import gettext
+from rest_framework.permissions import IsAuthenticated
 
 
 
@@ -25,13 +26,10 @@ class SignUpViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
     def create(self, request, *args, **kwargs):
         """ Method for user signup"""
         data = request.data
-
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
-
-        user_obj = serializer.save()
-        #return CustomResponse({"message": "OTP sent Successfully to your email"})
-        return CustomResponse({"message": gettext(SUCCESS_MESSAGES.get('OTP_SENT'))})
+        serializer.save()
+        return CustomResponse({"message": gettext(SUCCESS_MESSAGES.get('OTP_SENT'))}, status=status_code.HTTP_200_OK)
     
 
 class ReSendOtpViewSet(viewsets.ViewSet):
@@ -49,9 +47,7 @@ class ReSendOtpViewSet(viewsets.ViewSet):
         except Exception as e:
             print(e)
         pass
-    
-        #return CustomResponse({"message":"OTP Send Sucessfully", "otp":otp})
-        return CustomResponse({"message": gettext(SUCCESS_MESSAGES.get('RESEND_EMAIL_OTP')), "otp":otp})
+        return CustomResponse({"message": gettext(SUCCESS_MESSAGES.get('RESEND_EMAIL_OTP')), "otp":otp}, status=status_code.HTTP_200_OK)
     
 
 class VerifyOTPViewSet(viewsets.ViewSet):
@@ -70,7 +66,7 @@ class VerifyOTPViewSet(viewsets.ViewSet):
             user_id = user.user_id
             User.objects.filter(id=user_id).update(is_email_verified=True)
             OTP.objects.filter(otp=otp).update(is_used=True)
-            return CustomResponse({"message" : "OTP Verified, User created Successfully" , "user_id": user_id})
+            return CustomResponse({"message" : "OTP Verified, User created Successfully" , "user_id": user_id}, status=status_code.HTTP_200_OK)
 
 
 class UserLoginViewSet(viewsets.ViewSet):
@@ -82,9 +78,9 @@ class UserLoginViewSet(viewsets.ViewSet):
         if serializer.is_valid():
             user = serializer.validated_data['user']
             token, created = Token.objects.get_or_create(user=user)
-            return CustomResponse({"token": token.key})
+            return CustomResponse({"token": token.key}, status=status_code.HTTP_200_OK)
         else:
-            return CustomResponse(serializer.errors)
+            return CustomResponse({"msg": "Please provide valid Credentials"}, status=status_code.HTTP_200_OK)
         
 
 class ForgotPasswordViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
@@ -97,8 +93,7 @@ class ForgotPasswordViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        
-        return CustomResponse({"message": "OTP Sent Successfully"})
+        return CustomResponse({"message": "OTP Sent Successfully"}, status=status_code.HTTP_200_OK)
     
 
 class ResetPasswordViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
@@ -110,14 +105,11 @@ class ResetPasswordViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
     def update(self, request):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-
         user = serializer.validated_data['user']
         if not user:
-            return CustomResponse({"message": "User not found."})
-
+            return CustomResponse({"message": "User not found."}, status=status_code.HTTP_400_BAD_REQUEST)
         serializer.update(user, serializer.validated_data)
-
-        return CustomResponse({"message": "Password reset successfully."})
+        return CustomResponse({"message": "Password reset successfully."}, status=status_code.HTTP_200_OK)
 
 
 #Home
@@ -127,6 +119,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
     """
         CreateProjectViewSet to create project
     """
+    permission_classes = (IsAuthenticated,)
     queryset = Project.objects.all()
     serializer_class = CreateProjectSerializer
 
@@ -142,16 +135,16 @@ class ProjectViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         serializer.save(user=user, created_by=user)
 
-        return CustomResponse({"message": "Project created successfully."})
+        return CustomResponse({"message": "Project created successfully."}, status=status_code.HTTP_201_CREATED)
 
     def search(self, request):
         project_name = request.GET.get('project_name', None)
         project = Project.objects.all().values()
         if project_name:
             project=project.filter(project_name__icontains=project_name)
-            return CustomResponse(project)
+            return CustomResponse(project, status=status_code.HTTP_200_OK)
         else:
-            return CustomResponse(project)
+            return CustomResponse(project, status=status_code.HTTP_200_OK)
     
 #
 # class ListProjectViewSet(viewsets.ModelViewSet):
@@ -190,15 +183,15 @@ class FileDetailsViewSet(viewsets.ModelViewSet):
         user = Files.objects.all().values()
         if location:
             user = user.filter(location__icontains=location)
-            return CustomResponse(user)
+            return CustomResponse(user, status=status_code.HTTP_200_OK)
         if manufacturer_name:
             user = user.filter(manufacturer_name__icontains=manufacturer_name)
-            return CustomResponse(user)
+            return CustomResponse(user, status=status_code.HTTP_200_OK)
         if manufacturing_number:
             user = user.filter(manufacturing_number__icontains=manufacturing_number)
-            return CustomResponse(user)
+            return CustomResponse(user, status=status_code.HTTP_200_OK)
         else:
-            return CustomResponse(user)
+            return CustomResponse(user, status=status_code.HTTP_200_OK)
     
 
 # class ListFileDetailsViewSet(viewsets.ModelViewSet):
@@ -236,7 +229,7 @@ class ProjectDetailsViewSet(viewsets.ModelViewSet):
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
         serializer = self.get_serializer(queryset, many=True)
-        return CustomResponse(serializer.data)
+        return CustomResponse(serializer.data, status=status_code.HTTP_200_OK)
         
 
 class EditFileViewSet(viewsets.ModelViewSet):
@@ -248,22 +241,28 @@ class EditFileViewSet(viewsets.ModelViewSet):
         return Files.objects.filter(id=pk)
     
     def update(self, request, pk=None):
+        """
+            update method to update the file details.
+        """
         queryset = self.get_queryset()
         obj = queryset.get(pk=pk)
         serializer = CreateFileDetailsSerializer(obj, data=request.data)
         if serializer.is_valid():
             serializer.save()
             #return CustomResponse({'message': 'File details edited successfully.'})
-            return CustomResponse({"message": gettext(SUCCESS_MESSAGES.get('FILE_UPDATED'))})
+            return CustomResponse({"message": gettext(SUCCESS_MESSAGES.get('FILE_UPDATED'))}, status=status_code.HTTP_200_OK)
         else:
-            return CustomResponse(serializer.errors, status=status_code.HTTP_400_BAD_REQUEST)
+            return CustomResponse(serializer.errors, status=status_code.HTTP_200_OK)
         
     def destroy(self, request, pk=None):
+        """
+            delete method to delete the file from the database.
+        """
         queryset = self.get_queryset()
         obj = queryset.get(pk=pk)
         obj.delete()
         #return CustomResponse({'message': 'File deleted successfully.'})
-        return CustomResponse({"message": gettext(SUCCESS_MESSAGES.get('FILE_DELETED'))})
+        return CustomResponse({"message": gettext(SUCCESS_MESSAGES.get('FILE_DELETED'))}, status=status_code.HTTP_400_BAD_REQUEST)
 
 
 

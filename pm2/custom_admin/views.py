@@ -5,12 +5,14 @@ from rest_framework import status, viewsets, mixins, generics, filters
 from custom_admin.serializers import AdminLoginSerializer,AdminResetPasswordSerializer, ForgotPasswordSerializer
 from django.contrib.auth import authenticate
 from rest_framework.authtoken.models import Token
-from users.models import *
+from users.models import Company, UserCompany, User
 from django.contrib.auth.hashers import check_password
 from custom_admin.models import *
 from core.response import CustomResponse
 from django.db.models import Count
 from core.common_utils import generate_otp, send_verification_email
+from core.permissions import CheckAdminRoleStatusPermission
+from rest_framework.permissions import IsAuthenticated
 
 
 class AdminLoginView(viewsets.ViewSet):
@@ -23,9 +25,9 @@ class AdminLoginView(viewsets.ViewSet):
         if serializer.is_valid():
             user = serializer.validated_data['user']
             token, created = Token.objects.get_or_create(user=user)
-            return CustomResponse({"token": token.key})
+            return CustomResponse({"token": token.key}, status=status.HTTP_200_OK)
         else:
-            return CustomResponse(serializer.errors)
+            return CustomResponse({"msg": "Please provide valid Credentials"}, status=status.HTTP_400_BAD_REQUEST)
 
 class ForgotPasswordViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
     """
@@ -37,9 +39,9 @@ class ForgotPasswordViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        
         return CustomResponse({"message": "OTP Sent Successfully"})
-    
+
+
 class ResetPasswordViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
 
     def create(self, request):
@@ -57,16 +59,16 @@ class ResetPasswordViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
 
         user=OTP.objects.filter(otp=otp,otp_type=3).first()
         if user.expired_at and user.expired_at < timezone.now():
-            return CustomResponse({"message": "OTP expired"})
+            return CustomResponse({"message": "OTP expired"}, status=status.HTTP_400_BAD_REQUEST)
         if not user:
-            return CustomResponse({"message": "OTP incorrect"})
+            return CustomResponse({"message": "OTP incorrect"}, status=status.HTTP_400_BAD_REQUEST)
         if new_password != confirm_password:
-            return CustomResponse({"message": "Both Password are not same"})
+            return CustomResponse({"message": "Both Password are not same"}, status=status.HTTP_400_BAD_REQUEST)
         else:
             admin_user = User.objects.filter(id=user.user_id).first()
             admin_user.set_password(confirm_password) 
             admin_user.save()
-            return CustomResponse({"message": "Password Changed sucessfully"})
+            return CustomResponse({"message": "Password Changed sucessfully"}, status=status.HTTP_200_OK)
 
 # class AdminResetPasswordView(viewsets.ViewSet):
 
@@ -118,7 +120,7 @@ class AdminProfileViewSet(viewsets.ViewSet):
         User.objects.filter(id=request.user.id).update(email=email,is_email_verified=False)
             
 
-        return CustomResponse({"message": "profile updated sucessfully"})
+        return CustomResponse({"message": "profile updated sucessfully"}, status=status.HTTP_200_OK)
     
     def validate(self, request):
         data = request.data
@@ -127,21 +129,21 @@ class AdminProfileViewSet(viewsets.ViewSet):
             return CustomResponse({"message":"Please provide otp"})
         user=OTP.objects.filter(otp_type=1,is_used=False,otp=otp).first()
         if user.expired_at and user.expired_at < timezone.now():
-            return CustomResponse({"message": "OTP expired"})
+            return CustomResponse({"message": "OTP expired"}, status=status.HTTP_400_BAD_REQUEST)
         if not user:
-            return CustomResponse({"message": "OTP incorrect"})
+            return CustomResponse({"message": "OTP incorrect"}, status=status.HTTP_400_BAD_REQUEST)
         else:
             User.objects.filter(id=user.user_id).update(is_email_verified=True)
             OTP.objects.filter(otp_type=1,otp=otp).update(is_used=True)
-            return CustomResponse({"message": "email verified"})
+            return CustomResponse({"message": "Email Verified Successfully"}, status=status.HTTP_200_OK)
 
     def create(self, request):
         serializer = AdminResetPasswordSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
             serializer.update_password()
-            return CustomResponse({"message": "Password updated successfully."})
+            return CustomResponse({"message": "Password updated successfully."}, status=status.HTTP_200_OK)
         else:
-            return CustomResponse(serializer.errors)
+            return CustomResponse({"message": "Error Occurred"}, status=status.HTTP_400_BAD_REQUEST)
 
             
 class ContentManagementViewSet(viewsets.ViewSet):
@@ -153,7 +155,7 @@ class ContentManagementViewSet(viewsets.ViewSet):
         data = request.data
         type=data.get("type")
         user=ContentManagement.objects.filter(content_type=type).all().values("content")
-        return CustomResponse(user)
+        return CustomResponse(user, status=status.HTTP_200_OK)
     
     def update(self, request):
         data = request.data
@@ -162,13 +164,13 @@ class ContentManagementViewSet(viewsets.ViewSet):
         c=ContentManagement.objects.filter(content_type=type).update(content=content)
         if not c:
             ContentManagement.objects.create(content_type=type,content=content)
-        return CustomResponse({"message": "data successfully."})
+        return CustomResponse({"message": "Details Updated Successfully."}, status=status.HTTP_200_OK)
     
     def delete(self, request):
         data = request.data
         type=data.get("type")
         ContentManagement.objects.filter(content_type=type).delete()
-        return CustomResponse({"message": "data deleted successfully."})
+        return CustomResponse({"message": "Details deleted successfully."}, status=status.HTTP_200_OK)
 
     
 
@@ -194,29 +196,35 @@ class CompanyNameView(viewsets.ViewSet):
 #         return CustomResponse({"message": "profile updated sucessfully"})
 
 
-
 class ManageCompanyView(viewsets.ViewSet):
     """
-    this view is of crud operations of manage company
+        This view is of crud operations for manage company
     """
 
-    # def list(self, request):
-    #     user = Company.objects.annotate(num_users=Count('usercompany')).values('name', 'num_users', 'is_active')
-    #     return CustomResponse(user)
+    permission_classes = (IsAuthenticated, CheckAdminRoleStatusPermission,)
     
+
     def create(self, request):
+        """
+            method to create the company
+        """
         data = request.data
-        company_title=data.get("company_title")
+        company_title = data.get("company_title")
+
         if not company_title:
-            return CustomResponse({"message":"Please provide company name"})
+            return CustomResponse({"message": "Please provide company name"})
 
         if Company.objects.filter(name=company_title).exists():
-            return CustomResponse({"message":"this company name already registered"})
+            return CustomResponse({"message": "this company name already registered"})
         else:
             Company.objects.create(name=company_title)
-            return CustomResponse({"message":"company added sucesfully"})
+            return CustomResponse({"message": "company added successfully"})
     
+
     def update(self, request):
+        """
+            method to update the company details.
+        """
         data = request.data
         id=data.get("id")
         company_title=data.get("company_title")
@@ -228,24 +236,23 @@ class ManageCompanyView(viewsets.ViewSet):
             Company.objects.filter(id=id).update(name=company_title)
             return CustomResponse({"message":"company name updated"})
     
+
     def delete(self, request):
+        """
+            delete method to permanently delete the company.
+        """
         data = request.data
         id=data.get("id")
         Company.objects.filter(id=id).delete()
         return CustomResponse({"message":"company Deleted sucessfully"})
     
-    # def search(self,request):
-    #     company_name = request.GET.get('company_name', None)
-    #     user = Company.objects.annotate(num_users=Count('usercompany')).values('name', 'num_users', 'is_active')
-    #     if company_name:
-    #         user=user.filter(name__icontains=company_name)
-    #         return CustomResponse(user)
-    #     else:
-    #         return CustomResponse(user)
 
     def search(self, request):
+        """
+            method to list and search for the company.
+        """
         company_name = request.GET.get('company_name', None)
-        user = Company.objects.annotate(num_users=Count('company')).values('name', 'num_users', 'is_active')
+        user = Company.objects.annotate(num_users=Count('company')).values('id', 'name', 'num_users', 'is_active')
         if company_name:
             user = user.filter(name__icontains=company_name)
             return CustomResponse(user)
