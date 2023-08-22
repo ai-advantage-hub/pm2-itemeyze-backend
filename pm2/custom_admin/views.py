@@ -13,6 +13,8 @@ from django.db.models import Count
 from core.common_utils import generate_otp, send_verification_email
 from core.permissions import CheckAdminRoleStatusPermission
 from rest_framework.permissions import IsAuthenticated
+from users.models import OTP
+from django.utils import timezone
 
 
 class AdminLoginView(viewsets.ViewSet):
@@ -28,6 +30,7 @@ class AdminLoginView(viewsets.ViewSet):
             return CustomResponse({"token": token.key}, status=status.HTTP_200_OK)
         else:
             return CustomResponse({"msg": "Please provide valid Credentials"}, status=status.HTTP_400_BAD_REQUEST)
+
 
 class ForgotPasswordViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
     """
@@ -94,9 +97,10 @@ class ResetPasswordViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
 #         else:
 #             return CustomResponse({"message": "Both passwords are not the same."})
 
+
 class AdminProfileViewSet(viewsets.ViewSet):
     """
-    this view is for admin frofile listing,admin prifile updte and admin change password
+    this view is for admin frofile listing, admin profile updte and admin change password
 
     """
     def list(self, request):
@@ -118,8 +122,6 @@ class AdminProfileViewSet(viewsets.ViewSet):
             pass
 
         User.objects.filter(id=request.user.id).update(email=email,is_email_verified=False)
-            
-
         return CustomResponse({"message": "profile updated sucessfully"}, status=status.HTTP_200_OK)
     
     def validate(self, request):
