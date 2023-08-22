@@ -3,7 +3,10 @@ from .models import User, Company, UserCompany, OTP, Project, Files
 from core.common_utils import generate_otp, send_verification_email
 from django.contrib.auth import authenticate
 import re
+from core.exception import CustomException
 from django.utils import timezone
+from django.db import transaction
+
 
 
 
@@ -27,7 +30,8 @@ class SignupSerializer(serializers.ModelSerializer):
     """
         Serializer for Signup
     """
-    confirm_password = serializers.CharField(write_only=True, required=True, min_length=8)
+    email = serializers.EmailField(min_length=5, max_length=50, required=True)
+    confirm_password = serializers.CharField(write_only=True, required=True)
     company_id = serializers.IntegerField(write_only=True, required=True)
 
     class Meta:
@@ -35,25 +39,27 @@ class SignupSerializer(serializers.ModelSerializer):
         fields = ("full_name", "email", "password", "confirm_password", "company_id")
 
     @staticmethod
-    def validate_email(self, email):
+    def validate_email(email:str):
         """
             validate_email method to validate email
         """
         if User.objects.filter(email=email).exists():
-            raise serializers.ValidationError("This Email already exists.")
+            raise CustomException(status_code=400, message="This Email already exists.",
+                                          location="LOCATION")
         return email
-
-    @staticmethod
-    def validate_password(self, password):
-        if not re.search(r'[A-Z]', password):
-            raise serializers.ValidationError("Password must contain at least 1 uppercase letter.")
-        if not re.search(r'[a-z]', password):
-            raise serializers.ValidationError("Password must contain at least 1 lowercase letter.")
-        if not re.search(r'[0-9]', password):
-            raise serializers.ValidationError("Password must contain at least 1 numeric character.")
-        if not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
-            raise serializers.ValidationError("Password must contain at least 1 special character.")
-        return password
+    
+    # def validate_password(self, password):
+    #     if not re.search(r'[A-Z]', password):
+    #         # raise CustomException(status_code=400, message="Password must contain at least 1 uppercase letter.",
+    #         #                       location="LOCATION")
+    #         raise serializers.ValidationError("Password must contain at least 1 uppercase letter.")
+    #     if not re.search(r'[a-z]', password):
+    #         raise serializers.ValidationError("Password must contain at least 1 lowercase letter.")
+    #     if not re.search(r'[0-9]', password):
+    #         raise serializers.ValidationError("Password must contain at least 1 numeric character.")
+    #     if not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
+    #         raise serializers.ValidationError("Password must contain at least 1 special character.")
+    #     return password
 
     def validate(self, data):
         """
@@ -63,7 +69,9 @@ class SignupSerializer(serializers.ModelSerializer):
         confirm_password = data.pop('confirm_password', None)
 
         if password != confirm_password:
-            raise serializers.ValidationError("Passwords do not match.")
+            raise CustomException(status_code=400, message="Passwords do not match.",
+                                          location="LOCATION")
+            # raise serializers.ValidationError("Passwords do not match.")
 
         return data
     
@@ -71,15 +79,17 @@ class SignupSerializer(serializers.ModelSerializer):
         """
             Create method to create user and generate otp
         """
-        company_id = validated_data['company_id'] 
-        user = User(email=validated_data['email'],full_name=validated_data['full_name'])
-        user.set_password(validated_data['password'])
-        user.save()
-        UserCompany.objects.create(user=user, company_id=company_id)
-        otp = generate_otp()
-        OTP.objects.create(user=user,otp=otp,otp_type=1)
-        send_verification_email(user.email, otp)
-        return user
+        with transaction.atomic():
+            self.validate_email(validated_data.get('email'))
+            company_id = validated_data['company_id'] 
+            user = User(email=validated_data['email'],full_name=validated_data['full_name'])
+            user.set_password(validated_data['password'])
+            user.save()
+            UserCompany.objects.create(user=user, company_id=company_id)
+            otp = generate_otp()
+            OTP.objects.create(user=user,otp=otp,otp_type=1)
+            send_verification_email(user.email, otp)
+            return user
         
 
 class UserLoginSerializer(serializers.Serializer):
@@ -95,7 +105,8 @@ class UserLoginSerializer(serializers.Serializer):
         user = authenticate(email=email, password=password)
 
         if user is None:
-            raise serializers.ValidationError({"message": "Invalid email or password."})
+            raise CustomException(status_code=400, message="Invalid email or password.",
+                                          location="Login")
 
         # if not user.is_active:
         #     raise serializers.ValidationError({"message": "User account is not active."})
@@ -238,7 +249,6 @@ class ProjectDetailsViewSerializer(serializers.ModelSerializer):
     """
     project_files = FilesSerializer(many=True)
     created_by = ProjectUserSerializer()
-
     class Meta:
         model = Project
         fields = ("project_name", "project_number", "created_by", "project_files",)

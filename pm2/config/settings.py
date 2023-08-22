@@ -52,14 +52,14 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework',
+    'rest_framework.authtoken',
     'custom_admin',
     'users',
     'config',
     'django_extensions',
     'core',
-    'rest_framework',
     'corsheaders',
-    'rest_framework.authtoken',
 ]
 
 MIDDLEWARE = [
@@ -125,11 +125,8 @@ AUTH_PASSWORD_VALIDATORS = [
 
 REST_FRAMEWORK = {
     #"DEFAULT_PAGINATION_CLASS": "utility.pagination.Pagination",
-    "DEFAULT_AUTHENTICATION_CLASSES": (
-        "rest_framework.authentication.TokenAuthentication",
-        "rest_framework.authentication.BasicAuthentication",
-        "rest_framework.authentication.SessionAuthentication",
-    ),
+    "DEFAULT_AUTHENTICATION_CLASSES": ("rest_framework.authentication.TokenAuthentication", ),
+    'EXCEPTION_HANDLER': 'core.exception.custom_exception_handler',
     #"EXCEPTION_HANDLER": "utility.common_utils.custom_exception_handler"
 }
 
