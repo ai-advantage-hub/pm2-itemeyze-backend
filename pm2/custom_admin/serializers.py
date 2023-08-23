@@ -80,3 +80,19 @@ class ForgotPasswordSerializer(serializers.Serializer):
             pass
         
         return True
+    
+class FileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Files
+        fields = ['file_name', 'thumbnail', 'manufacturing_number', 'quantity', 'project_details', 'additional_details', 'recording', 'location', 'location_points']
+
+class ProjectDetailSerializer(serializers.ModelSerializer):
+    created_by = serializers.SerializerMethodField()
+    files = FileSerializer(source='project_files', many=True, read_only=True)
+
+    class Meta:
+        model = Project
+        fields = ['project_name', 'project_number', 'created_by', 'created_at', 'files']
+
+    def get_created_by(self, obj):
+        return obj.created_by.full_name

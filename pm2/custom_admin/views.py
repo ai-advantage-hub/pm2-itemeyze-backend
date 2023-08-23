@@ -2,10 +2,10 @@ from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, viewsets, mixins, generics, filters
-from custom_admin.serializers import AdminLoginSerializer,AdminResetPasswordSerializer, ForgotPasswordSerializer
+from custom_admin.serializers import AdminLoginSerializer,AdminResetPasswordSerializer, ForgotPasswordSerializer, ProjectDetailSerializer
 from django.contrib.auth import authenticate
 from rest_framework.authtoken.models import Token
-from users.models import Company, UserCompany, User
+from users.models import Company, UserCompany, User,Project,Files
 from django.contrib.auth.hashers import check_password
 from custom_admin.models import *
 from core.response import CustomResponse
@@ -15,6 +15,7 @@ from core.permissions import CheckAdminRoleStatusPermission
 from rest_framework.permissions import IsAuthenticated
 from users.models import OTP
 from django.utils import timezone
+from django.shortcuts import get_object_or_404
 
 
 class AdminLoginView(viewsets.ViewSet):
@@ -261,3 +262,117 @@ class ManageCompanyView(viewsets.ViewSet):
         else:
             return CustomResponse(user)
 
+class ManageProjectViewSet(viewsets.ViewSet):
+
+    def search(self, request):
+        name = request.GET.get('name', None)
+        projects = Project.objects.annotate(num_files=Count('project_files')).values('id','project_name', 'created_by__full_name', 'num_files')
+        if name:
+            projects=projects.filter(project_name__icontains=name)
+            return CustomResponse(projects)
+        else:
+            return CustomResponse(projects)
+        
+    
+    queryset = Project.objects.all()
+
+    def retrieve(self, request, pk=None):  
+        # Directly fetch the project using the queryset
+        project = get_object_or_404(self.queryset, pk=pk)
+
+        # Directly serialize the project object
+        serializer = ProjectDetailSerializer(project)
+
+        return CustomResponse(serializer.data)
+    
+    def destroy(self, request, id):
+        try:
+            instance = Project.objects.get(id=id)
+            instance.delete()
+            return Response({'message': 'Project deleted successfully'})
+        except Project.DoesNotExist:
+            return Response({'message': 'Project not found'})
+
+    # def create(self,request):
+    #     data = request.data
+    #     project_name=data.get("project_name")
+    #     project_number=data.get("project_number")
+    #     assigned_to=data.get("assigned_to")
+    #     if not project_name:
+    #         return CustomResponse({"message":"Please provide project_name"})
+    #     if not project_number:
+    #         return CustomResponse({"message":"Please provide project_number"})
+    #     if not assigned_to:
+    #         return CustomResponse({"message":"Please provide assigned_to"})
+    #     if Project.objects.filter(project_name=project_name).exists():
+    #         return CustomResponse({"message":"Project of this name already exists"})
+    #     if Project.objects.filter(project_number=project_number).exists():
+    #         return CustomResponse({"message":"Project Number of this name already exists"})
+    #     else:
+    #         user=User.objects.filter(email=assigned_to).first()
+    #         Project.objects.create(project_name=project_name,project_number=project_number,user_id=user.id,created_by_id=request.user.id)
+    #         return CustomResponse({"message":"Project created sucessfully"})
+
+    def create(self, request):
+        data = request.data
+        project_name = data.get("project_name")
+        project_number = data.get("project_number")
+        assigned_to = data.get("assigned_to", [])  # Default to an empty list if not provided
+
+        # Validations
+        if not project_name:
+            return CustomResponse({"message": "Please provide project_name"})
+        if not project_number:
+            return CustomResponse({"message": "Please provide project_number"})
+        if not assigned_to:
+            return CustomResponse({"message": "Please provide assigned_to"})
+        if Project.objects.filter(project_name=project_name).exists():
+            return CustomResponse({"message": "Project of this name already exists"})
+        if Project.objects.filter(project_number=project_number).exists():
+            return CustomResponse({"message": "Project Number of this name already exists"})
+
+        # Create project without assigning users
+        project = Project.objects.create(project_name=project_name, project_number=project_number, created_by_id=request.user.id)
+
+        # Assign users to the project
+        for email in assigned_to:
+            user = User.objects.filter(email=email).first()
+            if user:
+                project.users.add(user)  
+            print(email)
+
+        return CustomResponse({"message": "Project created successfully"})
+    
+    def file_create(self, request):
+        data = request.data
+        manufacturer_name = data.get("manufacturer_name")
+        manufacturing_number = data.get("manufacturing_number")
+        project_id = data.get("project_id")
+        location = data.get("location")
+        quantity = data.get("quantity")
+        project_details = data.get("project_details")
+        additional_details = data.get("additional_details")
+        if Files.objects.filter(manufacturing_number=manufacturing_number).exists():
+             return CustomResponse({"message": "This File name already exists"})
+        else:
+            Files.objects.create(manufacturing_number=manufacturing_number,project_id=project_id,location=location,manufacturer_name_id=manufacturer_name,quantity=quantity,project_details=project_details,additional_details=additional_details)
+            return CustomResponse({"message": "File created sucessfully"})
+
+
+
+        
+    
+
+
+        
+
+
+
+
+
+
+
+        
+    
+
+    

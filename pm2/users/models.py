@@ -51,6 +51,7 @@ class User(AbstractBaseUser, BaseModel):
     full_name = models.CharField(max_length=50, blank=False, null=True, verbose_name='Full Name')
     email = models.EmailField("Email", max_length=70, unique=True, blank=True, null=True)
     user_role = models.IntegerField("User role", choices=ROLE, default=USER)
+    profile_pic = models.CharField(blank=True, null=True, max_length=254)
     
     is_active = models.BooleanField(default=True)
     is_email_verified = models.BooleanField(default=False)
@@ -106,7 +107,7 @@ class OTP(BaseModel):
         verbose_name_plural = 'AccountVerifications'
 
 
-class Company(models.Model): 
+class Company(BaseModel): 
     name = models.CharField(max_length=255)
     is_active = models.BooleanField(default=True)
     # Add more fields if necessary
@@ -115,7 +116,7 @@ class Company(models.Model):
         return self.name
     
 
-class UserCompany(models.Model):
+class UserCompany(BaseModel):
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='company')
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_company')
 
@@ -127,7 +128,7 @@ class Project(BaseModel):
     """
         Project model to save project details
     """
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_project')
+    users = models.ManyToManyField(User,blank=True,related_name='assigned_projects')
     project_name = models.CharField(max_length=255, unique=True, null=True)
     project_description = models.TextField(null=True)
     is_admin_approved = models.BooleanField(default=False, null=True)
@@ -144,7 +145,7 @@ class Project(BaseModel):
         verbose_name_plural = "Projects"
 
 
-class Files(models.Model):
+class Files(BaseModel):
     """
         ProjecDetails model to see the details of the projects
     """
