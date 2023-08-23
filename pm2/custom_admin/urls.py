@@ -31,9 +31,9 @@ urlpatterns = [
     #ManageProject
     path("search_project", views.ManageProjectViewSet.as_view({"get": "search"}), name="search_project"),
     path("retereve_project/<int:pk>", views.ManageProjectViewSet.as_view({"get": "retrieve"}), name="retereve_project"),
-    path("delete_project/<int:id>", views.ManageProjectViewSet.as_view({"get": "destroy"}), name="delete_project"),
-    path("create_project", views.ManageProjectViewSet.as_view({"get": "create"}), name="create_project"),
-    path("create_file", views.ManageProjectViewSet.as_view({"get": "file_create"}), name="create_file")
+    path("delete_project/<int:id>", views.ManageProjectViewSet.as_view({"delete": "destroy"}), name="delete_project"),
+    path("create_project", views.ManageProjectViewSet.as_view({"post": "create"}), name="create_project"),
+    path("create_file", views.ManageProjectViewSet.as_view({"post": "file_create"}), name="create_file")
 
 
 ]
