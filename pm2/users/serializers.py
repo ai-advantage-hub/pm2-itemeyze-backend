@@ -34,6 +34,7 @@ class SignupSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(min_length=5, max_length=50, required=True)
     confirm_password = serializers.CharField(write_only=True, required=True)
     company_id = serializers.IntegerField(write_only=True, required=True)
+    full_name = serializers.CharField(required=True)
 
     class Meta:
         model = User
@@ -44,7 +45,7 @@ class SignupSerializer(serializers.ModelSerializer):
         """
             validate_email method to validate email
         """
-        if User.objects.filter(email=email).exists():
+        if User.objects.filter(email=email.lower()).exists():
             raise CustomException(status_code=400, message="This Email already exists.",
                                           location="LOCATION")
         return email
@@ -103,7 +104,7 @@ class UserLoginSerializer(serializers.Serializer):
     def validate(self, data):
         email = data['email']
         password = data['password']
-        user = authenticate(email=email, password=password)
+        user = authenticate(email=email.lower(), password=password)
 
         if user is None:
             raise CustomException(status_code=400, message="Invalid email or password.",
