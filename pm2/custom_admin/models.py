@@ -1,6 +1,7 @@
 from django.db import models
+from core.models import BaseModel
 
-class ContentManagement(models.Model):
+class ContentManagement(BaseModel):
     TERMS = 1
     ABOUT = 2
 
