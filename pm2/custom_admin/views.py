@@ -74,30 +74,6 @@ class ResetPasswordViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
             admin_user.save()
             return CustomResponse({"message": "Password Changed sucessfully"}, status=status.HTTP_200_OK)
 
-# class AdminResetPasswordView(viewsets.ViewSet):
-
-#     def create(self, request):
-
-#         data = request.data
-#         old_password = data.get("old_password")
-#         new_password = data.get("new_password")
-#         confirm_password = data.get("confirm_password")
-
-#         admin_user = User.objects.filter(id=request.user.id).first()
-
-#         if not admin_user:
-#             return CustomResponse({"message": "Admin user not found."})
-
-#         if not check_password(old_password, admin_user.password):
-#             return CustomResponse({"message": "Old password is incorrect."})
-
-#         if new_password == confirm_password:
-#             admin_user.set_password(confirm_password) 
-#             admin_user.save()
-#             return CustomResponse({"message": "Password updated successfully."})
-#         else:
-#             return CustomResponse({"message": "Both passwords are not the same."})
-
 
 class AdminProfileViewSet(viewsets.ViewSet):
     """
@@ -105,13 +81,20 @@ class AdminProfileViewSet(viewsets.ViewSet):
 
     """
     def list(self, request):
-        user=User.objects.filter(id=request.user.id).all().values("full_name","email")
+        user=User.objects.filter(id=request.user.id).all().values("full_name","email","profile_pic")
         return CustomResponse(user[0])
     
     def update(self, request):
         data = request.data
         full_name=data.get("full_name")
         email=data.get("email")
+        profile_pic=data.get("profile_pic")
+        if not full_name:
+            return CustomResponse({"message": "Please provide full name."})
+        if profile_pic:
+            User.objects.filter(id=request.user.id).update(profile_pic=profile_pic)
+
+
         if full_name:
             User.objects.filter(id=request.user.id).update(full_name=full_name)
         if email:
@@ -140,14 +123,21 @@ class AdminProfileViewSet(viewsets.ViewSet):
             OTP.objects.filter(otp_type=1,otp=otp).update(is_used=True)
             return CustomResponse({"message": "Email Verified Successfully"}, status=status.HTTP_200_OK)
 
+    # def create(self, request):
+    #     serializer = AdminResetPasswordSerializer(data=request.data, context={'request': request})
+    #     if serializer.is_valid():
+    #         serializer.update_password()
+    #         return CustomResponse({"message": "Password updated successfully."}, status=status.HTTP_200_OK)
+    #     else:
+    #         return CustomResponse({"message": "Error Occurred"}, status=status.HTTP_400_BAD_REQUEST)
     def create(self, request):
         serializer = AdminResetPasswordSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
             serializer.update_password()
             return CustomResponse({"message": "Password updated successfully."}, status=status.HTTP_200_OK)
         else:
-            return CustomResponse({"message": "Error Occurred"}, status=status.HTTP_400_BAD_REQUEST)
-
+            error_message = serializer.errors.get('message', ['Error Occurred'])[0]
+            return CustomResponse({"message": error_message}, status=status.HTTP_400_BAD_REQUEST)
             
 class ContentManagementViewSet(viewsets.ViewSet):
     """
@@ -164,6 +154,9 @@ class ContentManagementViewSet(viewsets.ViewSet):
         data = request.data
         type=data.get("type")
         content=data.get("content")
+        if not content:
+            return CustomResponse({"message": "Please provide content."})
+
         c=ContentManagement.objects.filter(content_type=type).update(content=content)
         if not c:
             ContentManagement.objects.create(content_type=type,content=content)
@@ -183,21 +176,6 @@ class CompanyNameView(viewsets.ViewSet):
         user=Company.objects.all().values('name')
         return CustomResponse(user)
     
-# class AdminprofileView(viewsets.ViewSet):
-
-#     def create(self, request):
-#         user=User.objects.filter(id=request.user.id).all().values("full_name","email")
-#         return CustomResponse(user[0])
-    
-# class AdminprofileUpdateView(viewsets.ViewSet):
-
-#     def create(self, request):
-#         data = request.data
-#         full_name=data.get("full_name")
-#         email=data.get("email")
-#         User.objects.filter(id=request.user.id).update(full_name=full_name,email=email)
-#         return CustomResponse({"message": "profile updated sucessfully"})
-
 
 class ManageCompanyView(viewsets.ViewSet):
     """
@@ -220,8 +198,12 @@ class ManageCompanyView(viewsets.ViewSet):
         if Company.objects.filter(name=company_title).exists():
             return CustomResponse({"message": "this company name already registered"})
         else:
-            Company.objects.create(name=company_title)
-            return CustomResponse({"message": "company added successfully"})
+            #Company.objects.create(name=company_title)
+            company = Company.objects.create(name=company_title)
+            return CustomResponse({
+            "message": "company added successfully",
+            "company_id": company.id
+        })
     
 
     def update(self, request):
@@ -258,17 +240,27 @@ class ManageCompanyView(viewsets.ViewSet):
         user = Company.objects.annotate(num_users=Count('company')).values('id', 'name', 'num_users', 'is_active')
         if company_name:
             user = user.filter(name__icontains=company_name)
+            if not user:
+                return CustomResponse({"message":"Data not found"})
+
             return CustomResponse(user)
         else:
             return CustomResponse(user)
 
 class ManageProjectViewSet(viewsets.ViewSet):
 
+    """
+        This view is of crud operations for manage Project
+    """
+
     def search(self, request):
         name = request.GET.get('name', None)
         projects = Project.objects.annotate(num_files=Count('project_files')).values('id','project_name', 'created_by__full_name', 'num_files')
         if name:
             projects=projects.filter(project_name__icontains=name)
+            if not projects:
+                return CustomResponse({"message":"Data not found"})
+
             return CustomResponse(projects)
         else:
             return CustomResponse(projects)
@@ -277,10 +269,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
     queryset = Project.objects.all()
 
     def retrieve(self, request, pk=None):  
-        # Directly fetch the project using the queryset
         project = get_object_or_404(self.queryset, pk=pk)
-
-        # Directly serialize the project object
         serializer = ProjectDetailSerializer(project)
 
         return CustomResponse(serializer.data)
@@ -292,26 +281,6 @@ class ManageProjectViewSet(viewsets.ViewSet):
             return Response({'message': 'Project deleted successfully'})
         except Project.DoesNotExist:
             return Response({'message': 'Project not found'})
-
-    # def create(self,request):
-    #     data = request.data
-    #     project_name=data.get("project_name")
-    #     project_number=data.get("project_number")
-    #     assigned_to=data.get("assigned_to")
-    #     if not project_name:
-    #         return CustomResponse({"message":"Please provide project_name"})
-    #     if not project_number:
-    #         return CustomResponse({"message":"Please provide project_number"})
-    #     if not assigned_to:
-    #         return CustomResponse({"message":"Please provide assigned_to"})
-    #     if Project.objects.filter(project_name=project_name).exists():
-    #         return CustomResponse({"message":"Project of this name already exists"})
-    #     if Project.objects.filter(project_number=project_number).exists():
-    #         return CustomResponse({"message":"Project Number of this name already exists"})
-    #     else:
-    #         user=User.objects.filter(email=assigned_to).first()
-    #         Project.objects.create(project_name=project_name,project_number=project_number,user_id=user.id,created_by_id=request.user.id)
-    #         return CustomResponse({"message":"Project created sucessfully"})
 
     def create(self, request):
         data = request.data

@@ -45,10 +45,10 @@ class AdminResetPasswordSerializer(serializers.Serializer):
             raise serializers.ValidationError({"message": "Admin user not found."})
 
         if not check_password(old_password, user.password):
-            raise serializers.ValidationError({"message": "Old password is incorrect."})
+            raise serializers.ValidationError({"message": "Incorrect old password."})
 
         if new_password != confirm_password:
-            raise serializers.ValidationError({"message": "Both passwords are not the same."})
+            raise serializers.ValidationError({"message": "New password and Confirm password should be same."})
 
         return data
 
