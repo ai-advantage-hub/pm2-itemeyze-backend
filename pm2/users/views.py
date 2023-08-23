@@ -2,7 +2,8 @@ from django.shortcuts import render
 from rest_framework import mixins, viewsets, generics, filters
 from rest_framework.response import Response
 from .models import User, OTP, Project, Files
-from .serializers import SignupSerializer, UserLoginSerializer, ForgotPasswordSerializer, ResetPasswordSerializer, CreateProjectSerializer, CreateFileDetailsSerializer, ProjectDetailsViewSerializer
+from custom_admin.models import ContentManagement
+from .serializers import SignupSerializer, UserLoginSerializer, ForgotPasswordSerializer, ResetPasswordSerializer, CreateProjectSerializer, CreateFileDetailsSerializer, ProjectDetailsViewSerializer, ContentManagementSerializer
 from rest_framework.authtoken.models import Token
 from core.common_utils import generate_otp, send_verification_email
 from core.response import CustomResponse
@@ -39,7 +40,10 @@ class ReSendOtpViewSet(viewsets.ViewSet):
     def create(self,request):
         data = request.data
         email=data.get("email")
+        if not email:
+            return CustomResponse({"message": "Please enter email"})
         user=User.objects.filter(email=email).first()
+        print("ddfgfregvrf",user)
         otp = generate_otp()
         OTP.objects.update(user=user,otp=otp,otp_type=1)
         try:
@@ -57,15 +61,17 @@ class VerifyOTPViewSet(viewsets.ViewSet):
     def create(self,request):
         data=request.data
         otp=data.get('otp')
-        user = OTP.objects.filter(otp=otp).first()
+        email=data.get('email')
+        type = data.get('type')
+        user = OTP.objects.filter(otp=otp, otp_type=type, is_used=False).first()
         if not user:
             return CustomResponse({"message" : "Wrong OTP"})
         if user.expired_at and user.expired_at < timezone.now():
             return CustomResponse({"message": "OTP expired"})
         else:
             user_id = user.user_id
-            User.objects.filter(id=user_id).update(is_email_verified=True)
-            OTP.objects.filter(otp=otp).update(is_used=True)
+            User.objects.filter(email=email).update(is_email_verified=True)
+            OTP.objects.filter(otp=otp, otp_type=type).update(is_used=True)
             return CustomResponse({"message" : "OTP Verified, User created Successfully" , "user_id": user_id}, status=status_code.HTTP_200_OK)
 
 
@@ -142,6 +148,8 @@ class ProjectViewSet(viewsets.ModelViewSet):
         project = Project.objects.all().values()
         if project_name:
             project=project.filter(project_name__icontains=project_name)
+            if not project:
+                return CustomResponse({"message": "No Data Found."})
             return CustomResponse(project, status=status_code.HTTP_200_OK)
         else:
             return CustomResponse(project, status=status_code.HTTP_200_OK)
@@ -265,5 +273,12 @@ class EditFileViewSet(viewsets.ModelViewSet):
         return CustomResponse({"message": gettext(SUCCESS_MESSAGES.get('FILE_DELETED'))}, status=status_code.HTTP_400_BAD_REQUEST)
 
 
-
+class TermsAndConditionsViewSet(viewsets.ModelViewSet):
+    """
+        TermsAndConditionsViewSet to get terms and conditions
+    """
+    def list(self, request):
+        content = ContentManagement.objects.all()
+        serializer = ContentManagementSerializer(content, many=True)
+        return CustomResponse(serializer.data, status=status_code.HTTP_200_OK)
 

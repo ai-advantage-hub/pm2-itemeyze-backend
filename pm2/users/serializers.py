@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import User, Company, UserCompany, OTP, Project, Files
+from custom_admin.models import ContentManagement
 from core.common_utils import generate_otp, send_verification_email
 from django.contrib.auth import authenticate
 import re
@@ -36,7 +37,7 @@ class SignupSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ("full_name", "email", "password", "confirm_password", "company_id")
+        fields = ("profile_pic", "full_name", "email", "password", "confirm_password", "company_id")
 
     @staticmethod
     def validate_email(email:str):
@@ -114,8 +115,12 @@ class UserLoginSerializer(serializers.Serializer):
         # if not user.is_admin_approved:
         #     raise serializers.ValidationError({"message": "User is not approved by admin."})
 
-        # if not user.is_email_verified:
-        #     raise serializers.ValidationError({"message": "User email is not verified."})
+        if not user.is_email_verified:
+            otp = generate_otp()
+            OTP.objects.create(user=user,otp=otp,otp_type=1)
+            send_verification_email(user.email, otp)
+            raise CustomException(status_code=400, message= "User email is not verified. Please check your email inbox.")
+        
 
         # if user.is_admin_approved == False or user.is_email_verified == False:
         #     raise serializers.ValidationError({"message": "User is not approved by admin or email is not verified."})
@@ -252,6 +257,15 @@ class ProjectDetailsViewSerializer(serializers.ModelSerializer):
     class Meta:
         model = Project
         fields = ("project_name", "project_number", "created_by", "project_files",)
+
+
+class ContentManagementSerializer(serializers.ModelSerializer):
+    """
+        ContentManagementSerializer to get the terms and conditions
+    """
+    class Meta:
+        model = ContentManagement
+        fields = ('content',)
     
 
 
