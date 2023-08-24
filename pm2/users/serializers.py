@@ -191,6 +191,14 @@ class CreateProjectSerializer(serializers.ModelSerializer):
     """
         CreateProjectSerializer for project creating project
     """
+
+    # def create(self, validated_data):
+    #     """
+    #     """
+    #     instance = Project.objects.create(validated_data)
+    #     instance.users.add()
+    #     return instance
+
     class Meta:
         model = Project
         fields = ("id", "project_name", "created_by")
