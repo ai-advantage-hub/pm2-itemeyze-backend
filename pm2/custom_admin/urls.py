@@ -27,6 +27,7 @@ urlpatterns = [
 
     #ManageCompany
     path("company", views.ManageCompanyView.as_view({"post": "create", "get": "search", "put": "update", "delete": "delete"}), name="AddCompany"),
+    path("status", views.ManageCompanyView.as_view({"post": "status"}), name="status"),
 
     #ManageProject
     path("search_project", views.ManageProjectViewSet.as_view({"get": "search"}), name="search_project"),
