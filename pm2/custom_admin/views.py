@@ -246,6 +246,27 @@ class ManageCompanyView(viewsets.ViewSet):
             return CustomResponse(user)
         else:
             return CustomResponse(user)
+    
+    def status(self, request):
+        """
+            method to change status for the company.
+        """
+        data = request.data
+        id=data.get("id")
+        status=data.get("status")
+
+        company=Company.objects.filter(id=id).first()
+        if not company:
+            return CustomResponse({"message":"Company dont exist for this ID"})
+
+        if status==1:
+            Company.objects.filter(id=id).update(is_active=True)
+            return CustomResponse({"message":"Status Activated sucessfully"})
+        else:
+            Company.objects.filter(id=id).update(is_active=False)
+            return CustomResponse({"message":"Status dectivated sucessfully"})
+
+
 
 class ManageProjectViewSet(viewsets.ViewSet):
 
