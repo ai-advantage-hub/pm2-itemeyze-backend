@@ -17,6 +17,9 @@ urlpatterns = [
         {"post": "create"}, name="forgot_password")),
     path("reset_password", views.ResetPasswordViewSet.as_view(
         {"put": "update"}, name="reset_password")),
+    path("company_list", views.CompanyNameViewSet.as_view(
+        {"get": "list"}, name="company_list")),
+    
 
     #Home
     path("create_project", views.ProjectViewSet.as_view(

@@ -77,20 +77,55 @@ class SignupSerializer(serializers.ModelSerializer):
 
         return data
     
+    def validate_company(self, request):
+        data = request.data
+        company_id = data.get('company_id')
+        c = Company.objects.filter(id=company_id).first()
+        if not c:
+            raise CustomException(status_code=400, message="Company Not Found.",
+                                          location="LOCATION")
+           
+        
+
+    
+    # def create(self, validated_data):
+    #     """
+    #         Create method to create user and generate otp
+    #     """
+    #     with transaction.atomic():
+    #         self.validate_email(validated_data.get('email'))
+    #         company_id = validated_data['company_id'] 
+    #         user = User(email=validated_data['email'],full_name=validated_data['full_name'])
+    #         user.set_password(validated_data['password'])
+    #         user.save()
+    #         UserCompany.objects.create(user=user, company_id=company_id)
+    #         otp = generate_otp()
+    #         OTP.objects.create(user=user,otp=otp,otp_type=1)
+    #         send_verification_email(user.email, otp)
+    #         return user
+
     def create(self, validated_data):
         """
-            Create method to create user and generate otp
+        Create method to create user and generate otp
         """
         with transaction.atomic():
             self.validate_email(validated_data.get('email'))
-            company_id = validated_data['company_id'] 
+            
+            company_id = validated_data['company_id']
+            c = Company.objects.filter(id=company_id).first()
+            if not c:
+                raise CustomException(status_code=400, message="Company Not Found.", location="LOCATION")
+            
             user = User(email=validated_data['email'],full_name=validated_data['full_name'])
             user.set_password(validated_data['password'])
             user.save()
+            
             UserCompany.objects.create(user=user, company_id=company_id)
+            
             otp = generate_otp()
             OTP.objects.create(user=user,otp=otp,otp_type=1)
             send_verification_email(user.email, otp)
+            
             return user
         
 
