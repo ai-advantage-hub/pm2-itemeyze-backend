@@ -29,6 +29,10 @@ urlpatterns = [
         {"put": "update", "delete":"destroy"}, name="edit_file")),
     path("terms_and_conditions", views.TermsAndConditionsViewSet.as_view(
         {"get": "list"}, name="terms_and_conditions")),
+
+    #Settings    
+    path("view_profile/<int:id>", views.ViewProfileViewSet.as_view(
+        {"get": "list"}, name="view_profile")),
     
 
 ]

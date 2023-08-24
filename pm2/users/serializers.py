@@ -48,7 +48,7 @@ class SignupSerializer(serializers.ModelSerializer):
         if User.objects.filter(email=email.lower()).exists():
             raise CustomException(status_code=400, message="This Email already exists.",
                                           location="LOCATION")
-        return email
+        return email.lower()
     
     # def validate_password(self, password):
     #     if not re.search(r'[A-Z]', password):
@@ -212,8 +212,7 @@ class CreateFileDetailsSerializer(serializers.ModelSerializer):
         model = Files
         fields = (
             "id", "manufacturer_name", "project_id", "file_name", "thumbnail",
-            "manufacturing_number", "quantity", "project_details",
-            "additional_details", "recording", "location", "location_points"
+            "manufacturing_number", "quantity", "project_details", "recording", "location", "location_points"
         )
         
     def validate(self, data):

@@ -282,3 +282,17 @@ class TermsAndConditionsViewSet(viewsets.ModelViewSet):
         serializer = ContentManagementSerializer(content, many=True)
         return CustomResponse(serializer.data, status=status_code.HTTP_200_OK)
 
+
+#Settings
+
+class ViewProfileViewSet(viewsets.ModelViewSet):
+    """
+        ViewProfileViewSet to get the users details
+    """
+    def list(self, request, id):
+        user = User.objects.filter(id=id).all().values('full_name', 'email', 'profile_pic')
+        if not user:
+            return CustomResponse({"message" : "User Not Found"})
+        return CustomResponse(user)
+    
+
