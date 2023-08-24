@@ -36,6 +36,11 @@ urlpatterns = [
     #Settings    
     path("view_profile/<int:id>", views.ViewProfileViewSet.as_view(
         {"get": "list"}, name="view_profile")),
+
+
+
+    path("user_listing", views.UserListingViewSet.as_view(
+        {"get": "list"}, name="user_listing")),
     
 
 ]

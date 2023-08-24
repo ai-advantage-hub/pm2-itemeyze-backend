@@ -65,8 +65,9 @@ class VerifyOTPViewSet(viewsets.ViewSet):
 
         # will remove in future
         if otp == "1234":
-            user = User.objects.filter(email=email).first()
+            user = User.objects.filter(email=email.lower()).first()
             user.is_email_verified=True
+            user.save()
             return CustomResponse({"message" : "OTP Verified, User created Successfully" , "user_id": user.id}, status=status_code.HTTP_200_OK)
 
 
@@ -310,4 +311,12 @@ class CompanyNameViewSet(viewsets.ViewSet):
     
     def list(self, request):
         user=Company.objects.all().values('id','name')
+        return CustomResponse(user)
+    
+
+class UserListingViewSet(viewsets.ViewSet):
+    #permission_classes = (IsAuthenticated, CheckUserRoleStatusPermission,)
+    
+    def list(self, request):
+        user=User.objects.all().values('id','full_name')
         return CustomResponse(user)

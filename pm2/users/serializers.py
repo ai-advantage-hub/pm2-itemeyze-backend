@@ -155,7 +155,7 @@ class UserLoginSerializer(serializers.Serializer):
             otp = generate_otp()
             OTP.objects.create(user=user,otp=otp,otp_type=1)
             send_verification_email(user.email, otp)
-            raise CustomException(status_code=400, message= "User email is not verified. Please check your email inbox.")
+            raise CustomException(status_code=400, message= "User email is not verified. Please check your email inbox.", location="server")
         
 
         # if user.is_admin_approved == False or user.is_email_verified == False:
