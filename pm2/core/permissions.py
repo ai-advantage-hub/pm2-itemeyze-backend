@@ -15,3 +15,16 @@ class CheckAdminRoleStatusPermission(BasePermission):
                                is_active=True).exists():
             return True
         return False
+    
+
+class CheckUserRoleStatusPermission(BasePermission):
+    """
+        CheckAdminRoleStatusPermission class used to check Admin Role Status Is active or not.
+    """
+    message = "Permission is allowed only to admin user."
+
+    def has_permission(self, request, view):
+        if User.objects.filter(id=request.user.id, user_role=2,
+                               is_active=True).exists():
+            return True
+        return False
