@@ -139,9 +139,9 @@ class ProjectViewSet(viewsets.ModelViewSet):
 
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save(user=user, created_by=user)
+        serializer.save(created_by=user)
 
-        return CustomResponse({"message": "Project created successfully."}, status=status_code.HTTP_201_CREATED)
+        return CustomResponse(serializer.data, status=status_code.HTTP_201_CREATED)
 
     def search(self, request):
         project_name = request.GET.get('project_name', None)
