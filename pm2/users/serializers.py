@@ -257,10 +257,10 @@ class CreateFileDetailsSerializer(serializers.ModelSerializer):
         c = Files.objects.filter(manufacturing_number=manufacturing_number).first()
         if c is not None:
             a = c.manufacturing_number
-            if Files.objects.filter(manufacturing_number=a).exists():
-                raise serializers.ValidationError("A file with this manufacturing number already exists for the project.")
-            else:
-                print("No Files object found with the given manufacturing number.")
+            # if Files.objects.filter(manufacturing_number=a).exists():
+            #     raise serializers.ValidationError("A file with this manufacturing number already exists for the project.")
+            # else:
+            #     print("No Files object found with the given manufacturing number.")
         return data
     
     def create(self, validated_data):
@@ -286,9 +286,10 @@ class FilesSerializer(serializers.ModelSerializer):
     """
         FilesSerializer serializer to serialize through files model
     """
+    manufacturer_name = ProjectUserSerializer()
     class Meta:
         model = Files
-        fields = ('__all__')
+        fields = ('manufacturer_name', 'file_name', 'manufacturing_number', 'location', 'quantity', 'project_details')
 
 
 class ProjectDetailsViewSerializer(serializers.ModelSerializer):

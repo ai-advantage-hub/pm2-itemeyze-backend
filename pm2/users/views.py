@@ -194,23 +194,23 @@ class FileDetailsViewSet(viewsets.ModelViewSet):
         self.perform_create(serializer)
         return CustomResponse(serializer.data, status=status_code.HTTP_201_CREATED)
 
-    def list(self, request):
+    def list(self, request, id):
         location = request.GET.get('location', None)
         manufacturer_name = request.GET.get('manufacturer_name', None)
         manufacturing_number = request.GET.get('manufacturing_number', None)
-        user = Files.objects.all().values()
-        if location:
-            user = user.filter(location__icontains=location)
-            return CustomResponse(user, status=status_code.HTTP_200_OK)
-        if manufacturer_name:
-            user = user.filter(manufacturer_name__icontains=manufacturer_name)
-            return CustomResponse(user, status=status_code.HTTP_200_OK)
-        if manufacturing_number:
-            user = user.filter(manufacturing_number__icontains=manufacturing_number)
-            return CustomResponse(user, status=status_code.HTTP_200_OK)
-        else:
-            return CustomResponse(user, status=status_code.HTTP_200_OK)
-    
+        user = Files.objects.filter(id=id).all().values('file_name','manufacturer_name__full_name', 'manufacturing_number','location','quantity','project_details','additional_details','recording')
+        # if location:
+        #     user = user.filter(location__icontains=location)
+        #     return CustomResponse(user, status=status_code.HTTP_200_OK)
+        # if manufacturer_name:
+        #     user = user.filter(manufacturer_name__full_name__icontains=manufacturer_name)
+        #     return CustomResponse(user, status=status_code.HTTP_200_OK)
+        # if manufacturing_number:
+        #     user = user.filter(manufacturing_number__icontains=manufacturing_number)
+        #     return CustomResponse(user, status=status_code.HTTP_200_OK)
+        # else:
+        #     return CustomResponse(user, status=status_code.HTTP_200_OK)
+        return CustomResponse(user)
 
 # class ListFileDetailsViewSet(viewsets.ModelViewSet):
 #     """
@@ -240,14 +240,50 @@ class ProjectDetailsViewSet(viewsets.ModelViewSet):
     """
     serializer_class = ProjectDetailsViewSerializer
 
+    # def get_queryset(self, request):
+    #     location = request.GET.get('location', None)
+    #     manufacturer_name = request.GET.get('manufacturer_name', None)
+    #     manufacturing_number = request.GET.get('manufacturing_number', None)
+    #     pk = self.kwargs.get('pk')
+    #     user = Project.objects.filter(id=pk)
+        
+    #     if location:
+    #         user = user.filter(location__icontains=location)
+    #         return CustomResponse(user, status=status_code.HTTP_200_OK)
+    #     if manufacturer_name:
+    #         user = user.filter(manufacturer_name__full_name__icontains=manufacturer_name)
+    #         return CustomResponse(user, status=status_code.HTTP_200_OK)
+    #     if manufacturing_number:
+    #         user = user.filter(manufacturing_number__icontains=manufacturing_number)
+    #         return CustomResponse(user, status=status_code.HTTP_200_OK)
+    #     else:
+    #         return CustomResponse(user, status=status_code.HTTP_200_OK)
+
     def get_queryset(self):
         pk = self.kwargs.get('pk')
-        return Project.objects.filter(id=pk)
+        queryset = Project.objects.filter(id=pk)
+        location = self.request.GET.get('location', None)
+        manufacturer_name = self.request.GET.get('manufacturer_name', None)
+        manufacturing_number = self.request.GET.get('manufacturing_number', None)
 
-    def list(self, request, *args, **kwargs):
-        queryset = self.get_queryset()
-        serializer = self.get_serializer(queryset, many=True)
-        return CustomResponse(serializer.data, status=status_code.HTTP_200_OK)
+        if location:
+            queryset = queryset.filter(project_files__location__icontains=location)
+        if manufacturer_name:
+            queryset = queryset.filter(project_files__manufacturer_name__full_name__icontains=manufacturer_name)
+        if manufacturing_number:
+            queryset = queryset.filter(project_files__manufacturing_number__icontains=manufacturing_number)
+        return queryset
+        
+
+    # def list(self, request, *args, **kwargs):
+    #     queryset = self.get_queryset()
+    #     serializer = self.get_serializer(queryset, many=True)
+    #     return CustomResponse(serializer.data, status=status_code.HTTP_200_OK)
+
+    def list(self, request, *args, **kwargs):     
+        queryset = self.get_queryset()     
+        serializer = self.get_serializer(queryset, many=True)     
+        return Response(serializer.data, status=status_code.HTTP_200_OK)
         
 
 class EditFileViewSet(viewsets.ModelViewSet):
