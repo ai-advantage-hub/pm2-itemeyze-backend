@@ -207,7 +207,7 @@ class ResetPasswordSerializer(serializers.Serializer):
 
         if new_password != confirm_password:
             raise serializers.ValidationError({"message": "Passwords do not match."})
-        user = User.objects.filter(email=email).first()
+        user = User.objects.filter(email=email.lower()).first()
 
         data['user'] = user 
         return data
