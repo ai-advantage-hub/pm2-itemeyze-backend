@@ -41,7 +41,7 @@ class ReSendOtpViewSet(viewsets.ViewSet):
         email=data.get("email")
         if not email:
             return CustomResponse({"message": "Please enter email"})
-        user=User.objects.filter(email=email).first()
+        user=User.objects.filter(email=email.lower()).first()
         print("ddfgfregvrf",user)
         otp = generate_otp()
         OTP.objects.update(user=user,otp=otp,otp_type=1)
@@ -78,7 +78,7 @@ class VerifyOTPViewSet(viewsets.ViewSet):
             return CustomResponse({"message": "OTP expired"})
         else:
             user_id = user.user_id
-            User.objects.filter(email=email).update(is_email_verified=True)
+            User.objects.filter(email=email.lower()).update(is_email_verified=True)
             OTP.objects.filter(otp=otp, otp_type=type).update(is_used=True)
             return CustomResponse({"message" : "OTP Verified, User created Successfully" , "user_id": user_id}, status=status_code.HTTP_200_OK)
 
@@ -155,7 +155,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
 
     def search(self, request):
         project_name = request.GET.get('project_name', None)
-        project = Project.objects.all().values()
+        project = Project.objects.filter(created_by=request.user).all().values()
         if project_name:
             project=project.filter(project_name__icontains=project_name)
             if not project:

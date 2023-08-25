@@ -62,6 +62,8 @@ class ResetPasswordViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
         
 
         user=OTP.objects.filter(otp=otp,otp_type=3).first()
+        if not user:
+            return CustomResponse({"message": "Wrong OTP"})
         if user.expired_at and user.expired_at < timezone.now():
             return CustomResponse({"message": "OTP expired"}, status=status.HTTP_400_BAD_REQUEST)
         if not user:
@@ -114,6 +116,8 @@ class AdminProfileViewSet(viewsets.ViewSet):
         if not otp:
             return CustomResponse({"message":"Please provide otp"})
         user=OTP.objects.filter(otp_type=1,is_used=False,otp=otp).first()
+        if not user:
+            return CustomResponse({"message": "Wrong OTP"})
         if user.expired_at and user.expired_at < timezone.now():
             return CustomResponse({"message": "OTP expired"}, status=status.HTTP_400_BAD_REQUEST)
         if not user:
@@ -173,7 +177,7 @@ class ContentManagementViewSet(viewsets.ViewSet):
 class CompanyNameView(viewsets.ViewSet):
 
     def create(self, request):
-        user=Company.objects.all().values('name')
+        user=Company.objects.all().values('id','name')
         return CustomResponse(user)
     
 
@@ -228,6 +232,9 @@ class ManageCompanyView(viewsets.ViewSet):
         """
         data = request.data
         id=data.get("id")
+        c =  Company.objects.filter(id=id).first()
+        if not c:
+            return CustomResponse({"message":"company Does not exist"})
         Company.objects.filter(id=id).delete()
         return CustomResponse({"message":"company Deleted sucessfully"})
     
