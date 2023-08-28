@@ -307,7 +307,7 @@ class ProjectDetailsViewSet(viewsets.ModelViewSet):
     def list(self, request, *args, **kwargs):     
         queryset = self.get_queryset()     
         serializer = self.get_serializer(queryset, many=True)     
-        return Response(serializer.data, status=status_code.HTTP_200_OK)
+        return CustomResponse(serializer.data, status=status_code.HTTP_200_OK)
         
 
 class EditFileViewSet(viewsets.ModelViewSet):
@@ -381,7 +381,7 @@ class ViewProfileViewSet(viewsets.ViewSet):
 
         serializer = ViewProfileSerializer(user)
 
-        return Response(serializer.data)
+        return CustomResponse(serializer.data)
     
 
 # class CompanyNameViewSet(viewsets.ViewSet):
@@ -400,7 +400,7 @@ class CompanyNameViewSet(viewsets.ViewSet):
         companies = Company.objects.all()
         serializer = CompanyNameSerializer(companies, many=True)
 
-        return Response(serializer.data)
+        return CustomResponse(serializer.data)
     
 
 # class UserListingViewSet(viewsets.ViewSet):
@@ -414,12 +414,12 @@ class UserListingViewSet(viewsets.ViewSet):
     """
        UserListingViewSet for getting the list of users 
     """
-    #permission_classes = (IsAuthenticated, CheckUserRoleStatusPermission,)
+    permission_classes = (IsAuthenticated, CheckUserRoleStatusPermission,)
     def list(self, request):
         users = User.objects.all()
         serializer = UserListingSerializer(users, many=True)
 
-        return Response(serializer.data)
+        return CustomResponse(serializer.data)
     
 
 class UserEditProfileViewSet(viewsets.ViewSet):
