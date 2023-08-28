@@ -329,7 +329,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
             return CustomResponse({"message": "Project Number of this name already exists"})
 
         # Create project without assigning users
-        project = Project.objects.create(project_name=project_name, project_number=project_number, created_by_id=request.user.id)
+        project = Project.objects.create(project_name=project_name, project_number=project_number, created_by_id=request.user.id,is_admin_approved=True)
 
         # Assign users to the project
         for email in assigned_to:

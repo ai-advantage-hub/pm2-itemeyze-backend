@@ -11,10 +11,13 @@ urlpatterns = [
 
 
     #Admin profile
-    path("Adminprofile", views.AdminProfileViewSet.as_view({"get": "list"}), name="Adminprofile"),
-    path("AdminprofileUpdate", views.AdminProfileViewSet.as_view({"put": "update"}), name="AdminprofileUpdate"),
-    path("validate_email", views.AdminProfileViewSet.as_view({"post": "validate"}), name="validate_email"),
+
+    # path("Adminprofile", views.AdminProfileViewSet.as_view({"get": "list"}), name="Adminprofile"),
+    # path("AdminprofileUpdate", views.AdminProfileViewSet.as_view({"put": "update"}), name="AdminprofileUpdate"),
+    # path("validate_email", views.AdminProfileViewSet.as_view({"post": "validate"}), name="validate_email"),
     path("reset_password", views.AdminProfileViewSet.as_view({"put": "create"}), name="reset_password"),
+
+    path("adminprofile", views.AdminProfileViewSet.as_view({"get": "list", "post": "validate", "put": "update"}), name="adminprofile"),
 
     #Content Management
     path("Terms_and_condition", views.ContentManagementViewSet.as_view({"get": "list"}), name="Terms_and_condition"),
