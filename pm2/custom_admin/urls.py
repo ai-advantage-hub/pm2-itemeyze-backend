@@ -11,10 +11,13 @@ urlpatterns = [
 
 
     #Admin profile
-    path("Adminprofile", views.AdminProfileViewSet.as_view({"get": "list"}), name="Adminprofile"),
-    path("AdminprofileUpdate", views.AdminProfileViewSet.as_view({"put": "update"}), name="AdminprofileUpdate"),
-    path("validate_email", views.AdminProfileViewSet.as_view({"post": "validate"}), name="validate_email"),
+
+    # path("Adminprofile", views.AdminProfileViewSet.as_view({"get": "list"}), name="Adminprofile"),
+    # path("AdminprofileUpdate", views.AdminProfileViewSet.as_view({"put": "update"}), name="AdminprofileUpdate"),
+    # path("validate_email", views.AdminProfileViewSet.as_view({"post": "validate"}), name="validate_email"),
     path("reset_password", views.AdminProfileViewSet.as_view({"put": "create"}), name="reset_password"),
+
+    path("adminprofile", views.AdminProfileViewSet.as_view({"get": "list", "post": "validate", "put": "update"}), name="adminprofile"),
 
     #Content Management
     path("Terms_and_condition", views.ContentManagementViewSet.as_view({"get": "list"}), name="Terms_and_condition"),
@@ -34,7 +37,8 @@ urlpatterns = [
     path("retrieve_project/<int:pk>", views.ManageProjectViewSet.as_view({"get": "retrieve"}), name="retereve_project"),
     path("delete_project/<int:id>", views.ManageProjectViewSet.as_view({"delete": "destroy"}), name="delete_project"),
     path("create_project", views.ManageProjectViewSet.as_view({"post": "create"}), name="create_project"),
-    path("create_file", views.ManageProjectViewSet.as_view({"post": "file_create"}), name="create_file")
+    path("create_file", views.ManageProjectViewSet.as_view({"post": "file_create"}), name="create_file"),
+    path("un_approved_project", views.ManageProjectViewSet.as_view({"get": "un_approved_project"}), name="un_approved_project"),
 
 
 ]

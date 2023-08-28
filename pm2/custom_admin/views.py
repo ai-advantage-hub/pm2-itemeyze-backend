@@ -283,7 +283,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
 
     def search(self, request):
         name = request.GET.get('name', None)
-        projects = Project.objects.annotate(num_files=Count('project_files')).values('id','project_name', 'created_by__full_name', 'num_files')
+        projects = Project.objects.filter(is_admin_approved=True).annotate(num_files=Count('project_files')).values('id','project_name', 'created_by__full_name', 'num_files')
         if name:
             projects=projects.filter(project_name__icontains=name)
             if not projects:
@@ -329,7 +329,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
             return CustomResponse({"message": "Project Number of this name already exists"})
 
         # Create project without assigning users
-        project = Project.objects.create(project_name=project_name, project_number=project_number, created_by_id=request.user.id)
+        project = Project.objects.create(project_name=project_name, project_number=project_number, created_by_id=request.user.id,is_admin_approved=True)
 
         # Assign users to the project
         for email in assigned_to:
@@ -354,6 +354,12 @@ class ManageProjectViewSet(viewsets.ViewSet):
         else:
             Files.objects.create(manufacturing_number=manufacturing_number,project_id=project_id,location=location,manufacturer_name_id=manufacturer_name,quantity=quantity,project_details=project_details,additional_details=additional_details)
             return CustomResponse({"message": "File created sucessfully"})
+        
+    def un_approved_project(self, request):
+        projects = Project.objects.filter(is_admin_approved=False).annotate(num_files=Count('project_files')).values('id','project_name', 'created_by__full_name', 'num_files')
+        return CustomResponse(projects)
+        
+
 
 
 
