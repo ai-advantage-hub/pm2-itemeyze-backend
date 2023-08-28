@@ -21,7 +21,8 @@ from .serializers import (
     UserListingSerializer, 
     CompanyNameSerializer, 
     ViewProfileSerializer, 
-    UserChangePasswordSerializer 
+    UserChangePasswordSerializer,
+    FilesSerializer
 )
 from rest_framework.authtoken.models import Token
 from core.common_utils import generate_otp, send_verification_email
@@ -34,6 +35,7 @@ from core.messages import SUCCESS_MESSAGES
 from django.utils.translation import gettext
 from rest_framework.permissions import IsAuthenticated
 from core.permissions import CheckUserRoleStatusPermission
+from django.db.models import Q
 
 class SignUpViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
     """ 
@@ -222,7 +224,7 @@ class FileDetailsViewSet(viewsets.ModelViewSet):
         location = request.GET.get('location', None)
         manufacturer_name = request.GET.get('manufacturer_name', None)
         manufacturing_number = request.GET.get('manufacturing_number', None)
-        user = Files.objects.filter(id=id).all().values('file_name','manufacturer_name__full_name', 'manufacturing_number','location','quantity','project_details','additional_details','recording')
+        user = Files.objects.filter(id=id).all().values('file_name', 'manufacturer_name__full_name','manufacturing_number', 'location', 'quantity','project_details', 'additional_details', 'recording')
         # if location:
         #     user = user.filter(location__icontains=location)
         #     return CustomResponse(user, status=status_code.HTTP_200_OK)
@@ -285,17 +287,17 @@ class ProjectDetailsViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         pk = self.kwargs.get('pk')
-        queryset = Project.objects.filter(id=pk)
         location = self.request.GET.get('location', None)
+        queryset = Project.objects.filter(id=pk)
         manufacturer_name = self.request.GET.get('manufacturer_name', None)
         manufacturing_number = self.request.GET.get('manufacturing_number', None)
 
-        if location:
-            queryset = queryset.filter(project_files__location__icontains=location)
-        if manufacturer_name:
-            queryset = queryset.filter(project_files__manufacturer_name__full_name__icontains=manufacturer_name)
-        if manufacturing_number:
-            queryset = queryset.filter(project_files__manufacturing_number__icontains=manufacturing_number)
+        # if location:
+        #     queryset = queryset.filter(project_files__location__icontains=location)
+        # if manufacturer_name:
+        #     queryset = queryset.filter(project_files__manufacturer_name__full_name__icontains=manufacturer_name)
+        # if manufacturing_number:
+        #     queryset = queryset.filter(project_files__manufacturing_number__icontains=manufacturing_number)
         return queryset
         
 
@@ -307,7 +309,21 @@ class ProjectDetailsViewSet(viewsets.ModelViewSet):
     def list(self, request, *args, **kwargs):     
         queryset = self.get_queryset()     
         serializer = self.get_serializer(queryset, many=True)     
-        return CustomResponse(serializer.data, status=status_code.HTTP_200_OK)
+        # return CustomResponse(serializer.data, status=status_code.HTTP_200_OK)
+        queryset = self.get_queryset()
+        pk = self.kwargs.get('pk')
+        location = self.request.GET.get('location', None)
+        file_obj = Files.objects.filter(Q(location__icontains=location) |
+                                        Q(manufacturer_name__full_name__icontains=location)|
+                                        Q(manufacturing_number__icontains=location),
+                                        project_id=pk)
+
+        file_serializer = FilesSerializer(file_obj, many=True)
+        serializer = self.get_serializer(queryset, many=True, context = {"search": location})
+        data = dict()
+        data['project_details'] = serializer.data
+        data['project_files'] = file_serializer.data
+        return Response(data, status=status_code.HTTP_200_OK)
         
 
 class EditFileViewSet(viewsets.ModelViewSet):
