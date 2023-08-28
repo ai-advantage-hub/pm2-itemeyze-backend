@@ -36,8 +36,12 @@ urlpatterns = [
         {"get": "list"}, name="terms_and_conditions")),
 
     #Settings    
-    path("view_profile/<int:id>", views.ViewProfileViewSet.as_view(
+    path("view_profile", views.ViewProfileViewSet.as_view(
         {"get": "list"}, name="view_profile")),
+    path("edit_profile", views.UserEditProfileViewSet.as_view(
+        {"put": "update"}, name="edit_profile")),
+    path("change_password", views.UserEditProfileViewSet.as_view(
+        {"put": "create"}, name="change_password")),
 
 
 

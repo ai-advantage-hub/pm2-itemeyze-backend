@@ -1,9 +1,28 @@
 from django.shortcuts import render
 from rest_framework import mixins, viewsets, generics, filters
 from rest_framework.response import Response
-from .models import User, OTP, Project, Files, Company
+from .models import (
+    User, 
+    OTP, 
+    Project, 
+    Files, 
+    Company
+)
 from custom_admin.models import ContentManagement
-from .serializers import SignupSerializer, UserLoginSerializer, ForgotPasswordSerializer, ResetPasswordSerializer, CreateProjectSerializer, CreateFileDetailsSerializer, ProjectDetailsViewSerializer, ContentManagementSerializer
+from .serializers import (
+    SignupSerializer, 
+    UserLoginSerializer, 
+    ForgotPasswordSerializer, 
+    ResetPasswordSerializer, 
+    CreateProjectSerializer, 
+    CreateFileDetailsSerializer, 
+    ProjectDetailsViewSerializer, 
+    ContentManagementSerializer, 
+    UserListingSerializer, 
+    CompanyNameSerializer, 
+    ViewProfileSerializer, 
+    UserChangePasswordSerializer 
+)
 from rest_framework.authtoken.models import Token
 from core.common_utils import generate_otp, send_verification_email
 from core.response import CustomResponse
@@ -89,6 +108,11 @@ class UserLoginViewSet(viewsets.ViewSet):
     """
     def create(self, request):
         serializer = UserLoginSerializer(data=request.data)
+        # serializer.is_valid(raise_exception=True)
+        # serializer.save()
+        # user = serializer.validated_data['user']
+        # token, created = Token.objects.get_or_create(user=user)
+        # return CustomResponse({"token": token.key}, status=status_code.HTTP_200_OK)
         if serializer.is_valid():
             user = serializer.validated_data['user']
             token, created = Token.objects.get_or_create(user=user)
@@ -289,7 +313,8 @@ class ProjectDetailsViewSet(viewsets.ModelViewSet):
 class EditFileViewSet(viewsets.ModelViewSet):
     """
         EditFileViewSet to edit the file on Left Swipe and delete on right swipe
-    """      
+    """    
+    permission_classes = (IsAuthenticated,)  
     def get_queryset(self):
         pk = self.kwargs.get('pk')
         return Files.objects.filter(id=pk)
@@ -301,6 +326,9 @@ class EditFileViewSet(viewsets.ModelViewSet):
         queryset = self.get_queryset()
         obj = queryset.get(pk=pk)
         serializer = CreateFileDetailsSerializer(obj, data=request.data)
+        # serializer.is_valid(raise_exception=True)
+        # serializer.save()
+        # return CustomResponse({"message": gettext(SUCCESS_MESSAGES.get('FILE_UPDATED'))}, status=status_code.HTTP_200_OK)
         if serializer.is_valid():
             serializer.save()
             #return CustomResponse({'message': 'File details edited successfully.'})
@@ -331,28 +359,121 @@ class TermsAndConditionsViewSet(viewsets.ModelViewSet):
 
 #Settings
 
-class ViewProfileViewSet(viewsets.ModelViewSet):
+# class ViewProfileViewSet(viewsets.ModelViewSet):
+#     """
+#         ViewProfileViewSet to get the users details
+#     """
+#     def list(self, request, id):
+#         user = User.objects.filter(id=id).all().values('full_name', 'email', 'profile_pic')
+#         if not user:
+#             return CustomResponse({"message" : "User Not Found"})
+#         return CustomResponse(user)
+
+class ViewProfileViewSet(viewsets.ViewSet):
     """
-        ViewProfileViewSet to get the users details
+    ViewProfileViewSet to get the user's details
     """
-    def list(self, request, id):
-        user = User.objects.filter(id=id).all().values('full_name', 'email', 'profile_pic')
+    permission_classes = (IsAuthenticated,)
+    def list(self, request):
+        user = User.objects.filter(id = request.user.id).first()
         if not user:
-            return CustomResponse({"message" : "User Not Found"})
-        return CustomResponse(user)
+            return CustomResponse({"message": "User Not Found"})
+
+        serializer = ViewProfileSerializer(user)
+
+        return Response(serializer.data)
     
+
+# class CompanyNameViewSet(viewsets.ViewSet):
+#     permission_classes = (IsAuthenticated, CheckUserRoleStatusPermission,)
+    
+#     def list(self, request):
+#         user=Company.objects.all().values('id','name')
+#         return CustomResponse(user)
 
 class CompanyNameViewSet(viewsets.ViewSet):
+    """
+        CompanyNameViewSet to get the Company Listing
+    """
     permission_classes = (IsAuthenticated, CheckUserRoleStatusPermission,)
-    
     def list(self, request):
-        user=Company.objects.all().values('id','name')
-        return CustomResponse(user)
+        companies = Company.objects.all()
+        serializer = CompanyNameSerializer(companies, many=True)
+
+        return Response(serializer.data)
     
 
-class UserListingViewSet(viewsets.ViewSet):
-    #permission_classes = (IsAuthenticated, CheckUserRoleStatusPermission,)
+# class UserListingViewSet(viewsets.ViewSet):
+#     #permission_classes = (IsAuthenticated, CheckUserRoleStatusPermission,)
     
+#     def list(self, request):
+#         user=User.objects.all().values('id','full_name')
+#         return CustomResponse(user)
+
+class UserListingViewSet(viewsets.ViewSet):
+    """
+       UserListingViewSet for getting the list of users 
+    """
+    #permission_classes = (IsAuthenticated, CheckUserRoleStatusPermission,)
     def list(self, request):
-        user=User.objects.all().values('id','full_name')
-        return CustomResponse(user)
+        users = User.objects.all()
+        serializer = UserListingSerializer(users, many=True)
+
+        return Response(serializer.data)
+    
+
+class UserEditProfileViewSet(viewsets.ViewSet):
+    """
+        UserEditProfileViewSet to Edit Personal Details of Users
+    """
+    permission_classes = (IsAuthenticated,)
+    def update(self, request):
+        data = request.data
+        full_name=data.get("full_name")
+        email=data.get("email")
+        profile_pic=data.get("profile_pic")
+        if not full_name:
+            return CustomResponse({"message": "Please provide full name."})
+        if profile_pic:
+            User.objects.filter(id=request.user.id).update(profile_pic=profile_pic)
+        if full_name:
+            User.objects.filter(id=request.user.id).update(full_name=full_name)
+        if email:
+            otp = generate_otp()
+            OTP.objects.update_or_create(user_id=request.user.id,otp=otp,otp_type=1)
+        try:
+            send_verification_email(email, otp)
+        except BaseException:
+            pass
+
+        User.objects.filter(id=request.user.id).update(email=email,is_email_verified=False)
+        return CustomResponse({"message": "profile updated sucessfully"}, status=status_code.HTTP_200_OK)
+    
+    def validate(self, request):
+        data = request.data
+        otp=data.get("otp")
+        if not otp:
+            return CustomResponse({"message":"Please provide otp"})
+        user=OTP.objects.filter(otp_type=1,is_used=False,otp=otp).first()
+        if not user:
+            return CustomResponse({"message": "Wrong OTP"})
+        if user.expired_at and user.expired_at < timezone.now():
+            return CustomResponse({"message": "OTP expired"}, status=status_code.HTTP_400_BAD_REQUEST)
+        if not user:
+            return CustomResponse({"message": "OTP incorrect"}, status=status_code.HTTP_400_BAD_REQUEST)
+        else:
+            User.objects.filter(id=user.user_id).update(is_email_verified=True)
+            OTP.objects.filter(otp_type=1,otp=otp).update(is_used=True)
+            return CustomResponse({"message": "Email Verified Successfully"}, status=status_code.HTTP_200_OK)
+
+    def create(self, request):
+        serializer = UserChangePasswordSerializer(data=request.data, context={'request': request})
+        # serializer.is_valid(raise_exception=True)
+        # serializer.save()
+        # return CustomResponse({"message": "Password updated successfully."}, status=status_code.HTTP_200_OK)
+        if serializer.is_valid():
+            serializer.update_password()
+            return CustomResponse({"message": "Password updated successfully."}, status=status_code.HTTP_200_OK)
+        else:
+            return CustomResponse({"message": "Old Password is incorrect"}, status=status_code.HTTP_400_BAD_REQUEST)
+            
