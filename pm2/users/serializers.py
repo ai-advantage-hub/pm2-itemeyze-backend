@@ -1,5 +1,12 @@
 from rest_framework import serializers
-from .models import User, Company, UserCompany, OTP, Project, Files
+from .models import (
+    User, 
+    Company, 
+    UserCompany, 
+    OTP, 
+    Project, 
+    Files
+)
 from custom_admin.models import ContentManagement
 from core.common_utils import generate_otp, send_verification_email
 from django.contrib.auth import authenticate
@@ -7,6 +14,8 @@ import re
 from core.exception import CustomException
 from django.utils import timezone
 from django.db import transaction
+from django.contrib.auth.hashers import check_password
+
 
 
 
@@ -312,6 +321,52 @@ class ContentManagementSerializer(serializers.ModelSerializer):
         fields = ('content',)
     
 
+class ViewProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('full_name', 'email', 'profile_pic')
 
 
+class UserListingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('id', 'full_name')
+
+
+class CompanyNameSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Company
+        fields = ('id', 'name')
+
+
+class UserChangePasswordSerializer(serializers.Serializer):
+    """
+        UserChangePasswordSerializer to change the password of user
+    """
+    old_password = serializers.CharField()
+    new_password = serializers.CharField()
+    confirm_password = serializers.CharField()
+
+    def validate(self, data):
+        user = self.context['request'].user
+        old_password = data.get("old_password")
+        new_password = data.get("new_password")
+        confirm_password = data.get("confirm_password")
+
+        if not user:
+            raise serializers.ValidationError({"message": "User not found."})
+
+        if not check_password(old_password, user.password):
+            raise serializers.ValidationError({"message": "Incorrect old password."})
+
+        if new_password != confirm_password:
+            raise serializers.ValidationError({"message": "New password and Confirm password should be same."})
+
+        return data
+
+    def update_password(self):
+        user = self.context['request'].user
+        new_password = self.validated_data.get("new_password")
+        user.set_password(new_password)
+        user.save()
 
