@@ -21,6 +21,7 @@ from .serializers import (
     UserListingSerializer, 
     CompanyNameSerializer, 
     ViewProfileSerializer, 
+    UserEditProfileSerializer,
     UserChangePasswordSerializer,
     FilesSerializer
 )
@@ -438,58 +439,109 @@ class UserListingViewSet(viewsets.ViewSet):
         return CustomResponse(serializer.data)
     
 
+# class UserEditProfileViewSet(viewsets.ViewSet):
+#     """
+#         UserEditProfileViewSet to Edit Personal Details of Users
+#     """
+#     permission_classes = (IsAuthenticated,)
+#     def update(self, request):
+#         data = request.data
+#         full_name=data.get("full_name")
+#         email=data.get("email")
+#         profile_pic=data.get("profile_pic")
+#         if not full_name:
+#             return CustomResponse({"message": "Please provide full name."})
+#         if profile_pic:
+#             User.objects.filter(id=request.user.id).update(profile_pic=profile_pic)
+#         if full_name:
+#             User.objects.filter(id=request.user.id).update(full_name=full_name)
+#         if email:
+#             otp = generate_otp()
+#             OTP.objects.update_or_create(user_id=request.user.id,otp=otp,otp_type=1)
+#         try:
+#             send_verification_email(email, otp)
+#         except BaseException:
+#             pass
+
+#         User.objects.filter(id=request.user.id).update(email=email,is_email_verified=False)
+#         return CustomResponse({"message": "profile updated sucessfully"}, status=status_code.HTTP_200_OK)
+    
+#     def validate(self, request):
+#         data = request.data
+#         otp=data.get("otp")
+#         if not otp:
+#             return CustomResponse({"message":"Please provide otp"})
+#         user=OTP.objects.filter(otp_type=1,is_used=False,otp=otp).first()
+#         if not user:
+#             return CustomResponse({"message": "Wrong OTP"})
+#         if user.expired_at and user.expired_at < timezone.now():
+#             return CustomResponse({"message": "OTP expired"}, status=status_code.HTTP_400_BAD_REQUEST)
+#         if not user:
+#             return CustomResponse({"message": "OTP incorrect"}, status=status_code.HTTP_400_BAD_REQUEST)
+#         else:
+#             User.objects.filter(id=user.user_id).update(is_email_verified=True)
+#             OTP.objects.filter(otp_type=1,otp=otp).update(is_used=True)
+#             return CustomResponse({"message": "Email Verified Successfully"}, status=status_code.HTTP_200_OK)
+
+#     def create(self, request):
+#         serializer = UserChangePasswordSerializer(data=request.data, context={'request': request})
+#         # serializer.is_valid(raise_exception=True)
+#         # serializer.save()
+#         # return CustomResponse({"message": "Password updated successfully."}, status=status_code.HTTP_200_OK)
+#         if serializer.is_valid():
+#             serializer.update_password()
+#             return CustomResponse({"message": "Password updated successfully."}, status=status_code.HTTP_200_OK)
+#         else:
+#             return CustomResponse({"message": "Old Password is incorrect"}, status=status_code.HTTP_400_BAD_REQUEST)
+            
 class UserEditProfileViewSet(viewsets.ViewSet):
     """
-        UserEditProfileViewSet to Edit Personal Details of Users
+        UserEditProfileViewSet to Edit the Personal Details of User
+    """
+    permission_classes = (IsAuthenticated,)
+
+    def update(self, request):
+        serializer = UserEditProfileSerializer(
+            instance=request.user, data=request.data, partial=True
+        )
+
+        serializer.is_valid(raise_exception=True)
+
+        serializer.save()
+        return CustomResponse({"message": "Profile information updated successfully"},status=status_code.HTTP_200_OK)
+    
+
+class UserChangePasswordViewSet(viewsets.ViewSet):
+    """
+        UserChangePasswordViewSet to change the Password of User
+    """
+    permission_classes = (IsAuthenticated,)
+
+    def create(self, request):
+        serializer = UserChangePasswordSerializer(
+            data=request.data, context={"request": request}
+        )
+
+        serializer.is_valid(raise_exception=True)  # Use raise_exception=True
+
+        serializer.update_password(request.user)
+        return Response({"message": "Password updated successfully."},status=status_code.HTTP_200_OK)
+
+
+
+
+#Delete Account
+class DeleteUserViewSet(viewsets.GenericViewSet):
+    """
+        DeleteUserViewSet to delete a user's account
     """
     permission_classes = (IsAuthenticated,)
     def update(self, request):
-        data = request.data
-        full_name=data.get("full_name")
-        email=data.get("email")
-        profile_pic=data.get("profile_pic")
-        if not full_name:
-            return CustomResponse({"message": "Please provide full name."})
-        if profile_pic:
-            User.objects.filter(id=request.user.id).update(profile_pic=profile_pic)
-        if full_name:
-            User.objects.filter(id=request.user.id).update(full_name=full_name)
-        if email:
-            otp = generate_otp()
-            OTP.objects.update_or_create(user_id=request.user.id,otp=otp,otp_type=1)
-        try:
-            send_verification_email(email, otp)
-        except BaseException:
-            pass
-
-        User.objects.filter(id=request.user.id).update(email=email,is_email_verified=False)
-        return CustomResponse({"message": "profile updated sucessfully"}, status=status_code.HTTP_200_OK)
-    
-    def validate(self, request):
-        data = request.data
-        otp=data.get("otp")
-        if not otp:
-            return CustomResponse({"message":"Please provide otp"})
-        user=OTP.objects.filter(otp_type=1,is_used=False,otp=otp).first()
+        user = User.objects.filter(id=request.user.id).first()
         if not user:
-            return CustomResponse({"message": "Wrong OTP"})
-        if user.expired_at and user.expired_at < timezone.now():
-            return CustomResponse({"message": "OTP expired"}, status=status_code.HTTP_400_BAD_REQUEST)
-        if not user:
-            return CustomResponse({"message": "OTP incorrect"}, status=status_code.HTTP_400_BAD_REQUEST)
-        else:
-            User.objects.filter(id=user.user_id).update(is_email_verified=True)
-            OTP.objects.filter(otp_type=1,otp=otp).update(is_used=True)
-            return CustomResponse({"message": "Email Verified Successfully"}, status=status_code.HTTP_200_OK)
-
-    def create(self, request):
-        serializer = UserChangePasswordSerializer(data=request.data, context={'request': request})
-        # serializer.is_valid(raise_exception=True)
-        # serializer.save()
-        # return CustomResponse({"message": "Password updated successfully."}, status=status_code.HTTP_200_OK)
-        if serializer.is_valid():
-            serializer.update_password()
-            return CustomResponse({"message": "Password updated successfully."}, status=status_code.HTTP_200_OK)
-        else:
-            return CustomResponse({"message": "Old Password is incorrect"}, status=status_code.HTTP_400_BAD_REQUEST)
+            return CustomResponse({"message": "User not found."}, status=status_code.HTTP_404_NOT_FOUND)
+        user.email = None
+        user.is_deleted = True
+        user.save()
             
+        return CustomResponse({"message": "Your account has been deactivated successfully."}, status=status_code.HTTP_204_NO_CONTENT)

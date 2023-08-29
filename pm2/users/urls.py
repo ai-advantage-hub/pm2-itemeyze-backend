@@ -40,13 +40,22 @@ urlpatterns = [
         {"get": "list"}, name="view_profile")),
     path("edit_profile", views.UserEditProfileViewSet.as_view(
         {"put": "update"}, name="edit_profile")),
-    path("change_password", views.UserEditProfileViewSet.as_view(
+    path("change_password", views.UserChangePasswordViewSet.as_view(
         {"put": "create"}, name="change_password")),
-
-
-
     path("user_listing", views.UserListingViewSet.as_view(
         {"get": "list"}, name="user_listing")),
+
+
+
+
+
+    #Delete Account
+    path("delete_account", views.DeleteUserViewSet.as_view(
+        {"put": "update"}, name="delete_account")),
+
+
+
+    
     
 
 ]

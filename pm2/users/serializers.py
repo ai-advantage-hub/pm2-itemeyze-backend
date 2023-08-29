@@ -339,6 +339,48 @@ class CompanyNameSerializer(serializers.ModelSerializer):
         fields = ('id', 'name')
 
 
+class UserEditProfileSerializer(serializers.Serializer):
+    """
+        UserEditProfileSerializer to Edit Personal Details of Users
+    """
+    full_name = serializers.CharField()
+    email = serializers.EmailField()
+    profile_pic = serializers.CharField(required=False)
+    company = serializers.PrimaryKeyRelatedField(
+        queryset=Company.objects.all(), required=False
+    )
+
+    def update(self, instance, validated_data):
+        full_name = validated_data.get("full_name")
+        email = validated_data.get("email")
+        profile_pic = validated_data.get("profile_pic")
+        company = validated_data.get("company")
+
+        if not full_name:
+            raise serializers.ValidationError({"message": "Please provide full name."})
+
+        if profile_pic:
+            instance.profile_pic = profile_pic
+
+        instance.full_name = full_name
+
+        if email:
+            otp = generate_otp()
+            OTP.objects.update_or_create(user_id=instance.id, otp=otp, otp_type=1)
+            try:
+                send_verification_email(email, otp)
+            except BaseException:
+                pass
+            instance.email = email
+            instance.is_email_verified = False
+
+        if company:
+            instance.company = company
+
+        instance.save()
+        return instance
+
+
 class UserChangePasswordSerializer(serializers.Serializer):
     """
         UserChangePasswordSerializer to change the password of user
@@ -364,8 +406,11 @@ class UserChangePasswordSerializer(serializers.Serializer):
 
         return data
 
-    def update_password(self):
-        user = self.context['request'].user
+    def update_password(self, user):
+        # user = self.context['request'].user
+        # new_password = self.validated_data.get("new_password")
+        # user.set_password(new_password)
+        # user.save()
         new_password = self.validated_data.get("new_password")
         user.set_password(new_password)
         user.save()
