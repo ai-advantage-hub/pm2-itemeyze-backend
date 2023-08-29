@@ -39,6 +39,7 @@ urlpatterns = [
     path("create_project", views.ManageProjectViewSet.as_view({"post": "create"}), name="create_project"),
     path("create_file", views.ManageProjectViewSet.as_view({"post": "file_create"}), name="create_file"),
     path("un_approved_project", views.ManageProjectViewSet.as_view({"get": "un_approved_project"}), name="un_approved_project"),
+    path("approve_project", views.ManageProjectViewSet.as_view({"post": "approve_project"}), name="approve_project"),
 
 
 ]

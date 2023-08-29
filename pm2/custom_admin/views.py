@@ -53,6 +53,7 @@ class ResetPasswordViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
         otp = data.get("otp")
         new_password = data.get("new_password")
         confirm_password = data.get("confirm_password")
+        email = data.get("email")
         if not otp:
             return CustomResponse({"message":"Please provide otp"})
         if not new_password:
@@ -71,10 +72,14 @@ class ResetPasswordViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
         if new_password != confirm_password:
             return CustomResponse({"message": "Both Password are not same"}, status=status.HTTP_400_BAD_REQUEST)
         else:
-            admin_user = User.objects.filter(id=user.user_id).first()
-            admin_user.set_password(confirm_password) 
-            admin_user.save()
-            return CustomResponse({"message": "Password Changed sucessfully"}, status=status.HTTP_200_OK)
+            c=User.objects.filter(email=email).first()
+            if c.id == user.user_id:
+                admin_user = User.objects.filter(id=user.user_id).first()
+                admin_user.set_password(confirm_password) 
+                admin_user.save()
+                return CustomResponse({"message": "Password Changed sucessfully"}, status=status.HTTP_200_OK)
+            else:
+                return CustomResponse({"message": "OTP is not matching with Email"}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class AdminProfileViewSet(viewsets.ViewSet):
@@ -356,9 +361,67 @@ class ManageProjectViewSet(viewsets.ViewSet):
             return CustomResponse({"message": "File created sucessfully"})
         
     def un_approved_project(self, request):
-        projects = Project.objects.filter(is_admin_approved=False).annotate(num_files=Count('project_files')).values('id','project_name', 'created_by__full_name', 'num_files')
+        projects = Project.objects.filter(is_admin_approved=False).annotate(num_files=Count('project_files')).values('id','project_name', 'created_by__full_name', 'num_files','created_at')
         return CustomResponse(projects)
         
+    def approve_project(self, request):
+        data = request.data
+        project_id = data.get("project_id")
+        project_name = data.get("project_name")
+        project_number = data.get("project_number")
+        assigned_to = data.get("assigned_to")
+        status = data.get("status")
+
+        if status == 2:
+            return CustomResponse({"message": "Request Denied"})
+        if not Project.objects.filter(id=project_id).first():
+            return CustomResponse({"message": "Project of this id dont exists"})
+        if not project_name:
+            return CustomResponse({"message": "Please provide project_name"})
+        if not project_number:
+            return CustomResponse({"message": "Please provide project_number"})
+        
+        if Project.objects.filter(id=project_id,project_name=project_name,project_number=project_number).exists():
+            if assigned_to:
+                project=Project.objects.filter(id=project_id,project_name=project_name,project_number=project_number).first()
+                user = User.objects.filter(email=assigned_to).first()
+                project.users.add(user)
+                project.is_admin_approved=True
+                project.save()
+                return CustomResponse({"message": "Project approved sucessfully"})
+            else:
+                project=Project.objects.filter(id=project_id).first()
+                project.is_admin_approved=True
+                project.save()
+                return CustomResponse({"message": "Project approved sucessfully"})
+
+        else:
+            if Project.objects.filter(project_name=project_name).exclude(id=project_id).exists():
+                return CustomResponse({"message": "Project of this name already exists"})
+            elif Project.objects.filter(project_number=project_number).exclude(id=project_id).exists():
+                return CustomResponse({"message": "Project Number of this name already exists"})
+            else:
+                if assigned_to:
+                    project=Project.objects.filter(id=project_id).update(project_name=project_name,project_number=project_number)
+                    project=Project.objects.filter(id=project_id).first()
+                    user = User.objects.filter(email=assigned_to).first()
+                    project.users.add(user)
+                    project.is_admin_approved=True
+                    project.save()
+                    return CustomResponse({"message": "Project approved sucessfully"})
+                else:
+                    project=Project.objects.filter(id=project_id).update(project_name=project_name,project_number=project_number)
+                    project=Project.objects.filter(id=project_id).first()
+                    project.is_admin_approved=True
+                    project.save()
+                    return CustomResponse({"message": "Project approved sucessfully"})
+
+
+
+
+        
+
+
 
 
 
