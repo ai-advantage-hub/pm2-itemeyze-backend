@@ -104,6 +104,10 @@ class AdminProfileViewSet(viewsets.ViewSet):
 
         if full_name:
             User.objects.filter(id=request.user.id).update(full_name=full_name)
+
+        if User.objects.filter(email=email).exists():
+            return CustomResponse({"message": "Email already exists."})
+
         if email:
             otp = generate_otp()
             OTP.objects.update_or_create(user_id=request.user.id,otp=otp,otp_type=1)
