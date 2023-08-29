@@ -307,32 +307,52 @@ class ProjectDetailsViewSet(viewsets.ModelViewSet):
     #     serializer = self.get_serializer(queryset, many=True)
     #     return CustomResponse(serializer.data, status=status_code.HTTP_200_OK)
 
+    # def list(self, request, *args, **kwargs):     
+    #     queryset = self.get_queryset()     
+    #     serializer = self.get_serializer(queryset)     
+    #     # return CustomResponse(serializer.data, status=status_code.HTTP_200_OK)
+    #     queryset = self.get_queryset()
+    #     pk = self.kwargs.get('pk')
+    #     location = self.request.GET.get('location', None)
+    #     if location:
+    #         file_obj = Files.objects.filter(Q(location__icontains=location) |
+    #                                     Q(manufacturer_name__full_name__icontains=location)|
+    #                                     Q(manufacturing_number__icontains=location),
+    #                                     project_id=pk).all().values()
+        
+
+    #         # file_serializer = FilesSerializer(file_obj, many=True)
+    #         # serializer = self.get_serializer(queryset, many=True, context = {"search": location})
+    #         # data = dict()
+    #         # data['project_details'] = serializer.data
+    #         # data['project_files'] = file_serializer.data
+    #         # return Response(data, status=status_code.HTTP_200_OK)
+    #         c = {"project_files":file_obj, "project_details":Project.objects.filter(id=pk).all().values()}
+    #         return CustomResponse(c)
+    #     else:
+    #         queryset = self.get_queryset()
+    #         serializer = self.get_serializer(queryset, many=True)
+    #         return CustomResponse(serializer.data, status=status_code.HTTP_200_OK)
     def list(self, request, *args, **kwargs):     
         queryset = self.get_queryset()     
-        serializer = self.get_serializer(queryset)     
+        serializer = self.get_serializer(queryset, many=True)     
         # return CustomResponse(serializer.data, status=status_code.HTTP_200_OK)
         queryset = self.get_queryset()
         pk = self.kwargs.get('pk')
         location = self.request.GET.get('location', None)
-        if location:
-            file_obj = Files.objects.filter(Q(location__icontains=location) |
+        if not location:
+            location = ""
+        file_obj = Files.objects.filter(Q(location__icontains=location) |
                                         Q(manufacturer_name__full_name__icontains=location)|
                                         Q(manufacturing_number__icontains=location),
-                                        project_id=pk).all().values()
-        
+                                        project_id=pk) 
+        file_serializer = FilesSerializer(file_obj, many=True)
+        serializer = self.get_serializer(queryset, many=True, context = {"search": location})
+        data = dict()
+        data['project_details'] = serializer.data
+        data['project_files'] = file_serializer.data
+        return Response(data, status=status_code.HTTP_200_OK)
 
-            # file_serializer = FilesSerializer(file_obj, many=True)
-            # serializer = self.get_serializer(queryset, many=True, context = {"search": location})
-            # data = dict()
-            # data['project_details'] = serializer.data
-            # data['project_files'] = file_serializer.data
-            # return Response(data, status=status_code.HTTP_200_OK)
-            c = {"project_files":file_obj, "project_details":Project.objects.filter(id=pk).all().values()}
-            return CustomResponse(c)
-        else:
-            queryset = self.get_queryset()
-            serializer = self.get_serializer(queryset, many=True)
-            return CustomResponse(serializer.data, status=status_code.HTTP_200_OK)
 
 class EditFileViewSet(viewsets.ModelViewSet):
     """
