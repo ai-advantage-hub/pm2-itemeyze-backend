@@ -305,11 +305,11 @@ class ProjectDetailsViewSerializer(serializers.ModelSerializer):
     """
         ProjectDetailsViewSerializer serializer to serialize through project model
     """
-    # project_files = FilesSerializer(many=True)
+    project_files = FilesSerializer(many=True)
     created_by = ProjectUserSerializer()
     class Meta:
         model = Project
-        fields = ("project_name", "project_number", "created_by",)
+        fields = ("project_name", "project_number", "created_by",'project_files')
 
 
 class ContentManagementSerializer(serializers.ModelSerializer):
