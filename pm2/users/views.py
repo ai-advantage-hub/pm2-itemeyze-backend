@@ -333,6 +333,7 @@ class ProjectDetailsViewSet(viewsets.ModelViewSet):
     #         queryset = self.get_queryset()
     #         serializer = self.get_serializer(queryset, many=True)
     #         return CustomResponse(serializer.data, status=status_code.HTTP_200_OK)
+    
     def list(self, request, *args, **kwargs):     
         queryset = self.get_queryset()     
         serializer = self.get_serializer(queryset, many=True)     
@@ -351,7 +352,7 @@ class ProjectDetailsViewSet(viewsets.ModelViewSet):
         data = dict()
         data['project_details'] = serializer.data
         data['project_files'] = file_serializer.data
-        return Response(data, status=status_code.HTTP_200_OK)
+        return CustomResponse(data, status=status_code.HTTP_200_OK)
 
 
 class EditFileViewSet(viewsets.ModelViewSet):
