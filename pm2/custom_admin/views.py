@@ -162,8 +162,9 @@ class ContentManagementViewSet(viewsets.ViewSet):
     """
 
     def list(self, request):
-        data = request.data
-        type=data.get("type")
+        # data = request.data
+        # type=data.get("type")
+        type = request.GET.get('type')
         user=ContentManagement.objects.filter(content_type=type).all().values("content")
         return CustomResponse(user, status=status.HTTP_200_OK)
     
