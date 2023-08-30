@@ -60,6 +60,8 @@ class ResetPasswordViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
             return CustomResponse({"message":"Please provide new_password"})
         if not confirm_password:
             return CustomResponse({"message":"Please provide confirm_password"})
+        if not email:
+            return CustomResponse({"message":"Please provide email"})
         
 
         user=OTP.objects.filter(otp=otp,otp_type=3).first()
@@ -73,6 +75,8 @@ class ResetPasswordViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
             return CustomResponse({"message": "Both Password are not same"}, status=status.HTTP_400_BAD_REQUEST)
         else:
             c=User.objects.filter(email=email).first()
+            if not c:
+                return CustomResponse({"message": "No user found with the provided email"}, status=status.HTTP_400_BAD_REQUEST)
             if c.id == user.user_id:
                 admin_user = User.objects.filter(id=user.user_id).first()
                 admin_user.set_password(confirm_password) 
