@@ -302,7 +302,7 @@ class FilesSerializer(serializers.ModelSerializer):
     manufacturer_name = ProjectUserSerializer()
     class Meta:
         model = Files
-        fields = ('id','manufacturer_name', 'file_name', 'manufacturing_number', 'location', 'quantity', 'project_details')
+        fields = ('id','manufacturer_name', 'file_name', 'manufacturing_number', 'location', 'quantity', 'project_details','is_marked_deleted')
 
 
 class ProjectDetailsViewSerializer(serializers.ModelSerializer):
