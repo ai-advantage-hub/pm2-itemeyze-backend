@@ -160,6 +160,8 @@ class Files(BaseModel):
     recording = models.CharField(max_length=254)
     location = models.CharField(max_length=255, null = True)
     location_points = models.PointField(blank=True, null=True, verbose_name='User Coordinate')
+    is_admin_approved = models.BooleanField(default=False, null=True)
+    is_marked_deleted = models.BooleanField(default = False, null=True)
     
     # Add other fields as needed
 

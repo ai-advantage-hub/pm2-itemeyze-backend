@@ -381,14 +381,20 @@ class EditFileViewSet(viewsets.ModelViewSet):
         else:
             return CustomResponse(serializer.errors, status=status_code.HTTP_200_OK)
         
-    def destroy(self, request, pk=None):
+    def destroy(self, request, pk):
         """
             delete method to delete the file from the database.
         """
-        queryset = self.get_queryset()
-        obj = queryset.get(pk=pk)
-        obj.delete()
-        #return CustomResponse({'message': 'File deleted successfully.'})
+        # queryset = self.get_queryset()
+        # obj = queryset.get(pk=pk)
+        # obj.delete()
+        # #return CustomResponse({'message': 'File deleted successfully.'})
+        # return CustomResponse({"message": gettext(SUCCESS_MESSAGES.get('FILE_DELETED'))}, status=status_code.HTTP_400_BAD_REQUEST)
+        user = Files.objects.filter(id = pk, is_marked_deleted = False).first()
+        if not user:
+            return CustomResponse({"message": "File Not Found"}, status=status_code.HTTP_400_BAD_REQUEST)
+        user.is_marked_deleted = True
+        user.save()
         return CustomResponse({"message": gettext(SUCCESS_MESSAGES.get('FILE_DELETED'))}, status=status_code.HTTP_400_BAD_REQUEST)
 
 
