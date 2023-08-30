@@ -553,7 +553,7 @@ class UserChangePasswordViewSet(viewsets.ViewSet):
         serializer.is_valid(raise_exception=True)  # Use raise_exception=True
 
         serializer.update_password(request.user)
-        return Response({"message": "Password updated successfully."},status=status_code.HTTP_200_OK)
+        return CustomResponse({"message": "Password updated successfully."},status=status_code.HTTP_200_OK)
 
 
 
