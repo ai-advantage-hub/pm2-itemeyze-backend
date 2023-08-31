@@ -395,7 +395,7 @@ class EditFileViewSet(viewsets.ModelViewSet):
             return CustomResponse({"message": "File Not Found"}, status=status_code.HTTP_400_BAD_REQUEST)
         user.is_marked_deleted = True
         user.save()
-        return CustomResponse({"message": gettext(SUCCESS_MESSAGES.get('FILE_DELETED'))}, status=status_code.HTTP_400_BAD_REQUEST)
+        return CustomResponse({"message": gettext(SUCCESS_MESSAGES.get('FILE_DELETED'))}, status=status_code.HTTP_200_OK)
 
 
 class TermsAndConditionsViewSet(viewsets.ModelViewSet):
@@ -562,6 +562,16 @@ class UserChangePasswordViewSet(viewsets.ViewSet):
         return CustomResponse({"message": "Password updated successfully."},status=status_code.HTTP_200_OK)
 
 
+#Log out
+class LogoutUserViewSet(viewsets.ViewSet):
+    """
+        LogoutUserViewSet to Logout the User
+    """
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request):
+        request.auth.delete()
+        return Response({"message": "Logged out successfully"}, status=status_code.HTTP_200_OK)
 
 
 #Delete Account
