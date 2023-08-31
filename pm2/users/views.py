@@ -562,6 +562,16 @@ class UserChangePasswordViewSet(viewsets.ViewSet):
         return CustomResponse({"message": "Password updated successfully."},status=status_code.HTTP_200_OK)
 
 
+#Log out
+class LogoutUserViewSet(viewsets.ViewSet):
+    """
+        LogoutUserViewSet to Logout the User
+    """
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request):
+        request.auth.delete()
+        return Response({"message": "Logged out successfully"}, status=status_code.HTTP_200_OK)
 
 
 #Delete Account

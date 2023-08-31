@@ -46,7 +46,9 @@ urlpatterns = [
         {"get": "list"}, name="user_listing")),
 
 
-
+    #Log out
+    path("logout", views.LogoutUserViewSet.as_view(
+        {"post": "post"}, name="logout")),
 
 
     #Delete Account
