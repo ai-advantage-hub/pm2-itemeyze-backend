@@ -40,6 +40,13 @@ urlpatterns = [
     path("create_file", views.ManageProjectViewSet.as_view({"post": "file_create"}), name="create_file"),
     path("un_approved_project", views.ManageProjectViewSet.as_view({"get": "un_approved_project"}), name="un_approved_project"),
     path("approve_project", views.ManageProjectViewSet.as_view({"post": "approve_project"}), name="approve_project"),
+    path("un_approved_file", views.ManageProjectViewSet.as_view({"get": "un_approved_file"}), name="un_approved_file"),
+    path("view_file<int:id>", views.ManageProjectViewSet.as_view({"get": "view_file"}), name="view_file"),
+    path("destroy_file<int:id>", views.ManageProjectViewSet.as_view({"put": "destroy_file"}), name="destroy_file"),
+    path("update_file<int:pk>", views.ManageProjectViewSet.as_view({"put": "update_file"}), name="update_file"),
+    path("approve_file", views.ManageProjectViewSet.as_view({"put": "approve_file"}), name="approve_file"),
+
+    
 
 
 ]
