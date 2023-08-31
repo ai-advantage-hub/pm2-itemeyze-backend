@@ -96,3 +96,12 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
 
     def get_created_by(self, obj):
         return obj.created_by.full_name
+
+
+class FilesSerializer(serializers.ModelSerializer):
+    manufacturer_name = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
+    #project = serializers.PrimaryKeyRelatedField(queryset=Project.objects.all())
+
+    class Meta:
+        model = Files
+        fields = '__all__'

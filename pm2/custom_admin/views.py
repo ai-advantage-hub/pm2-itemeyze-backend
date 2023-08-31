@@ -2,7 +2,7 @@ from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, viewsets, mixins, generics, filters
-from custom_admin.serializers import AdminLoginSerializer,AdminResetPasswordSerializer, ForgotPasswordSerializer, ProjectDetailSerializer
+from custom_admin.serializers import AdminLoginSerializer,AdminResetPasswordSerializer, ForgotPasswordSerializer, ProjectDetailSerializer,FilesSerializer
 from django.contrib.auth import authenticate
 from rest_framework.authtoken.models import Token
 from users.models import Company, UserCompany, User,Project,Files
@@ -60,6 +60,8 @@ class ResetPasswordViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
             return CustomResponse({"message":"Please provide new_password"})
         if not confirm_password:
             return CustomResponse({"message":"Please provide confirm_password"})
+        if not email:
+            return CustomResponse({"message":"Please provide email"})
         
 
         user=OTP.objects.filter(otp=otp,otp_type=3).first()
@@ -73,6 +75,8 @@ class ResetPasswordViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
             return CustomResponse({"message": "Both Password are not same"}, status=status.HTTP_400_BAD_REQUEST)
         else:
             c=User.objects.filter(email=email).first()
+            if not c:
+                return CustomResponse({"message": "No user found with the provided email"}, status=status.HTTP_400_BAD_REQUEST)
             if c.id == user.user_id:
                 admin_user = User.objects.filter(id=user.user_id).first()
                 admin_user.set_password(confirm_password) 
@@ -421,7 +425,60 @@ class ManageProjectViewSet(viewsets.ViewSet):
                     project.save()
                     return CustomResponse({"message": "Project approved sucessfully"})
 
+    def un_approved_file(self, request):
+        file = Files.objects.filter(is_admin_approved=False).all().values('file_name','created_at')
+        return CustomResponse(file)
+    
+    def view_file(self, request,id):
+        file = Files.objects.filter(id=id).all().values()
+        return CustomResponse(file)
+    
+    def destroy_file(self,request,id):
+        file=Files.objects.filter(id=id).first()
+        if not file:
+            return CustomResponse({"message": "File not found"},status=status.HTTP_404_NOT_FOUND)
+        else:
+            file.delete()
+            return CustomResponse({"message": "File deleted sucessfully"})
+        
+    def update_file(self, request, *args, **kwargs):
+        queryset = Files.objects.all()
+        pk = self.kwargs.get('pk')
+        instance = queryset.filter(pk=pk).first()
 
+        if instance is None:
+            return Response({"error": "File not found."}, status=status.HTTP_404_NOT_FOUND)
+        serializer = FilesSerializer(instance, data=request.data, partial=True)
+        
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def approve_file(self,request):
+        data = request.data
+        id = data.get("id")
+        status = data.get("status")
+
+        file=Files.objects.filter(id=id).first()
+        if not file:
+            return CustomResponse({"error": "File not found."})
+        if status == 2:
+            return CustomResponse({"message": "Request Denied"})
+        else:
+            file.is_admin_approved=True
+            file.save()
+            return CustomResponse({"message": "File approved by the admin"})
+
+
+            
+
+
+
+
+    
+            
 
 
         
