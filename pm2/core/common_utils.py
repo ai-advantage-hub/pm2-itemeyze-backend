@@ -71,3 +71,18 @@ def send_verification_email(email, otp):
     except Exception as e:
         print("error", e)
         pass
+
+
+def check_file_size(file_obj):
+    """
+        check_file_size function to check the size of files
+    """
+    try:
+        file_obj_size = file_obj.size
+        file_in_mb = file_obj_size / 1000000
+
+        if file_in_mb <= 7:
+            return True
+        return False
+    except Exception:
+        return False
