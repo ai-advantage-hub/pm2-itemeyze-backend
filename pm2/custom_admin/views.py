@@ -294,6 +294,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
     """
         This view is of crud operations for manage Project
     """
+    permission_classes = (IsAuthenticated, CheckAdminRoleStatusPermission,)
 
     def search(self, request):
         name = request.GET.get('name', None)
@@ -491,7 +492,10 @@ class ManageProjectViewSet(viewsets.ViewSet):
             file.save()
             return CustomResponse({"message":"File delete denied by admin"})
     
-
+    def view_file_unapproved(self, request,id):
+        file = Files.objects.filter(id=id).all().values()
+        return CustomResponse(file)
+    
 
 
     
