@@ -260,7 +260,8 @@ class CreateFileDetailsSerializer(serializers.ModelSerializer):
         model = Files
         fields = (
             "id", "manufacturer_name", "project_id", "file_name", "thumbnail",
-            "manufacturing_number", "quantity", "project_details", "recording", "location", "location_points"
+            "manufacturing_number", "quantity", "project_details", "recording", 
+            "location", "location_points", "additional_details",
         )
         
     def validate(self, data):
@@ -302,7 +303,9 @@ class FilesSerializer(serializers.ModelSerializer):
     manufacturer_name = ProjectUserSerializer()
     class Meta:
         model = Files
-        fields = ('id','manufacturer_name', 'file_name', 'manufacturing_number', 'location', 'quantity', 'project_details','is_marked_deleted')
+        fields = ('id','manufacturer_name', 'file_name', 'manufacturing_number', 'location', 
+                  'quantity', 'project_details','is_marked_deleted', 'additional_details',
+                  'recording', 'is_admin_approved', 'is_marked_deleted')
 
 
 class ProjectDetailsViewSerializer(serializers.ModelSerializer):
