@@ -470,6 +470,35 @@ class ManageProjectViewSet(viewsets.ViewSet):
             file.is_admin_approved=True
             file.save()
             return CustomResponse({"message": "File approved by the admin"})
+        
+
+    def delete_file_list(self,request):
+        file=Files.objects.filter(is_marked_deleted=True).all().values("id","file_name")
+        return CustomResponse(file)
+    
+    def delete_file_admin(self,request):
+        data = request.data
+        id = data.get("id")
+        status = data.get("status")
+        file=Files.objects.filter(id=id).first()
+        if not file:
+            return CustomResponse({"message":"File dont exist"})
+        if status == 1:
+            file.delete()
+            return CustomResponse({"message":"File deleted sucessfully"})
+        else:
+            file.is_marked_deleted=False
+            file.save()
+            return CustomResponse({"message":"File delete denied by admin"})
+    
+
+
+
+    
+
+
+
+    
 
 
             
