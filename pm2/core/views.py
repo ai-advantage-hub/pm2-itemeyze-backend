@@ -9,7 +9,7 @@ from .exception import CustomException
 import boto3
 import uuid
 import os
-from core.common_utils import check_file_size as core_utils
+from core.common_utils import check_file_size
 from config.local import AWS_S3_ACCESS_KEY_ID, AWS_S3_SECRET_ACCESS_KEY, AWS_STORAGE_BUCKET_NAME
 
 # Create your views here.
@@ -48,7 +48,7 @@ class UploadFileView(views.APIView):
             else:
                 return CustomResponse({"message" :"Please provide valid file."},
                                                  status=status_code.HTTP_400_BAD_REQUEST)
-            bool_val = core_utils.check_file_size(upload)
+            bool_val = check_file_size(upload)
             if not bool_val:
                 return CustomResponse({"message" :"File size must be less than or equal to 7 MB."},
                                             status=status_code.HTTP_400_BAD_REQUEST)
@@ -59,7 +59,7 @@ class UploadFileView(views.APIView):
                 return CustomResponse({"message" : "Something went wrong during file uploading."},
                                                  status=status_code.HTTP_400_BAD_REQUEST),
                                 
-            created_url = 'https://s3.amazonaws.com/'+path_key
+            created_url = 'https://'+AWS_STORAGE_BUCKET_NAME+'.s3.amazonaws.com/'+path_key
             data = {'name': path_key, 'url': created_url}
             images.append(data)
         return CustomResponse(images)
