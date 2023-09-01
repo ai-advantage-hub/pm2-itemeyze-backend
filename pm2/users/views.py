@@ -93,7 +93,8 @@ class VerifyOTPViewSet(viewsets.ViewSet):
             return CustomResponse({"message" : "OTP Verified, User created Successfully" , "user_id": user.id}, status=status_code.HTTP_200_OK)
 
 
-        user = OTP.objects.filter(otp=otp, otp_type=type, is_used=False).first()
+        #user = OTP.objects.filter(otp=otp, otp_type=type, is_used=False).first()
+        user = OTP.objects.filter(otp=otp, otp_type=type, is_used=False).order_by('-created_at')[0]
         if not user:
             return CustomResponse({"message" : "Wrong OTP"})
         if user.expired_at and user.expired_at < timezone.now():
