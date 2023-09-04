@@ -11,6 +11,7 @@ import uuid
 import os
 from PIL import Image
 from io import BytesIO
+import io 
 from pydub import AudioSegment
 from core.common_utils import check_file_size
 from config.local import AWS_S3_ACCESS_KEY_ID, AWS_S3_SECRET_ACCESS_KEY, AWS_STORAGE_BUCKET_NAME
@@ -126,10 +127,16 @@ class UploadFileView(views.APIView):
            compress_image method to compress the images 
         """
         try:
+            print("Compressing image...")
             img = Image.open(image)
+            print("Compressing image 2...")
             img.thumbnail((800, 800))
+            print("Compressing image 3...")
             output_buffer = BytesIO()
-            img.save(output_buffer, format="JPEG")
+            print("Compressing image 4...")
+            img.save(output_buffer, format="png")
+            output_buffer.seek(0)
+            print("Compressed image...")
             return output_buffer
         except Exception as e:
             return None
@@ -146,3 +153,4 @@ class UploadFileView(views.APIView):
             return output_buffer
         except Exception as e:
             return None
+        

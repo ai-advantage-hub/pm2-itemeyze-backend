@@ -58,19 +58,6 @@ class SignupSerializer(serializers.ModelSerializer):
             raise CustomException(status_code=400, message="This Email already exists.",
                                           location="LOCATION")
         return email.lower()
-    
-    # def validate_password(self, password):
-    #     if not re.search(r'[A-Z]', password):
-    #         # raise CustomException(status_code=400, message="Password must contain at least 1 uppercase letter.",
-    #         #                       location="LOCATION")
-    #         raise serializers.ValidationError("Password must contain at least 1 uppercase letter.")
-    #     if not re.search(r'[a-z]', password):
-    #         raise serializers.ValidationError("Password must contain at least 1 lowercase letter.")
-    #     if not re.search(r'[0-9]', password):
-    #         raise serializers.ValidationError("Password must contain at least 1 numeric character.")
-    #     if not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
-    #         raise serializers.ValidationError("Password must contain at least 1 special character.")
-    #     return password
 
     def validate(self, data):
         """
@@ -93,25 +80,7 @@ class SignupSerializer(serializers.ModelSerializer):
         if not c:
             raise CustomException(status_code=400, message="Company Not Found.",
                                           location="LOCATION")
-           
-        
 
-    
-    # def create(self, validated_data):
-    #     """
-    #         Create method to create user and generate otp
-    #     """
-    #     with transaction.atomic():
-    #         self.validate_email(validated_data.get('email'))
-    #         company_id = validated_data['company_id'] 
-    #         user = User(email=validated_data['email'],full_name=validated_data['full_name'])
-    #         user.set_password(validated_data['password'])
-    #         user.save()
-    #         UserCompany.objects.create(user=user, company_id=company_id)
-    #         otp = generate_otp()
-    #         OTP.objects.create(user=user,otp=otp,otp_type=1)
-    #         send_verification_email(user.email, otp)
-    #         return user
 
     def create(self, validated_data):
         """
