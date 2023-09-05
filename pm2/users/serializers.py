@@ -96,7 +96,7 @@ class SignupSerializer(serializers.ModelSerializer):
             if not c:
                 raise CustomException(status_code=400, message="Company Not Found.", location="LOCATION")
             
-            user = User(email=validated_data['email'],full_name=validated_data['full_name'])
+            user = User(email=validated_data['email'],full_name=validated_data['full_name'], is_admin_approved = True)
             user.set_password(validated_data['password'])
             user.save()
             

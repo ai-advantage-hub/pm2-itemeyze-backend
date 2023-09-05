@@ -470,6 +470,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
         else:
             file.is_admin_approved=True
             file.save()
+            User.objects.filter(id=file.manufacturer_name.id).update(is_admin_approved=True)
             return CustomResponse({"message": "File approved by the admin"})
         
 
