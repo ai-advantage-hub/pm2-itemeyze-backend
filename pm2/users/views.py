@@ -235,7 +235,7 @@ class FileDetailsViewSet(viewsets.ModelViewSet):
             print("new filleeeee", file)
             return CustomResponse({"message" : "File Created with new user Successfully", "file_id": file.id}, status=status_code.HTTP_201_CREATED)
         else:
-            Files.objects.create(manufacturer_name_id = manufacturer_name, project_id = project_id, manufacturing_number = manufacturing_number, quantity = quantity, project_details = project_details, additional_details = additional_details, recording = recording, location = location, location_points = location_points)
+            file = Files.objects.create(manufacturer_name_id = manufacturer_name, project_id = project_id, manufacturing_number = manufacturing_number, quantity = quantity, project_details = project_details, additional_details = additional_details, recording = recording, location = location, location_points = location_points)
             return CustomResponse({"message" : "File Created with existing user Successfully", "file_id": file.id}, status=status_code.HTTP_201_CREATED)
 
     # def create(self, request, *args, **kwargs):
