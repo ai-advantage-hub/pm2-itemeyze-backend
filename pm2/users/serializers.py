@@ -227,10 +227,11 @@ class CreateFileDetailsSerializer(serializers.ModelSerializer):
     """
          CreateFileDetailsSerializer to add the details of files
     """
+    manual_manufacturer_name = serializers.CharField(allow_blank=True, required=False)
     class Meta:
         model = Files
         fields = (
-            "id", "manufacturer_name", "project_id", "file_name", "thumbnail",
+            "id", "manufacturer_name", "manual_manufacturer_name", "project_id", "file_name", "thumbnail",
             "manufacturing_number", "quantity", "project_details", "recording", 
             "location", "location_points", "additional_details",
         )
