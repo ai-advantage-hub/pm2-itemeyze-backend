@@ -151,6 +151,7 @@ class Files(BaseModel):
     """
     manufacturer_name = models.ForeignKey(User, on_delete=models.CASCADE, related_name='name_manufacture')
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='project_files')
+    manual_manufacturer_name = models.CharField(blank=True, null=True, max_length=254, verbose_name='manual_name')
     file_name = models.CharField(blank=True, null=True, max_length=254)
     thumbnail = models.CharField(blank=True, null=True, max_length=254)
     manufacturing_number = models.CharField(max_length=254)

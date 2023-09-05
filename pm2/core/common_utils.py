@@ -7,6 +7,8 @@ from sendgrid.helpers.mail import Content, Email, Mail, To, From
 from config.local import FROM_NAME, FROM_EMAIL, SEND_GRID_API_KEY
 from sendgrid.helpers.mail import Content, Email, Mail, To
 from users.templates import *
+from fcm_django.models import FCMDevice
+from core.messages import VARIABLES
 
 
 def send_signup_verification_email(email, otp):
@@ -86,3 +88,31 @@ def check_file_size(file_obj):
         return False
     except Exception:
         return False
+
+def update_or_create_fcm_detail(user, registration_id, device_type):
+    """
+        method used to save the fcm device token details
+    :param user:
+    :param device_type:
+    :param registration_id:
+    """
+    device = FCMDevice.objects.filter(
+        type=device_type, registration_id=registration_id).first()
+    if not device:
+        user_device = FCMDevice.objects.filter(
+            user=user).order_by('date_created')
+        device_count = user_device.count()
+        if device_count == VARIABLES.get('MAX_LOGIN_FCM_TOKEN'):
+            user_device.first().delete()
+        FCMDevice.objects.create(
+            type=device_type, registration_id=registration_id, active=True, user=user)
+    else:
+        device.active = True
+        device.user = user
+        device.save()
+
+    FCMDevice.objects.update_or_create(type=device_type, registration_id=registration_id, defaults={
+        "active": True,
+        "user": user
+    })
+    return True
