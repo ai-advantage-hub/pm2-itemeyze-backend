@@ -8,13 +8,15 @@ from .models import (
     Files
 )
 from custom_admin.models import ContentManagement
-from core.common_utils import generate_otp, send_verification_email
+from core.common_utils import generate_otp, send_verification_email, update_or_create_fcm_detail
 from django.contrib.auth import authenticate
 import re
 from core.exception import CustomException
 from django.utils import timezone
 from django.db import transaction
 from django.contrib.auth.hashers import check_password
+from fcm_django.models import FCMDevice
+
 
 
 
@@ -399,3 +401,35 @@ class UserChangePasswordSerializer(serializers.Serializer):
         user.set_password(new_password)
         user.save()
 
+# FCM Device
+
+class UserDeviceDetailSerializer(serializers.ModelSerializer):
+    """
+        UserDeviceDetailSerializer used to get the user details.
+    """
+    class Meta:
+        model = FCMDevice
+        fields = ('id', 'user', 'registration_id', 'type',)
+
+
+class UserDeviceSerializer(serializers.Serializer):
+    """
+        UserDeviceSerializer used to save the user details.
+    """
+    DEVICE_CHOICE = (
+        'ios', 'ios',
+        'android', 'android',
+        'web', 'web'
+    )
+
+    device_type = serializers.ChoiceField(choices=DEVICE_CHOICE, required=True)
+    registration_id = serializers.CharField(required=True, min_length=10)
+
+    def update(self, instance, validated_data):
+        """
+            method used to update the fcm details.
+        """
+        with transaction.atomic():
+            update_or_create_fcm_detail(instance, validated_data.get('registration_id'),
+                                        validated_data.get('device_type'))
+            return True

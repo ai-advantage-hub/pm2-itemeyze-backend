@@ -22,7 +22,8 @@ ERROR_MESSAGES = {
 """ Variables """
 VARIABLES = {
     """ Added this value for eg. """
-    "OTP_EXPIRATION_TIME": 20  # in Minutes
+    "OTP_EXPIRATION_TIME": 20,  # in Minutes
+    "MAX_LOGIN_FCM_TOKEN": 10,
 }
 
 """ Add any hardcoded values here if any """

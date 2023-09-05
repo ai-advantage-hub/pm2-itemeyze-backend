@@ -23,7 +23,10 @@ from .serializers import (
     ViewProfileSerializer, 
     UserEditProfileSerializer,
     UserChangePasswordSerializer,
-    FilesSerializer
+    FilesSerializer,
+    UserDeviceDetailSerializer,
+    UserDeviceSerializer
+    
 )
 from rest_framework.authtoken.models import Token
 from core.common_utils import generate_otp, send_verification_email
@@ -37,6 +40,8 @@ from django.utils.translation import gettext
 from rest_framework.permissions import IsAuthenticated
 from core.permissions import CheckUserRoleStatusPermission
 from django.db.models import Q
+from fcm_django.models import FCMDevice
+
 
 class SignUpViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
     """ 
@@ -427,5 +432,60 @@ class DeleteUserViewSet(viewsets.GenericViewSet):
         user.save()
             
         return CustomResponse({"message": "Your account has been deactivated successfully."}, status=status_code.HTTP_204_NO_CONTENT)
+
+
+ #FCM
     
+class UpdateDeviceDetailViewSet(viewsets.ViewSet):
+    """
+        AddDeviceDetailViewSet used to update the user devices details.
+    """
+    #authentication_classes = (CustomTokenAuthentication,)
+    permission_classes = (IsAuthenticated,)
+    action_serializer = {
+        'retrieve': UserDeviceDetailSerializer,
+        'perform_update': UserDeviceSerializer
+    }
+
+    def retrieve(self, request):
+        """
+            retrieve method used to get the device details.
+        :param request:
+        :return:
+        """
+        fcm_user = FCMDevice.objects.select_related(
+            'user').filter(user=request.user, active=True)
+        serializer = self.action_serializer.get(
+            self.action)(fcm_user, many=True)
+        return CustomResponse(serializer.data)
+
+    def perform_update(self, request):
+        """
+            update method used to update the device details.
+        :param request:
+        :return:
+        """
+        device_type = request.query_params.get('device_type')
+        registration_id = request.query_params.get('registration_id')
+        data = {'device_type': device_type, 'registration_id': registration_id}
+        serializer = self.action_serializer.get(self.action)(
+            data=data, instance=request.user)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return CustomResponse({"message": "DEVICE_SUCCESS_MESSAGE"})
+
+    def perform_destroy(self, request):
+        """
+            method used to delete the current user device token
+        :param request:
+        :return:
+        """
+        device_type = request.GET.get('device_type', 'ios')
+        registration_id = request.GET.get('registration_id')
+        if device_type == 'both':
+            FCMDevice.objects.filter(user=request.user).delete()
+        elif device_type:
+            FCMDevice.objects.filter(user=request.user,
+                                     type=device_type, registration_id=registration_id).delete()
+        return CustomResponse({"message": "DEVICE_DELETED_SUCCESSFULLY"})
     
