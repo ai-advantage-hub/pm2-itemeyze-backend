@@ -193,6 +193,7 @@ class ContentManagementViewSet(viewsets.ViewSet):
     def delete(self, request):
         data = request.data
         type=data.get("type")
+        #type = request.GET.get('type')
         ContentManagement.objects.filter(content_type=type).delete()
         return CustomResponse({"message": "Details deleted successfully."}, status=status.HTTP_200_OK)
 
@@ -254,8 +255,9 @@ class ManageCompanyView(viewsets.ViewSet):
         """
             delete method to permanently delete the company.
         """
-        data = request.data
-        id=data.get("id")
+        # data = request.data
+        # id=data.get("id")
+        id = request.GET.get('id')
         c =  Company.objects.filter(id=id).first()
         if not c:
             return CustomResponse({"message":"company Does not exist"})
