@@ -4,7 +4,7 @@ from django.contrib.auth import authenticate
 from rest_framework import serializers
 from rest_framework.authtoken.models import Token
 from django.contrib.auth.hashers import check_password
-from core.common_utils import generate_otp, send_verification_email
+from core.common_utils import generate_otp, send_verification_email, send_verification_link
 
 class AdminLoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
@@ -75,7 +75,7 @@ class ForgotPasswordSerializer(serializers.Serializer):
         OTP.objects.update_or_create(user=instance,otp=otp,otp_type=3)
         print(otp,instance.email)
         try:
-            send_verification_email(instance.email, otp)
+            send_verification_link(instance.email, otp)
         except BaseException:
             pass
         

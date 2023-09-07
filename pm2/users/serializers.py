@@ -430,6 +430,7 @@ class UserDeviceSerializer(serializers.Serializer):
         """
             method used to update the fcm details.
         """
+        print("printttt")
         with transaction.atomic():
             update_or_create_fcm_detail(instance, validated_data.get('registration_id'),
                                         validated_data.get('device_type'))

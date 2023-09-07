@@ -74,6 +74,17 @@ def send_verification_email(email, otp):
         print("error", e)
         pass
 
+def send_verification_link(email, otp):
+    """to send verification email"""
+    try:
+        reset_link = f"https://d29zp2hclzhanw.cloudfront.net/reset-password?otp={otp}"
+        ctx_dict = {"email": email, "verification_code": otp, "reset_link": reset_link}
+        html_template = "forgot_password_admin.html"
+        subject = "YOUR LOGIN Link"
+        send_html_mail_to_single_user(subject, email, html_template, ctx_dict)
+    except Exception as e:
+        print("error", e)
+        pass
 
 def check_file_size(file_obj):
     """

@@ -581,27 +581,40 @@ class UpdateDeviceDetailViewSet(viewsets.ViewSet):
         :param request:
         :return:
         """
-        device_type = request.query_params.get('device_type')
-        registration_id = request.query_params.get('registration_id')
-        data = {'device_type': device_type, 'registration_id': registration_id}
+        # device_type = request.query_params.get('device_type')
+        # registration_id = request.query_params.get('registration_id')
+        # data = {'device_type': device_type, 'registration_id': registration_id}
+
         serializer = self.action_serializer.get(self.action)(
-            data=data, instance=request.user)
+            data=request.data, instance=request.user)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return CustomResponse({"message": "DEVICE_SUCCESS_MESSAGE"})
 
+    # def perform_destroy(self, request):
+    #     """
+    #         method used to delete the current user device token
+    #     :param request:
+    #     :return:
+    #     """
+    #     device_type = request.GET.get('device_type', 'ios')
+    #     registration_id = request.GET.get('registration_id')
+    #     if device_type == 'both':
+    #         FCMDevice.objects.filter(user=request.user).delete()
+    #     elif device_type:
+    #         FCMDevice.objects.filter(user=request.user,
+    #                                  type=device_type, registration_id=registration_id).delete()
+    #     return CustomResponse({"message": "DEVICE_DELETED_SUCCESSFULLY"})
     def perform_destroy(self, request):
         """
-            method used to delete the current user device token
+        method used to delete the current user device token
         :param request:
         :return:
         """
-        device_type = request.GET.get('device_type', 'ios')
-        registration_id = request.GET.get('registration_id')
+        device_type = request.GET.get('device_type')
         if device_type == 'both':
-            FCMDevice.objects.filter(user=request.user).delete()
+            FCMDevice.objects.filter(user=request.user).update(active=False)
         elif device_type:
-            FCMDevice.objects.filter(user=request.user,
-                                     type=device_type, registration_id=registration_id).delete()
-        return CustomResponse({"message": "DEVICE_DELETED_SUCCESSFULLY"})
-    
+            FCMDevice.objects.filter(
+            user=request.user, type=device_type).update(active=False)
+            return CustomResponse({"message": "DEVICE_DELETED_SUCCESSFULLY"},status=status_code.HTTP_200_OK)
