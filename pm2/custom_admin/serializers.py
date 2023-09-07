@@ -5,6 +5,7 @@ from rest_framework import serializers
 from rest_framework.authtoken.models import Token
 from django.contrib.auth.hashers import check_password
 from core.common_utils import generate_otp, send_verification_email
+import pandas as pd
 
 class AdminLoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
@@ -92,7 +93,7 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Project
-        fields = ['project_name', 'project_number', 'created_by', 'created_at', 'files']
+        fields = ['project_name', 'project_number','created_by','created_at', 'files']
 
     def get_created_by(self, obj):
         return obj.created_by.full_name

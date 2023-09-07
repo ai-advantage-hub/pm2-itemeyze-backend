@@ -18,6 +18,7 @@ from django.utils import timezone
 from django.shortcuts import get_object_or_404
 
 
+
 class AdminLoginView(viewsets.ViewSet):
     """
         this view to for admin to login
@@ -294,7 +295,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
     """
         This view is of crud operations for manage Project
     """
-    permission_classes = (IsAuthenticated, CheckAdminRoleStatusPermission,)
+    #permission_classes = (IsAuthenticated, CheckAdminRoleStatusPermission,)
 
     def search(self, request):
         name = request.GET.get('name', None)
@@ -496,13 +497,14 @@ class ManageProjectViewSet(viewsets.ViewSet):
         file = Files.objects.filter(id=id).all().values()
         return CustomResponse(file)
     
+  
+                
 
 
-    
 
 
-
-    
+        
+                
 
 
             
@@ -510,30 +512,21 @@ class ManageProjectViewSet(viewsets.ViewSet):
 
 
 
-    
+
+
+            
+        
+
+
             
 
 
+
+
+
+
+
+            
         
 
-
-
-
-
-
         
-    
-
-
-        
-
-
-
-
-
-
-
-        
-    
-
-    
