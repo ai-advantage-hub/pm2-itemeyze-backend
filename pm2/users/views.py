@@ -23,7 +23,10 @@ from .serializers import (
     ViewProfileSerializer, 
     UserEditProfileSerializer,
     UserChangePasswordSerializer,
-    FilesSerializer
+    FilesSerializer,
+    UserDeviceDetailSerializer,
+    UserDeviceSerializer
+    
 )
 from rest_framework.authtoken.models import Token
 from core.common_utils import generate_otp, send_verification_email
@@ -37,6 +40,10 @@ from django.utils.translation import gettext
 from rest_framework.permissions import IsAuthenticated
 from core.permissions import CheckUserRoleStatusPermission
 from django.db.models import Q
+from fcm_django.models import FCMDevice
+from core.pagination import CustomPagination
+
+
 
 class SignUpViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
     """ 
@@ -64,7 +71,6 @@ class ReSendOtpViewSet(viewsets.ViewSet):
         if not email:
             return CustomResponse({"message": "Please enter email"})
         user=User.objects.filter(email=email.lower()).first()
-        print("ddfgfregvrf",user)
         otp = generate_otp()
         OTP.objects.update(user=user,otp=otp,otp_type=1)
         try:
@@ -94,6 +100,7 @@ class VerifyOTPViewSet(viewsets.ViewSet):
 
 
         user = OTP.objects.filter(otp=otp, otp_type=type, is_used=False).first()
+        #user = OTP.objects.filter(otp=otp, otp_type=type, is_used=False).order_by('-created_at')[0]
         if not user:
             return CustomResponse({"message" : "Wrong OTP"})
         if user.expired_at and user.expired_at < timezone.now():
@@ -129,6 +136,7 @@ class ForgotPasswordViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
         ForgotPasswordViewSet for forget password
     """
     serializer_class = ForgotPasswordSerializer
+    permission_classes = (IsAuthenticated,)
 
     def create(self, request):
         serializer = self.serializer_class(data=request.data)
@@ -142,6 +150,7 @@ class ResetPasswordViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
        ResetPasswordViewSet will be used for reseting the password 
     """
     serializer_class = ResetPasswordSerializer
+    permission_classes = (IsAuthenticated,)
 
     def update(self, request):
         serializer = self.get_serializer(data=request.data)
@@ -154,6 +163,7 @@ class ResetPasswordViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
 
 
 #Home
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 
 class ProjectViewSet(viewsets.ModelViewSet):
@@ -180,27 +190,40 @@ class ProjectViewSet(viewsets.ModelViewSet):
 
         return CustomResponse(serializer.data, status=status_code.HTTP_201_CREATED)
 
+    # def search(self, request):
+    #     project_name = request.GET.get('project_name', None)
+    #     project = Project.objects.filter(created_by=request.user).all().values()
+    #     if project_name:
+    #         project=project.filter(project_name__icontains=project_name)
+    #         if not project:
+    #             return CustomResponse({"message": "No Data Found."})
+    #         return CustomResponse(project, status=status_code.HTTP_200_OK)
+    #     else:
+    #         return CustomResponse(project, status=status_code.HTTP_200_OK)
     def search(self, request):
-        project_name = request.GET.get('project_name', None)
-        project = Project.objects.filter(created_by=request.user).all().values()
-        if project_name:
-            project=project.filter(project_name__icontains=project_name)
-            if not project:
-                return CustomResponse({"message": "No Data Found."})
-            return CustomResponse(project, status=status_code.HTTP_200_OK)
-        else:
-            return CustomResponse(project, status=status_code.HTTP_200_OK)
-    
-#
-# class ListProjectViewSet(viewsets.ModelViewSet):
-#     """
-#         ListProjectViewSet to get the list of projects
-#     """
-#     def list(self, request, *args, **kwargs):
-#         user = Project.objects.filter(user_id=request.user.id).all().values()
-#         return CustomResponse(user)
-#
 
+        project_name = request.GET.get('project_name', None)
+        page = request.GET.get('page', 1)  # Get the requested page number from the request
+        per_page = request.GET.get('per_page', 10)  # Get the requested number of items per page    
+        projects = Project.objects.filter(created_by=request.user)    
+        if project_name:
+            projects = projects.filter(project_name__icontains=project_name)    
+        # Pagination
+        paginator = Paginator(projects, per_page)   
+        try:
+            paginated_projects = paginator.page(page)
+        except PageNotAnInteger:
+            paginated_projects = paginator.page(1)
+        except EmptyPage:
+            paginated_projects = paginator.page(paginator.num_pages)    
+        if not paginated_projects:
+            return CustomResponse({"message": "No Data Found."})    
+        # Return paginated results
+        results = {
+            "data": list(paginated_projects.object_list.values()),  # Convert the queryset to a list of dictionaries           
+        }    
+        return CustomResponse(results, status=status_code.HTTP_200_OK)
+    
 
 class FileDetailsViewSet(viewsets.ModelViewSet):
     """
@@ -208,57 +231,77 @@ class FileDetailsViewSet(viewsets.ModelViewSet):
     """
     queryset = Files.objects.all()
     serializer_class = CreateFileDetailsSerializer
+    pagination_class = CustomPagination
+    permission_classes = (IsAuthenticated,)
 
     def perform_create(self, serializer):
         serializer.save(file_name="autogenerated_filename")
 
+    # def create(self, request, *args, **kwargs):
+    #     request_data = request.data.copy()
+    #     request_data["manufacturer_name"] = self.request.user.id
+    #     serializer = self.get_serializer(data=request.data)
+    #     serializer.is_valid(raise_exception=True)
+    #     serializer.context["project_id"] = request_data["project_id"]
+    #     self.perform_create(serializer)
+    #     return CustomResponse(serializer.data, status=status_code.HTTP_201_CREATED)
+    
     def create(self, request, *args, **kwargs):
-        request_data = request.data.copy()
-        request_data["manufacturer_name"] = self.request.user.id
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.context["project_id"] = request_data["project_id"]
-        self.perform_create(serializer)
-        return CustomResponse(serializer.data, status=status_code.HTTP_201_CREATED)
+        data=request.data
+        manufacturer_name = data.get('manufacturer_name')
+        manual_manufacturer_name = data.get('manual_manufacturer_name')
+        project_id = data.get('project_id')
+        manufacturing_number = data.get('manufacturing_number')
+        quantity = data.get('quantity')
+        project_details = data.get('project_details')
+        additional_details = data.get('additional_details')
+        recording = data.get('recording')
+        location = data.get('location')
+        location_points = data.get('location_points')
+        if manual_manufacturer_name:
+            new_user = User.objects.create(full_name = manual_manufacturer_name)
+            print("newwwwww", new_user.id)
+            file = Files.objects.create(manufacturer_name_id = new_user.id, manual_manufacturer_name = manual_manufacturer_name, project_id = project_id, manufacturing_number = manufacturing_number, quantity = quantity, project_details = project_details, additional_details = additional_details, recording = recording, location = location, location_points = location_points)
+            print("new filleeeee", file)
+            return CustomResponse({"message" : "File Created with new user Successfully", "file_id": file.id}, status=status_code.HTTP_201_CREATED)
+        else:
+            file = Files.objects.create(manufacturer_name_id = manufacturer_name, project_id = project_id, manufacturing_number = manufacturing_number, quantity = quantity, project_details = project_details, additional_details = additional_details, recording = recording, location = location, location_points = location_points)
+            return CustomResponse({"message" : "File Created with existing user Successfully", "file_id": file.id}, status=status_code.HTTP_201_CREATED)
 
-    def list(self, request, id):
+    # def create(self, request, *args, **kwargs):
+    #     data = request.data
+    #     serializer = CreateFileDetailsSerializer(data=data)
+
+    #     if serializer.is_valid():
+    #         manufacturer_name = serializer.validated_data.get('manufacturer_name')
+    #         manual_manufacturer_name = serializer.validated_data.get('manual_manufacturer_name', '')
+    #         project_id = serializer.validated_data.get('project_id')
+    #         manufacturing_number = serializer.validated_data.get('manufacturing_number')
+    #         quantity = serializer.validated_data.get('quantity')
+    #         project_details = serializer.validated_data.get('project_details')
+    #         additional_details = serializer.validated_data.get('additional_details')
+    #         recording = serializer.validated_data.get('recording')
+    #         location = serializer.validated_data.get('location')
+    #         location_points = serializer.validated_data.get('location_points')
+
+    #         if manual_manufacturer_name:
+    #             new_user = User.objects.create(full_name=manual_manufacturer_name)
+    #             print("newwwwww", new_user.id)
+    #             file = Files.objects.create(manufacturer_name_id=new_user.id, manual_manufacturer_name=manual_manufacturer_name, project_id=project_id, manufacturing_number=manufacturing_number, quantity=quantity, project_details=project_details, additional_details=additional_details, recording=recording, location=location, location_points=location_points)
+    #             print("new filleeeee", file)
+    #             return CustomResponse({"message": "File Created with a new user Successfully"}, status=status_code.HTTP_201_CREATED)
+    #         else:
+    #             Files.objects.create(manufacturer_name_id=manufacturer_name, project_id=project_id, manufacturing_number=manufacturing_number, quantity=quantity, project_details=project_details, additional_details=additional_details, recording=recording, location=location, location_points=location_points)
+    #             return CustomResponse({"message": "File Created with an existing user Successfully"}, status=status_code.HTTP_201_CREATED)
+    #     else:
+    #         return CustomResponse(serializer.errors, status=status_code.HTTP_400_BAD_REQUEST)
+
+    def list(self, request, id, *args, **kwargs):
         location = request.GET.get('location', None)
         manufacturer_name = request.GET.get('manufacturer_name', None)
         manufacturing_number = request.GET.get('manufacturing_number', None)
         user = Files.objects.filter(id=id).all().values('file_name', 'manufacturer_name__full_name','manufacturing_number', 'location', 'quantity','project_details', 'additional_details', 'recording')
-        # if location:
-        #     user = user.filter(location__icontains=location)
-        #     return CustomResponse(user, status=status_code.HTTP_200_OK)
-        # if manufacturer_name:
-        #     user = user.filter(manufacturer_name__full_name__icontains=manufacturer_name)
-        #     return CustomResponse(user, status=status_code.HTTP_200_OK)
-        # if manufacturing_number:
-        #     user = user.filter(manufacturing_number__icontains=manufacturing_number)
-        #     return CustomResponse(user, status=status_code.HTTP_200_OK)
-        # else:
-        #     return CustomResponse(user, status=status_code.HTTP_200_OK)
         return CustomResponse(user)
-
-# class ListFileDetailsViewSet(viewsets.ModelViewSet):
-#     """
-#         ListFileDetailsViewSet to list and search file details
-#     """
-#     def list(self, request):
-#         location = request.GET.get('location', None)
-#         manufacturer_name = request.GET.get('manufacturer_name', None)
-#         manufacturing_number = request.GET.get('manufacturing_number', None)
-#         user = Files.objects.all().values()
-#         if location:
-#             user = user.filter(location__icontains=location)
-#             return CustomResponse(user)
-#         if manufacturer_name:
-#             user = user.filter(manufacturer_name__icontains=manufacturer_name)
-#             return CustomResponse(user)
-#         if manufacturing_number:
-#             user = user.filter(manufacturing_number__icontains=manufacturing_number)
-#             return CustomResponse(user)
-#         else:
-#             return CustomResponse(user)
 
         
 class ProjectDetailsViewSet(viewsets.ModelViewSet):
@@ -266,25 +309,8 @@ class ProjectDetailsViewSet(viewsets.ModelViewSet):
         ProjectDetailsViewSet to view to project details
     """
     serializer_class = ProjectDetailsViewSerializer
-
-    # def get_queryset(self, request):
-    #     location = request.GET.get('location', None)
-    #     manufacturer_name = request.GET.get('manufacturer_name', None)
-    #     manufacturing_number = request.GET.get('manufacturing_number', None)
-    #     pk = self.kwargs.get('pk')
-    #     user = Project.objects.filter(id=pk)
-        
-    #     if location:
-    #         user = user.filter(location__icontains=location)
-    #         return CustomResponse(user, status=status_code.HTTP_200_OK)
-    #     if manufacturer_name:
-    #         user = user.filter(manufacturer_name__full_name__icontains=manufacturer_name)
-    #         return CustomResponse(user, status=status_code.HTTP_200_OK)
-    #     if manufacturing_number:
-    #         user = user.filter(manufacturing_number__icontains=manufacturing_number)
-    #         return CustomResponse(user, status=status_code.HTTP_200_OK)
-    #     else:
-    #         return CustomResponse(user, status=status_code.HTTP_200_OK)
+    pagination_class = CustomPagination
+    permission_classes = (IsAuthenticated,)
 
     def get_queryset(self):
         pk = self.kwargs.get('pk')
@@ -300,58 +326,58 @@ class ProjectDetailsViewSet(viewsets.ModelViewSet):
         # if manufacturing_number:
         #     queryset = queryset.filter(project_files__manufacturing_number__icontains=manufacturing_number)
         return queryset
-        
-
-    # def list(self, request, *args, **kwargs):
-    #     queryset = self.get_queryset()
-    #     serializer = self.get_serializer(queryset, many=True)
-    #     return CustomResponse(serializer.data, status=status_code.HTTP_200_OK)
-
+    
     # def list(self, request, *args, **kwargs):     
     #     queryset = self.get_queryset()     
-    #     serializer = self.get_serializer(queryset)     
+    #     serializer = self.get_serializer(queryset, many=True)     
     #     # return CustomResponse(serializer.data, status=status_code.HTTP_200_OK)
     #     queryset = self.get_queryset()
     #     pk = self.kwargs.get('pk')
     #     location = self.request.GET.get('location', None)
-    #     if location:
-    #         file_obj = Files.objects.filter(Q(location__icontains=location) |
+    #     if not location:
+    #         location = ""
+    #     file_obj = Files.objects.filter(Q(location__icontains=location) |
     #                                     Q(manufacturer_name__full_name__icontains=location)|
     #                                     Q(manufacturing_number__icontains=location),
-    #                                     project_id=pk).all().values()
-        
+    #                                     project_id=pk) 
+    #     file_serializer = FilesSerializer(file_obj, many=True)
+    #     serializer = self.get_serializer(queryset, many=True, context = {"search": location})
+    #     data = dict()
+    #     data['project_details'] = serializer.data
+    #     data['project_files'] = file_serializer.data
+    #     return CustomResponse(data, status=status_code.HTTP_200_OK)
 
-    #         # file_serializer = FilesSerializer(file_obj, many=True)
-    #         # serializer = self.get_serializer(queryset, many=True, context = {"search": location})
-    #         # data = dict()
-    #         # data['project_details'] = serializer.data
-    #         # data['project_files'] = file_serializer.data
-    #         # return Response(data, status=status_code.HTTP_200_OK)
-    #         c = {"project_files":file_obj, "project_details":Project.objects.filter(id=pk).all().values()}
-    #         return CustomResponse(c)
-    #     else:
-    #         queryset = self.get_queryset()
-    #         serializer = self.get_serializer(queryset, many=True)
-    #         return CustomResponse(serializer.data, status=status_code.HTTP_200_OK)
-    
-    def list(self, request, *args, **kwargs):     
-        queryset = self.get_queryset()     
-        serializer = self.get_serializer(queryset, many=True)     
-        # return CustomResponse(serializer.data, status=status_code.HTTP_200_OK)
+    def list(self, request, *args, **kwargs):
+
         queryset = self.get_queryset()
         pk = self.kwargs.get('pk')
-        location = self.request.GET.get('location', None)
-        if not location:
-            location = ""
+        location = self.request.GET.get('location', '')
+        # Filtering for Files based on the search criteria
         file_obj = Files.objects.filter(Q(location__icontains=location) |
-                                        Q(manufacturer_name__full_name__icontains=location)|
+                                        Q(manufacturer_name__full_name__icontains=location) |
                                         Q(manufacturing_number__icontains=location),
-                                        project_id=pk) 
-        file_serializer = FilesSerializer(file_obj, many=True)
-        serializer = self.get_serializer(queryset, many=True, context = {"search": location})
-        data = dict()
-        data['project_details'] = serializer.data
-        data['project_files'] = file_serializer.data
+                                        project_id=pk)
+        # Apply pagination to the file_obj
+        page = request.GET.get('page', 1)
+        per_page = request.GET.get('per_page', 10)  # Use a default value for per_page, or adjust as needed    
+        paginator = Paginator(file_obj, per_page)    
+        try:
+            paginated_files = paginator.page(page)
+        except PageNotAnInteger:
+            paginated_files = paginator.page(1)
+        except EmptyPage:
+            paginated_files = paginator.page(paginator.num_pages)    
+        # Serialize data
+        file_serializer = FilesSerializer(paginated_files, many=True)
+        project_serializer = self.get_serializer(queryset, many=True, context={"search": location})    
+        data = {
+            'project_details': project_serializer.data,
+            'project_files': file_serializer.data,
+            "total": paginator.count,
+            "per_page": paginator.per_page,
+            "current_page": int(page),
+            "total_pages": paginator.num_pages,
+        }    
         return CustomResponse(data, status=status_code.HTTP_200_OK)
 
 
@@ -410,16 +436,6 @@ class TermsAndConditionsViewSet(viewsets.ModelViewSet):
 
 #Settings
 
-# class ViewProfileViewSet(viewsets.ModelViewSet):
-#     """
-#         ViewProfileViewSet to get the users details
-#     """
-#     def list(self, request, id):
-#         user = User.objects.filter(id=id).all().values('full_name', 'email', 'profile_pic')
-#         if not user:
-#             return CustomResponse({"message" : "User Not Found"})
-#         return CustomResponse(user)
-
 class ViewProfileViewSet(viewsets.ViewSet):
     """
     ViewProfileViewSet to get the user's details
@@ -435,13 +451,6 @@ class ViewProfileViewSet(viewsets.ViewSet):
         return CustomResponse(serializer.data)
     
 
-# class CompanyNameViewSet(viewsets.ViewSet):
-#     permission_classes = (IsAuthenticated, CheckUserRoleStatusPermission,)
-    
-#     def list(self, request):
-#         user=Company.objects.all().values('id','name')
-#         return CustomResponse(user)
-
 class CompanyNameViewSet(viewsets.ViewSet):
     """
         CompanyNameViewSet to get the Company Listing
@@ -454,79 +463,17 @@ class CompanyNameViewSet(viewsets.ViewSet):
         return CustomResponse(serializer.data)
     
 
-# class UserListingViewSet(viewsets.ViewSet):
-#     #permission_classes = (IsAuthenticated, CheckUserRoleStatusPermission,)
-    
-#     def list(self, request):
-#         user=User.objects.all().values('id','full_name')
-#         return CustomResponse(user)
-
 class UserListingViewSet(viewsets.ViewSet):
     """
        UserListingViewSet for getting the list of users 
     """
     permission_classes = (IsAuthenticated, CheckUserRoleStatusPermission,)
     def list(self, request):
-        users = User.objects.all()
+        users = User.objects.filter(is_admin_approved=True).all()
         serializer = UserListingSerializer(users, many=True)
 
         return CustomResponse(serializer.data)
-    
 
-# class UserEditProfileViewSet(viewsets.ViewSet):
-#     """
-#         UserEditProfileViewSet to Edit Personal Details of Users
-#     """
-#     permission_classes = (IsAuthenticated,)
-#     def update(self, request):
-#         data = request.data
-#         full_name=data.get("full_name")
-#         email=data.get("email")
-#         profile_pic=data.get("profile_pic")
-#         if not full_name:
-#             return CustomResponse({"message": "Please provide full name."})
-#         if profile_pic:
-#             User.objects.filter(id=request.user.id).update(profile_pic=profile_pic)
-#         if full_name:
-#             User.objects.filter(id=request.user.id).update(full_name=full_name)
-#         if email:
-#             otp = generate_otp()
-#             OTP.objects.update_or_create(user_id=request.user.id,otp=otp,otp_type=1)
-#         try:
-#             send_verification_email(email, otp)
-#         except BaseException:
-#             pass
-
-#         User.objects.filter(id=request.user.id).update(email=email,is_email_verified=False)
-#         return CustomResponse({"message": "profile updated sucessfully"}, status=status_code.HTTP_200_OK)
-    
-#     def validate(self, request):
-#         data = request.data
-#         otp=data.get("otp")
-#         if not otp:
-#             return CustomResponse({"message":"Please provide otp"})
-#         user=OTP.objects.filter(otp_type=1,is_used=False,otp=otp).first()
-#         if not user:
-#             return CustomResponse({"message": "Wrong OTP"})
-#         if user.expired_at and user.expired_at < timezone.now():
-#             return CustomResponse({"message": "OTP expired"}, status=status_code.HTTP_400_BAD_REQUEST)
-#         if not user:
-#             return CustomResponse({"message": "OTP incorrect"}, status=status_code.HTTP_400_BAD_REQUEST)
-#         else:
-#             User.objects.filter(id=user.user_id).update(is_email_verified=True)
-#             OTP.objects.filter(otp_type=1,otp=otp).update(is_used=True)
-#             return CustomResponse({"message": "Email Verified Successfully"}, status=status_code.HTTP_200_OK)
-
-#     def create(self, request):
-#         serializer = UserChangePasswordSerializer(data=request.data, context={'request': request})
-#         # serializer.is_valid(raise_exception=True)
-#         # serializer.save()
-#         # return CustomResponse({"message": "Password updated successfully."}, status=status_code.HTTP_200_OK)
-#         if serializer.is_valid():
-#             serializer.update_password()
-#             return CustomResponse({"message": "Password updated successfully."}, status=status_code.HTTP_200_OK)
-#         else:
-#             return CustomResponse({"message": "Old Password is incorrect"}, status=status_code.HTTP_400_BAD_REQUEST)
             
 class UserEditProfileViewSet(viewsets.ViewSet):
     """
@@ -589,3 +536,60 @@ class DeleteUserViewSet(viewsets.GenericViewSet):
         user.save()
             
         return CustomResponse({"message": "Your account has been deactivated successfully."}, status=status_code.HTTP_204_NO_CONTENT)
+
+
+#FCM
+    
+class UpdateDeviceDetailViewSet(viewsets.ViewSet):
+    """
+        AddDeviceDetailViewSet used to update the user devices details.
+    """
+    #authentication_classes = (CustomTokenAuthentication,)
+    permission_classes = (IsAuthenticated,)
+    action_serializer = {
+        'retrieve': UserDeviceDetailSerializer,
+        'perform_update': UserDeviceSerializer
+    }
+
+    def retrieve(self, request):
+        """
+            retrieve method used to get the device details.
+        :param request:
+        :return:
+        """
+        fcm_user = FCMDevice.objects.select_related(
+            'user').filter(user=request.user, active=True)
+        serializer = self.action_serializer.get(
+            self.action)(fcm_user, many=True)
+        return CustomResponse(serializer.data)
+
+    def perform_update(self, request):
+        """
+            update method used to update the device details.
+        :param request:
+        :return:
+        """
+        device_type = request.query_params.get('device_type')
+        registration_id = request.query_params.get('registration_id')
+        data = {'device_type': device_type, 'registration_id': registration_id}
+        serializer = self.action_serializer.get(self.action)(
+            data=data, instance=request.user)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return CustomResponse({"message": "DEVICE_SUCCESS_MESSAGE"})
+
+    def perform_destroy(self, request):
+        """
+            method used to delete the current user device token
+        :param request:
+        :return:
+        """
+        device_type = request.GET.get('device_type', 'ios')
+        registration_id = request.GET.get('registration_id')
+        if device_type == 'both':
+            FCMDevice.objects.filter(user=request.user).delete()
+        elif device_type:
+            FCMDevice.objects.filter(user=request.user,
+                                     type=device_type, registration_id=registration_id).delete()
+        return CustomResponse({"message": "DEVICE_DELETED_SUCCESSFULLY"})
+    

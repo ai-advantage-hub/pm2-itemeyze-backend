@@ -60,6 +60,7 @@ INSTALLED_APPS = [
     'django_extensions',
     'core',
     'corsheaders',
+    'fcm_django'
 ]
 
 MIDDLEWARE = [

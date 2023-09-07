@@ -8,13 +8,15 @@ from .models import (
     Files
 )
 from custom_admin.models import ContentManagement
-from core.common_utils import generate_otp, send_verification_email
+from core.common_utils import generate_otp, send_verification_email, update_or_create_fcm_detail
 from django.contrib.auth import authenticate
 import re
 from core.exception import CustomException
 from django.utils import timezone
 from django.db import transaction
 from django.contrib.auth.hashers import check_password
+from fcm_django.models import FCMDevice
+
 
 
 
@@ -58,19 +60,6 @@ class SignupSerializer(serializers.ModelSerializer):
             raise CustomException(status_code=400, message="This Email already exists.",
                                           location="LOCATION")
         return email.lower()
-    
-    # def validate_password(self, password):
-    #     if not re.search(r'[A-Z]', password):
-    #         # raise CustomException(status_code=400, message="Password must contain at least 1 uppercase letter.",
-    #         #                       location="LOCATION")
-    #         raise serializers.ValidationError("Password must contain at least 1 uppercase letter.")
-    #     if not re.search(r'[a-z]', password):
-    #         raise serializers.ValidationError("Password must contain at least 1 lowercase letter.")
-    #     if not re.search(r'[0-9]', password):
-    #         raise serializers.ValidationError("Password must contain at least 1 numeric character.")
-    #     if not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
-    #         raise serializers.ValidationError("Password must contain at least 1 special character.")
-    #     return password
 
     def validate(self, data):
         """
@@ -93,25 +82,7 @@ class SignupSerializer(serializers.ModelSerializer):
         if not c:
             raise CustomException(status_code=400, message="Company Not Found.",
                                           location="LOCATION")
-           
-        
 
-    
-    # def create(self, validated_data):
-    #     """
-    #         Create method to create user and generate otp
-    #     """
-    #     with transaction.atomic():
-    #         self.validate_email(validated_data.get('email'))
-    #         company_id = validated_data['company_id'] 
-    #         user = User(email=validated_data['email'],full_name=validated_data['full_name'])
-    #         user.set_password(validated_data['password'])
-    #         user.save()
-    #         UserCompany.objects.create(user=user, company_id=company_id)
-    #         otp = generate_otp()
-    #         OTP.objects.create(user=user,otp=otp,otp_type=1)
-    #         send_verification_email(user.email, otp)
-    #         return user
 
     def create(self, validated_data):
         """
@@ -125,7 +96,7 @@ class SignupSerializer(serializers.ModelSerializer):
             if not c:
                 raise CustomException(status_code=400, message="Company Not Found.", location="LOCATION")
             
-            user = User(email=validated_data['email'],full_name=validated_data['full_name'])
+            user = User(email=validated_data['email'],full_name=validated_data['full_name'], is_admin_approved = True)
             user.set_password(validated_data['password'])
             user.save()
             
@@ -256,10 +227,11 @@ class CreateFileDetailsSerializer(serializers.ModelSerializer):
     """
          CreateFileDetailsSerializer to add the details of files
     """
+    manual_manufacturer_name = serializers.CharField(allow_blank=True, required=False)
     class Meta:
         model = Files
         fields = (
-            "id", "manufacturer_name", "project_id", "file_name", "thumbnail",
+            "id", "manufacturer_name", "manual_manufacturer_name", "project_id", "file_name", "thumbnail",
             "manufacturing_number", "quantity", "project_details", "recording", 
             "location", "location_points", "additional_details",
         )
@@ -430,3 +402,35 @@ class UserChangePasswordSerializer(serializers.Serializer):
         user.set_password(new_password)
         user.save()
 
+# FCM Device
+
+class UserDeviceDetailSerializer(serializers.ModelSerializer):
+    """
+        UserDeviceDetailSerializer used to get the user details.
+    """
+    class Meta:
+        model = FCMDevice
+        fields = ('id', 'user', 'registration_id', 'type',)
+
+
+class UserDeviceSerializer(serializers.Serializer):
+    """
+        UserDeviceSerializer used to save the user details.
+    """
+    DEVICE_CHOICE = (
+        'ios', 'ios',
+        'android', 'android',
+        'web', 'web'
+    )
+
+    device_type = serializers.ChoiceField(choices=DEVICE_CHOICE, required=True)
+    registration_id = serializers.CharField(required=True, min_length=10)
+
+    def update(self, instance, validated_data):
+        """
+            method used to update the fcm details.
+        """
+        with transaction.atomic():
+            update_or_create_fcm_detail(instance, validated_data.get('registration_id'),
+                                        validated_data.get('device_type'))
+            return True

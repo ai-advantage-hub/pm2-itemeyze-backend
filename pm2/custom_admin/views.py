@@ -16,6 +16,16 @@ from rest_framework.permissions import IsAuthenticated
 from users.models import OTP
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
+import pandas as pd
+from rest_framework.decorators import action
+import os
+import csv
+from django.http import HttpResponse
+from config.local import AWS_S3_ACCESS_KEY_ID, AWS_S3_SECRET_ACCESS_KEY, AWS_STORAGE_BUCKET_NAME
+import boto3
+import uuid
+from rest_framework import status as status_code
+
 
 
 
@@ -184,6 +194,7 @@ class ContentManagementViewSet(viewsets.ViewSet):
     def delete(self, request):
         data = request.data
         type=data.get("type")
+        #type = request.GET.get('type')
         ContentManagement.objects.filter(content_type=type).delete()
         return CustomResponse({"message": "Details deleted successfully."}, status=status.HTTP_200_OK)
 
@@ -245,8 +256,9 @@ class ManageCompanyView(viewsets.ViewSet):
         """
             delete method to permanently delete the company.
         """
-        data = request.data
-        id=data.get("id")
+        # data = request.data
+        # id=data.get("id")
+        id = request.GET.get('id')
         c =  Company.objects.filter(id=id).first()
         if not c:
             return CustomResponse({"message":"company Does not exist"})
@@ -471,6 +483,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
         else:
             file.is_admin_approved=True
             file.save()
+            User.objects.filter(id=file.manufacturer_name.id).update(is_admin_approved=True)
             return CustomResponse({"message": "File approved by the admin"})
         
 
@@ -496,11 +509,81 @@ class ManageProjectViewSet(viewsets.ViewSet):
     def view_file_unapproved(self, request,id):
         file = Files.objects.filter(id=id).all().values()
         return CustomResponse(file)
-    
-  
-                
+        
+    # @action(detail=True, methods=['get'])
+    # def save_to_csv(self, request, pk=None):
+    # # Retrieve the serialized data
+    #     queryset = Project.objects.all()
+    #     project = get_object_or_404(queryset, pk=pk)
+    #     serializer = ProjectDetailSerializer(project)
+    #     serialized_data = serializer.data
 
+    #     # Check and create directory if it doesn't exist
+    #     export_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'exports')
+    #     if not os.path.exists(export_dir):
+    #         os.makedirs(export_dir)
 
+    #     # Define path for the CSV file
+    #     csv_path = os.path.join(export_dir, f'project_detail_{pk}.csv')
+
+    #     with open(csv_path, 'w', newline='') as csvfile:
+    #         writer = csv.writer(csvfile)
+
+    #         # Write the headers to the CSV
+    #         headers = [
+    #             'project_name', 'project_number', 'created_at', 'created_by', 'file_name', 'thumbnail',
+    #             'manufacturing_number', 'quantity', 'project_details', 'additional_details', 
+    #             'recording', 'location', 'location_points'
+    #         ]
+    #         writer.writerow(headers)
+
+    #         # Write the data to the CSV
+    #         for file in serialized_data['files']:
+    #             row_data = [
+    #                 serialized_data['project_name'], 
+    #                 serialized_data['project_number'], 
+    #                 serialized_data['created_at'],
+    #                 serialized_data['created_by']
+    #             ]
+    #             for field in headers[3:]:  # start from 'file_name'
+    #                 row_data.append(file.get(field, ''))
+    #             writer.writerow(row_data)
+
+    #     return Response({'file_path': csv_path}, status=status.HTTP_201_CREATED)
+        
+    @action(detail=True, methods=['get'])
+    def save_to_csv(self, request, pk=None):
+        # Retrieve the serialized data
+        queryset = Project.objects.all()
+        project = get_object_or_404(queryset, pk=pk)
+        serializer = ProjectDetailSerializer(project)
+        project_data = serializer.data
+        files_data = project_data.pop('files')
+        all_data = []
+        for file_data in files_data:
+            combined_data = {**project_data, **file_data}
+            all_data.append(combined_data) 
+        df = pd.DataFrame(all_data)
+        # Create a directory to store the CSV temporarily
+        export_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'exports')
+        if not os.path.exists(export_dir):
+            os.makedirs(export_dir)
+        csv_path = os.path.join(export_dir, f'project_detail_{pk}.csv')
+        df.to_csv(csv_path, index=False)
+        # Upload the CSV to AWS S3
+        s3 = boto3.resource('s3', aws_access_key_id=AWS_S3_ACCESS_KEY_ID, aws_secret_access_key=AWS_S3_SECRET_ACCESS_KEY)
+        file_name = f'project_detail_{pk}.csv'
+        path_key = f"csv/{uuid.uuid4()}_{file_name}"
+        try:
+            with open(csv_path, 'rb') as csv_file:
+                s3.Bucket(AWS_STORAGE_BUCKET_NAME).upload_fileobj(csv_file, path_key)
+            # After successful upload, delete local CSV (optional)
+            os.remove(csv_path)
+        except Exception:
+            return CustomResponse({"message": "Something went wrong during file uploading."},
+                                  status=status_code.HTTP_400_BAD_REQUEST)
+        created_url = f'https://{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com/{path_key}'
+        return CustomResponse({"file_path": created_url})
 
 
         
