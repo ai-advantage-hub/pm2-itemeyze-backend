@@ -468,11 +468,23 @@ class UserListingViewSet(viewsets.ViewSet):
        UserListingViewSet for getting the list of users 
     """
     permission_classes = (IsAuthenticated, CheckUserRoleStatusPermission,)
-    def list(self, request):
-        users = User.objects.filter(is_admin_approved=True).all()
-        serializer = UserListingSerializer(users, many=True)
+    # def list(self, request):
+    #     users = User.objects.filter(is_admin_approved=True).all()
+    #     serializer = UserListingSerializer(users, many=True)
 
-        return CustomResponse(serializer.data)
+    #     return CustomResponse(serializer.data)
+    def list(self, request):
+        name = request.GET.get('name', None)
+        users = User.objects.filter(is_admin_approved=True).all().values('id', 'full_name')
+        if name:
+            users = users.filter(full_name__icontains= name)
+            if not users:
+                return CustomResponse({"message": "User not Found"})
+            return CustomResponse(users)
+        else:
+            return CustomResponse(users)
+
+
 
             
 class UserEditProfileViewSet(viewsets.ViewSet):
