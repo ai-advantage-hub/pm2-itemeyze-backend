@@ -18,10 +18,6 @@ from django.contrib.auth.hashers import check_password
 from fcm_django.models import FCMDevice
 
 
-
-
-
-
 class UserSerializer():
     """Serializer to serialize user fields"""
 
@@ -52,13 +48,12 @@ class SignupSerializer(serializers.ModelSerializer):
         fields = ("profile_pic", "full_name", "email", "password", "confirm_password", "company_id")
 
     @staticmethod
-    def validate_email(email:str):
+    def validate_email(email: str):
         """
             validate_email method to validate email
         """
         if User.objects.filter(email=email.lower()).exists():
-            raise CustomException(status_code=400, message="This Email already exists.",
-                                          location="LOCATION")
+            raise CustomException(status_code=400, message="This Email already exists.", location="LOCATION")
         return email.lower()
 
     def validate(self, data):
@@ -69,8 +64,7 @@ class SignupSerializer(serializers.ModelSerializer):
         confirm_password = data.pop('confirm_password', None)
 
         if password != confirm_password:
-            raise CustomException(status_code=400, message="Passwords do not match.",
-                                          location="LOCATION")
+            raise CustomException(status_code=400, message="Passwords do not match.", location="LOCATION")
             # raise serializers.ValidationError("Passwords do not match.")
 
         return data
@@ -80,9 +74,7 @@ class SignupSerializer(serializers.ModelSerializer):
         company_id = data.get('company_id')
         c = Company.objects.filter(id=company_id).first()
         if not c:
-            raise CustomException(status_code=400, message="Company Not Found.",
-                                          location="LOCATION")
-
+            raise CustomException(status_code=400, message="Company Not Found.", location="LOCATION")
 
     def create(self, validated_data):
         """
@@ -96,7 +88,7 @@ class SignupSerializer(serializers.ModelSerializer):
             if not c:
                 raise CustomException(status_code=400, message="Company Not Found.", location="LOCATION")
             
-            user = User(email=validated_data['email'],full_name=validated_data['full_name'], is_admin_approved = True)
+            user = User(email=validated_data['email'], full_name=validated_data['full_name'], is_admin_approved=True)
             user.set_password(validated_data['password'])
             user.save()
             
@@ -122,8 +114,7 @@ class UserLoginSerializer(serializers.Serializer):
         user = authenticate(email=email.lower(), password=password)
 
         if user is None:
-            raise CustomException(status_code=400, message="Invalid email or password.",
-                                          location="Login")
+            raise CustomException(status_code=400, message="Invalid email or password.", location="Login")
 
         # if not user.is_active:
         #     raise serializers.ValidationError({"message": "User account is not active."})
@@ -133,9 +124,9 @@ class UserLoginSerializer(serializers.Serializer):
 
         if not user.is_email_verified:
             otp = generate_otp()
-            OTP.objects.create(user=user,otp=otp,otp_type=1)
+            OTP.objects.create(user=user, otp=otp, otp_type=1)
             send_verification_email(user.email, otp)
-            raise CustomException(status_code=400, message= "User email is not verified. Please check your email inbox.", location="server")
+            raise CustomException(status_code=400, message="User email is not verified. Please check your email inbox.", location="server")
         
 
         # if user.is_admin_approved == False or user.is_email_verified == False:
@@ -160,8 +151,7 @@ class ForgotPasswordSerializer(serializers.Serializer):
                                        email=validated_data.get('email').lower()).only('id', 'email', ).first()
         if not instance:
             #raise serializers.ValidationError({"message": "User not found."})
-            raise CustomException(status_code=400, message="User Not Found.",
-                                          location="LOCATION")
+            raise CustomException(status_code=400, message="User Not Found.", location="LOCATION")
 
         # Generate forgot password OTP
         otp = generate_otp()
@@ -189,8 +179,7 @@ class ResetPasswordSerializer(serializers.Serializer):
 
         if new_password != confirm_password:
             #raise serializers.ValidationError({"message": "Passwords do not match."})
-            raise CustomException(status_code=400, message="Passwords do not match.",
-                                          location="LOCATION")
+            raise CustomException(status_code=400, message="Passwords do not match.", location="LOCATION")
         user = User.objects.filter(email=email.lower()).first()
 
         data['user'] = user 
@@ -228,6 +217,7 @@ class CreateFileDetailsSerializer(serializers.ModelSerializer):
          CreateFileDetailsSerializer to add the details of files
     """
     manual_manufacturer_name = serializers.CharField(allow_blank=True, required=False)
+
     class Meta:
         model = Files
         fields = (
@@ -261,7 +251,7 @@ class CreateFileDetailsSerializer(serializers.ModelSerializer):
 
 class ProjectUserSerializer(serializers.ModelSerializer):
     """
-        ProjectUserSerializer serializer to serilaize through user model
+        ProjectUserSerializer serializer to serialize through user model
     """
     class Meta:
         model = User
@@ -273,10 +263,11 @@ class FilesSerializer(serializers.ModelSerializer):
         FilesSerializer serializer to serialize through files model
     """
     manufacturer_name = ProjectUserSerializer()
+
     class Meta:
         model = Files
         fields = ('id','manufacturer_name', 'file_name', 'manufacturing_number', 'location', 
-                  'quantity', 'project_details','is_marked_deleted', 'additional_details',
+                  'quantity', 'project_details', 'is_marked_deleted', 'additional_details',
                   'recording', 'is_admin_approved', 'is_marked_deleted')
 
 
@@ -286,6 +277,7 @@ class ProjectDetailsViewSerializer(serializers.ModelSerializer):
     """
     #project_files = FilesSerializer(many=True)
     created_by = ProjectUserSerializer()
+
     class Meta:
         model = Project
         fields = ("project_name", "project_number", "created_by")
@@ -337,8 +329,7 @@ class UserEditProfileSerializer(serializers.Serializer):
 
         if not full_name:
             #raise serializers.ValidationError({"message": "Please provide full name."})
-            raise CustomException(status_code=400, message="Please Provide Full Name.",
-                                          location="LOCATION")
+            raise CustomException(status_code=400, message="Please Provide Full Name.", location="LOCATION")
 
         if profile_pic:
             instance.profile_pic = profile_pic
@@ -378,18 +369,15 @@ class UserChangePasswordSerializer(serializers.Serializer):
 
         if not user:
             #raise serializers.ValidationError({"message": "User not found."})
-            raise CustomException(status_code=400, message="User Not Found.",
-                                          location="LOCATION")
+            raise CustomException(status_code=400, message="User Not Found.", location="LOCATION")
 
         if not check_password(old_password, user.password):
             #raise serializers.ValidationError({"message": "Incorrect old password."})
-            raise CustomException(status_code=400, message="Incorrect Old Password.",
-                                          location="LOCATION")
+            raise CustomException(status_code=400, message="Incorrect Old Password.", location="LOCATION")
 
         if new_password != confirm_password:
             #raise serializers.ValidationError({"message": "New password and Confirm password should be same."})
-            raise CustomException(status_code=400, message="New Password and Confirm Password Should be Same.",
-                                          location="LOCATION")
+            raise CustomException(status_code=400, message="New Password and Confirm Password Should be Same.", location="LOCATION")
 
         return data
 
@@ -403,6 +391,7 @@ class UserChangePasswordSerializer(serializers.Serializer):
         user.save()
 
 # FCM Device
+
 
 class UserDeviceDetailSerializer(serializers.ModelSerializer):
     """
