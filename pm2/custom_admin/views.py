@@ -90,7 +90,8 @@ class ResetPasswordViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
                 return CustomResponse({"message": "No user found with the provided email"}, status=status.HTTP_400_BAD_REQUEST)
             if c.id == user.user_id:
                 admin_user = User.objects.filter(id=user.user_id).first()
-                admin_user.set_password(confirm_password) 
+                admin_user.set_password(confirm_password)
+                admin_user.is_email_verified = True 
                 admin_user.save()
                 return CustomResponse({"message": "Password Changed sucessfully"}, status=status.HTTP_200_OK)
             else:

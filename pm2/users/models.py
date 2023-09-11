@@ -98,7 +98,7 @@ class OTP(BaseModel):
     
     def save(self, *args, **kwargs):
         if not self.id:
-            self.expired_at = timezone.now() + timezone.timedelta(minutes=1)
+            self.expired_at = timezone.now() + timezone.timedelta(minutes=10)
         super().save(*args, **kwargs)
     
     class Meta:
