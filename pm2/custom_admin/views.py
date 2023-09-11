@@ -104,34 +104,42 @@ class AdminProfileViewSet(viewsets.ViewSet):
     def list(self, request):
         user=User.objects.filter(id=request.user.id).all().values("full_name","email","profile_pic")
         return CustomResponse(user[0])
-    
+
     def update(self, request):
         data = request.data
-        full_name=data.get("full_name")
-        email=data.get("email")
-        profile_pic=data.get("profile_pic")
+        full_name = data.get("full_name")
+        email = data.get("email")
+        profile_pic = data.get("profile_pic")
+
+        # Validate full name
         if not full_name:
             return CustomResponse({"message": "Please provide full name."})
-        if profile_pic:
-            User.objects.filter(id=request.user.id).update(profile_pic=profile_pic)
 
+        # Check if email already exists, but ignore the current user's email
+        if email and User.objects.filter(email=email).exclude(id=request.user.id).exists():
+            return CustomResponse({"message": "Email already exists."})    
 
-        if full_name:
-            User.objects.filter(id=request.user.id).update(full_name=full_name)
+        update_data = {"full_name": full_name}
 
-        if User.objects.filter(email=email).exists():
-            return CustomResponse({"message": "Email already exists."})
-
+        # Update email and its verification status if provided
         if email:
+            update_data["email"] = email
+            update_data["is_email_verified"] = False
             otp = generate_otp()
-            OTP.objects.update_or_create(user_id=request.user.id,otp=otp,otp_type=1)
-        try:
-            send_verification_email(email, otp)
-        except BaseException:
-            pass
+            OTP.objects.update_or_create(user_id=request.user.id, otp=otp, otp_type=1)
+            try:
+                send_verification_email(email, otp)
+            except Exception as e:
+                pass
 
-        User.objects.filter(id=request.user.id).update(email=email,is_email_verified=False)
-        return CustomResponse({"message": "profile updated sucessfully"}, status=status.HTTP_200_OK)
+        # Update profile picture if provided
+        if profile_pic:
+            update_data["profile_pic"] = profile_pic
+
+        # Perform the update in a single query
+        User.objects.filter(id=request.user.id).update(**update_data)
+
+        return CustomResponse({"message": "Profile updated successfully"}, status=status.HTTP_200_OK)
     
     def validate(self, request):
         data = request.data
