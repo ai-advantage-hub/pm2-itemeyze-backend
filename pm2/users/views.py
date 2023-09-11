@@ -136,7 +136,7 @@ class ForgotPasswordViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
         ForgotPasswordViewSet for forget password
     """
     serializer_class = ForgotPasswordSerializer
-    permission_classes = (IsAuthenticated,)
+    #permission_classes = (IsAuthenticated,)
 
     def create(self, request):
         serializer = self.serializer_class(data=request.data)
@@ -150,7 +150,7 @@ class ResetPasswordViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
        ResetPasswordViewSet will be used for reseting the password 
     """
     serializer_class = ResetPasswordSerializer
-    permission_classes = (IsAuthenticated,)
+    #permission_classes = (IsAuthenticated,)
 
     def update(self, request):
         serializer = self.get_serializer(data=request.data)
