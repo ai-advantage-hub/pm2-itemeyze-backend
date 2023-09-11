@@ -68,6 +68,7 @@ from config.local import AWS_S3_ACCESS_KEY_ID, AWS_S3_SECRET_ACCESS_KEY, AWS_STO
 #             images.append(data)
 #         return CustomResponse(images)
 
+
 class UploadFileView(views.APIView):
     """
     UploadFileView: This class contains the logic of file upload into the S3 bucket.
