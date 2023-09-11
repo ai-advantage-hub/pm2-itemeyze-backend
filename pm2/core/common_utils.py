@@ -74,6 +74,7 @@ def send_verification_email(email, otp):
         print("error", e)
         pass
 
+
 def send_verification_link(email, otp):
     """to send verification email"""
     try:
@@ -85,6 +86,7 @@ def send_verification_link(email, otp):
     except Exception as e:
         print("error", e)
         pass
+
 
 def check_file_size(file_obj):
     """
@@ -99,6 +101,7 @@ def check_file_size(file_obj):
         return False
     except Exception:
         return False
+
 
 def update_or_create_fcm_detail(user, registration_id, device_type):
     """

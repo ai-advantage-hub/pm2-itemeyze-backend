@@ -42,14 +42,15 @@ from core.permissions import CheckUserRoleStatusPermission
 from django.db.models import Q
 from fcm_django.models import FCMDevice
 from core.pagination import CustomPagination
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 
+#Onboarding
 
 class SignUpViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
     """ 
         Signup view where user provides basic information and should be able to signup
     """
-
     serializer_class = SignupSerializer 
 
     def create(self, request, *args, **kwargs):
@@ -65,12 +66,12 @@ class ReSendOtpViewSet(viewsets.ViewSet):
     """
         ReSendOtpViewSet used for resending the otp on email  
     """
-    def create(self,request):
+    def create(self, request):
         data = request.data
-        email=data.get("email")
+        email = data.get("email")
         if not email:
             return CustomResponse({"message": "Please enter email"})
-        user=User.objects.filter(email=email.lower()).first()
+        user = User.objects.filter(email=email.lower()).first()
         otp = generate_otp()
         OTP.objects.update(user=user,otp=otp,otp_type=1)
         try:
@@ -78,38 +79,37 @@ class ReSendOtpViewSet(viewsets.ViewSet):
         except Exception as e:
             print(e)
         pass
-        return CustomResponse({"message": gettext(SUCCESS_MESSAGES.get('RESEND_EMAIL_OTP')), "otp":otp}, status=status_code.HTTP_200_OK)
+        return CustomResponse({"message": gettext(SUCCESS_MESSAGES.get('RESEND_EMAIL_OTP')), "otp": otp}, status=status_code.HTTP_200_OK)
     
 
 class VerifyOTPViewSet(viewsets.ViewSet):
     """
         VerifyOTPViewSet used for verifying the otp  
     """
-    def create(self,request):
-        data=request.data
-        otp=data.get('otp')
-        email=data.get('email')
+    def create(self, request):
+        data = request.data
+        otp = data.get('otp')
+        email = data.get('email')
         type = data.get('type')
 
         # will remove in future
         if otp == "1234":
             user = User.objects.filter(email=email.lower()).first()
-            user.is_email_verified=True
+            user.is_email_verified = True
             user.save()
-            return CustomResponse({"message" : "OTP Verified, User created Successfully" , "user_id": user.id}, status=status_code.HTTP_200_OK)
-
+            return CustomResponse({"message": "OTP Verified, User created Successfully", "user_id": user.id}, status=status_code.HTTP_200_OK)
 
         user = OTP.objects.filter(otp=otp, otp_type=type, is_used=False).first()
         #user = OTP.objects.filter(otp=otp, otp_type=type, is_used=False).order_by('-created_at')[0]
         if not user:
-            return CustomResponse({"message" : "Wrong OTP"})
+            return CustomResponse({"message": "Wrong OTP"})
         if user.expired_at and user.expired_at < timezone.now():
             return CustomResponse({"message": "OTP expired"})
         else:
             user_id = user.user_id
             User.objects.filter(email=email.lower()).update(is_email_verified=True)
             OTP.objects.filter(otp=otp, otp_type=type).update(is_used=True)
-            return CustomResponse({"message" : "OTP Verified, User created Successfully" , "user_id": user_id}, status=status_code.HTTP_200_OK)
+            return CustomResponse({"message": "OTP Verified, User created Successfully", "user_id": user_id}, status=status_code.HTTP_200_OK)
 
 
 class UserLoginViewSet(viewsets.ViewSet):
@@ -136,7 +136,7 @@ class ForgotPasswordViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
         ForgotPasswordViewSet for forget password
     """
     serializer_class = ForgotPasswordSerializer
-    permission_classes = (IsAuthenticated,)
+    #permission_classes = (IsAuthenticated,)
 
     def create(self, request):
         serializer = self.serializer_class(data=request.data)
@@ -150,7 +150,7 @@ class ResetPasswordViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
        ResetPasswordViewSet will be used for reseting the password 
     """
     serializer_class = ResetPasswordSerializer
-    permission_classes = (IsAuthenticated,)
+    #permission_classes = (IsAuthenticated,)
 
     def update(self, request):
         serializer = self.get_serializer(data=request.data)
@@ -163,8 +163,6 @@ class ResetPasswordViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
 
 
 #Home
-from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-
 
 class ProjectViewSet(viewsets.ModelViewSet):
     """
@@ -247,7 +245,7 @@ class FileDetailsViewSet(viewsets.ModelViewSet):
     #     return CustomResponse(serializer.data, status=status_code.HTTP_201_CREATED)
     
     def create(self, request, *args, **kwargs):
-        data=request.data
+        data = request.data
         manufacturer_name = data.get('manufacturer_name')
         manual_manufacturer_name = data.get('manual_manufacturer_name')
         project_id = data.get('project_id')
@@ -259,14 +257,20 @@ class FileDetailsViewSet(viewsets.ModelViewSet):
         location = data.get('location')
         location_points = data.get('location_points')
         if manual_manufacturer_name:
-            new_user = User.objects.create(full_name = manual_manufacturer_name)
+            new_user = User.objects.create(full_name=manual_manufacturer_name)
             print("newwwwww", new_user.id)
-            file = Files.objects.create(manufacturer_name_id = new_user.id, manual_manufacturer_name = manual_manufacturer_name, project_id = project_id, manufacturing_number = manufacturing_number, quantity = quantity, project_details = project_details, additional_details = additional_details, recording = recording, location = location, location_points = location_points)
+            file = Files.objects.create(manufacturer_name_id=new_user.id, manual_manufacturer_name=manual_manufacturer_name, project_id=project_id, manufacturing_number=manufacturing_number, quantity=quantity, project_details=project_details, additional_details=additional_details, recording=recording, location=location, location_points=location_points)
+            c = str(project_id)+'_'+str(file.id)+'_'+'filename'
+            print("ccccccccc",c)
+            b = Files.objects.filter(id=file.id).update(file_name=c)
             print("new filleeeee", file)
-            return CustomResponse({"message" : "File Created with new user Successfully", "file_id": file.id}, status=status_code.HTTP_201_CREATED)
+            return CustomResponse({"message": "File Created with new user Successfully", "file_id": file.id}, status=status_code.HTTP_201_CREATED)
         else:
-            file = Files.objects.create(manufacturer_name_id = manufacturer_name, project_id = project_id, manufacturing_number = manufacturing_number, quantity = quantity, project_details = project_details, additional_details = additional_details, recording = recording, location = location, location_points = location_points)
-            return CustomResponse({"message" : "File Created with existing user Successfully", "file_id": file.id}, status=status_code.HTTP_201_CREATED)
+            file = Files.objects.create(manufacturer_name_id=manufacturer_name, project_id=project_id, manufacturing_number=manufacturing_number, quantity=quantity, project_details=project_details, additional_details=additional_details, recording=recording, location=location, location_points=location_points, file_name='autogenerated_filename')
+            c = str(project_id)+'_'+str(file.id)+'_'+'filename'
+            print("ccccccccc",c)
+            b = Files.objects.filter(id=file.id).update(file_name=c)
+            return CustomResponse({"message": "File Created with existing user Successfully", "file_id": file.id}, status=status_code.HTTP_201_CREATED)
 
     # def create(self, request, *args, **kwargs):
     #     data = request.data
@@ -300,7 +304,7 @@ class FileDetailsViewSet(viewsets.ModelViewSet):
         location = request.GET.get('location', None)
         manufacturer_name = request.GET.get('manufacturer_name', None)
         manufacturing_number = request.GET.get('manufacturing_number', None)
-        user = Files.objects.filter(id=id).all().values('file_name', 'manufacturer_name__full_name','manufacturing_number', 'location', 'quantity','project_details', 'additional_details', 'recording')
+        user = Files.objects.filter(id=id).all().values('file_name', 'manufacturer_name__full_name', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording')
         return CustomResponse(user)
 
         
@@ -386,6 +390,7 @@ class EditFileViewSet(viewsets.ModelViewSet):
         EditFileViewSet to edit the file on Left Swipe and delete on right swipe
     """    
     permission_classes = (IsAuthenticated,)  
+
     def get_queryset(self):
         pk = self.kwargs.get('pk')
         return Files.objects.filter(id=pk)
@@ -441,6 +446,7 @@ class ViewProfileViewSet(viewsets.ViewSet):
     ViewProfileViewSet to get the user's details
     """
     permission_classes = (IsAuthenticated,)
+
     def list(self, request):
         user = User.objects.filter(id = request.user.id).first()
         if not user:
@@ -455,7 +461,8 @@ class CompanyNameViewSet(viewsets.ViewSet):
     """
         CompanyNameViewSet to get the Company Listing
     """
-    permission_classes = (IsAuthenticated, CheckUserRoleStatusPermission,)
+    #permission_classes = (IsAuthenticated, CheckUserRoleStatusPermission,)
+
     def list(self, request):
         companies = Company.objects.all()
         serializer = CompanyNameSerializer(companies, many=True)
@@ -468,6 +475,7 @@ class UserListingViewSet(viewsets.ViewSet):
        UserListingViewSet for getting the list of users 
     """
     permission_classes = (IsAuthenticated, CheckUserRoleStatusPermission,)
+
     def list(self, request):
         name = request.GET.get('name', None)
         users = User.objects.filter(is_admin_approved=True, full_name__icontains= name).all()
@@ -485,8 +493,6 @@ class UserListingViewSet(viewsets.ViewSet):
     #     else:
     #         return CustomResponse(users)
 
-
-
             
 class UserEditProfileViewSet(viewsets.ViewSet):
     """
@@ -502,7 +508,7 @@ class UserEditProfileViewSet(viewsets.ViewSet):
         serializer.is_valid(raise_exception=True)
 
         serializer.save()
-        return CustomResponse({"message": "Profile information updated successfully"},status=status_code.HTTP_200_OK)
+        return CustomResponse({"message": "Profile information updated successfully"}, status=status_code.HTTP_200_OK)
     
 
 class UserChangePasswordViewSet(viewsets.ViewSet):
@@ -519,7 +525,7 @@ class UserChangePasswordViewSet(viewsets.ViewSet):
         serializer.is_valid(raise_exception=True)  # Use raise_exception=True
 
         serializer.update_password(request.user)
-        return CustomResponse({"message": "Password updated successfully."},status=status_code.HTTP_200_OK)
+        return CustomResponse({"message": "Password updated successfully."}, status=status_code.HTTP_200_OK)
 
 
 #Log out
@@ -540,6 +546,7 @@ class DeleteUserViewSet(viewsets.GenericViewSet):
         DeleteUserViewSet to delete a user's account
     """
     permission_classes = (IsAuthenticated,)
+
     def update(self, request):
         user = User.objects.filter(id=request.user.id).first()
         if not user:
@@ -617,5 +624,6 @@ class UpdateDeviceDetailViewSet(viewsets.ViewSet):
             FCMDevice.objects.filter(user=request.user).update(active=False)
         elif device_type:
             FCMDevice.objects.filter(
-            user=request.user, type=device_type).update(active=False)
-            return CustomResponse({"message": "DEVICE_DELETED_SUCCESSFULLY"},status=status_code.HTTP_200_OK)
+            user =request.user, type=device_type).update(active=False)
+            return CustomResponse({"message": "DEVICE_DELETED_SUCCESSFULLY"}, status=status_code.HTTP_200_OK)
+        
