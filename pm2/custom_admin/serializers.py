@@ -92,7 +92,7 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Project
-        fields = ['project_name', 'project_number', 'created_by', 'created_at', 'files']
+        fields = ['project_name', 'project_number','created_by','created_at', 'files']
 
     def get_created_by(self, obj):
         return obj.created_by.full_name

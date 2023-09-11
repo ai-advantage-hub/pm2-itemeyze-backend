@@ -28,6 +28,7 @@ from rest_framework import status as status_code
 
 
 
+
 class AdminLoginView(viewsets.ViewSet):
     """
         this view to for admin to login
@@ -89,7 +90,8 @@ class ResetPasswordViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
                 return CustomResponse({"message": "No user found with the provided email"}, status=status.HTTP_400_BAD_REQUEST)
             if c.id == user.user_id:
                 admin_user = User.objects.filter(id=user.user_id).first()
-                admin_user.set_password(confirm_password) 
+                admin_user.set_password(confirm_password)
+                admin_user.is_email_verified = True 
                 admin_user.save()
                 return CustomResponse({"message": "Password Changed sucessfully"}, status=status.HTTP_200_OK)
             else:
@@ -104,7 +106,8 @@ class AdminProfileViewSet(viewsets.ViewSet):
     permission_classes = (IsAuthenticated, CheckAdminRoleStatusPermission,)
     def list(self, request):
         user=User.objects.filter(id=request.user.id).all().values("full_name","email","profile_pic")
-        return CustomResponse(user[0])
+        print(user)
+        return CustomResponse(user)
 
     def update(self, request):
         data = request.data
@@ -315,7 +318,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
     """
         This view is of crud operations for manage Project
     """
-    permission_classes = (IsAuthenticated, CheckAdminRoleStatusPermission,)
+    #permission_classes = (IsAuthenticated, CheckAdminRoleStatusPermission,)
 
     def search(self, request):
         name = request.GET.get('name', None)
@@ -594,7 +597,8 @@ class ManageProjectViewSet(viewsets.ViewSet):
         return CustomResponse({"file_path": created_url})
 
 
-    
+        
+                
 
 
             
@@ -602,30 +606,21 @@ class ManageProjectViewSet(viewsets.ViewSet):
 
 
 
-    
+
+
+            
+        
+
+
             
 
 
+
+
+
+
+
+            
         
 
-
-
-
-
-
         
-    
-
-
-        
-
-
-
-
-
-
-
-        
-    
-
-    
