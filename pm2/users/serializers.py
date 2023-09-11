@@ -255,7 +255,7 @@ class ProjectUserSerializer(serializers.ModelSerializer):
     """
     class Meta:
         model = User
-        fields = ("full_name",)
+        fields = ("id", "full_name")
 
 
 class FilesSerializer(serializers.ModelSerializer):
