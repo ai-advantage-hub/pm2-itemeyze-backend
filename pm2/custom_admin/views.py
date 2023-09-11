@@ -101,6 +101,7 @@ class AdminProfileViewSet(viewsets.ViewSet):
     this view is for admin frofile listing, admin profile updte and admin change password
 
     """
+    permission_classes = (IsAuthenticated, CheckAdminRoleStatusPermission,)
     def list(self, request):
         user=User.objects.filter(id=request.user.id).all().values("full_name","email","profile_pic")
         return CustomResponse(user[0])
