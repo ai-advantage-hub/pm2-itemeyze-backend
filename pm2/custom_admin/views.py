@@ -104,7 +104,8 @@ class AdminProfileViewSet(viewsets.ViewSet):
     """
     def list(self, request):
         user=User.objects.filter(id=request.user.id).all().values("full_name","email","profile_pic")
-        return CustomResponse(user[0])
+        print(user)
+        return CustomResponse(user)
 
     def update(self, request):
         data = request.data
