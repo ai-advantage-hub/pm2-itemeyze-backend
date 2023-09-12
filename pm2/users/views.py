@@ -100,7 +100,6 @@ class VerifyOTPViewSet(viewsets.ViewSet):
             return CustomResponse({"message": "OTP Verified, User created Successfully", "user_id": user.id}, status=status_code.HTTP_200_OK)
 
         user = OTP.objects.filter(otp=otp, otp_type=type, is_used=False).first()
-        #user = OTP.objects.filter(otp=otp, otp_type=type, is_used=False).order_by('-created_at')[0]
         if not user:
             return CustomResponse({"message": "Wrong OTP"})
         if user.expired_at and user.expired_at < timezone.now():
@@ -188,16 +187,6 @@ class ProjectViewSet(viewsets.ModelViewSet):
 
         return CustomResponse(serializer.data, status=status_code.HTTP_201_CREATED)
 
-    # def search(self, request):
-    #     project_name = request.GET.get('project_name', None)
-    #     project = Project.objects.filter(created_by=request.user).all().values()
-    #     if project_name:
-    #         project=project.filter(project_name__icontains=project_name)
-    #         if not project:
-    #             return CustomResponse({"message": "No Data Found."})
-    #         return CustomResponse(project, status=status_code.HTTP_200_OK)
-    #     else:
-    #         return CustomResponse(project, status=status_code.HTTP_200_OK)
     def search(self, request):
 
         project_name = request.GET.get('project_name', None)
@@ -218,7 +207,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
             return CustomResponse({"message": "No Data Found."})    
         # Return paginated results
         results = {
-            "data": list(paginated_projects.object_list.values()),  # Convert the queryset to a list of dictionaries           
+            "data": list(paginated_projects.object_list.values()),           
         }    
         return CustomResponse(results, status=status_code.HTTP_200_OK)
     
@@ -482,16 +471,6 @@ class UserListingViewSet(viewsets.ViewSet):
         serializer = UserListingSerializer(users, many=True)
 
         return CustomResponse(serializer.data)
-    # def list(self, request):
-    #     name = request.GET.get('name', None)
-    #     users = User.objects.filter(is_admin_approved=True).all().values('id', 'full_name')
-    #     if name:
-    #         users = users.filter(full_name__icontains= name)
-    #         if not users:
-    #             return CustomResponse({"message": "User not Found"})
-    #         return CustomResponse(users)
-    #     else:
-    #         return CustomResponse(users)
 
             
 class UserEditProfileViewSet(viewsets.ViewSet):
@@ -522,7 +501,7 @@ class UserChangePasswordViewSet(viewsets.ViewSet):
             data=request.data, context={"request": request}
         )
 
-        serializer.is_valid(raise_exception=True)  # Use raise_exception=True
+        serializer.is_valid(raise_exception=True)  
 
         serializer.update_password(request.user)
         return CustomResponse({"message": "Password updated successfully."}, status=status_code.HTTP_200_OK)
