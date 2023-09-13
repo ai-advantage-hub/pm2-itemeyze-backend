@@ -96,6 +96,10 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
 
     def get_created_by(self, obj):
         return obj.created_by.full_name
+    
+    def get_files(self, obj):
+        approved_files = obj.project_files.filter(is_admin_approved=True)
+        return FileSerializer(approved_files, many=True).data
 
 
 class FilesSerializer(serializers.ModelSerializer):
