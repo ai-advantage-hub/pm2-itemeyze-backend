@@ -381,6 +381,8 @@ class ManageProjectViewSet(viewsets.ViewSet):
     
     def file_create(self, request):
         data = request.data
+        thumbnail = data.get("thumbnail")
+        file_name = data.get("file_name")
         manufacturer_name = data.get("manufacturer_name")
         manufacturing_number = data.get("manufacturing_number")
         project_id = data.get("project_id")
@@ -391,7 +393,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
         if Files.objects.filter(manufacturing_number=manufacturing_number).exists():
              return CustomResponse({"message": "This File name already exists"})
         else:
-            Files.objects.create(manufacturing_number=manufacturing_number,project_id=project_id,location=location,manufacturer_name_id=manufacturer_name,quantity=quantity,project_details=project_details,additional_details=additional_details)
+            Files.objects.create(file_name=file_name,thumbnail=thumbnail,manufacturing_number=manufacturing_number,project_id=project_id,location=location,manufacturer_name_id=manufacturer_name,quantity=quantity,project_details=project_details,additional_details=additional_details)
             return CustomResponse({"message": "File created sucessfully"})
         
     def un_approved_project(self, request):
@@ -403,13 +405,19 @@ class ManageProjectViewSet(viewsets.ViewSet):
         project_id = data.get("project_id")
         project_name = data.get("project_name")
         project_number = data.get("project_number")
-        assigned_to = data.get("assigned_to")
+        assigned_to = data.get("assigned_to", [])
         status = data.get("status")
 
-        if status == 2:
-            return CustomResponse({"message": "Request Denied"})
+        # if status == 2:
+        #     Project.objects.filter(id=project_id).delete()
+        #     return CustomResponse({"message": "Project deleted"})
         if not Project.objects.filter(id=project_id).first():
             return CustomResponse({"message": "Project of this id dont exists"})
+        
+        if status == 2:
+            Project.objects.filter(id=project_id).delete()
+            return CustomResponse({"message": "Project deleted"})
+        
         if not project_name:
             return CustomResponse({"message": "Please provide project_name"})
         if not project_number:
@@ -418,10 +426,16 @@ class ManageProjectViewSet(viewsets.ViewSet):
         if Project.objects.filter(id=project_id,project_name=project_name,project_number=project_number).exists():
             if assigned_to:
                 project=Project.objects.filter(id=project_id,project_name=project_name,project_number=project_number).first()
-                user = User.objects.filter(email=assigned_to).first()
-                project.users.add(user)
-                project.is_admin_approved=True
-                project.save()
+                # user = User.objects.filter(email=assigned_to).first()
+                # project.users.add(user)
+                # project.is_admin_approved=True
+                # project.save()
+                for email in assigned_to:
+                    user = User.objects.filter(email=email).first()
+                    if user:
+                        project.users.add(user)
+                        project.is_admin_approved=True
+                        project.save() 
                 return CustomResponse({"message": "Project approved sucessfully"})
             else:
                 project=Project.objects.filter(id=project_id).first()
@@ -438,10 +452,16 @@ class ManageProjectViewSet(viewsets.ViewSet):
                 if assigned_to:
                     project=Project.objects.filter(id=project_id).update(project_name=project_name,project_number=project_number)
                     project=Project.objects.filter(id=project_id).first()
-                    user = User.objects.filter(email=assigned_to).first()
-                    project.users.add(user)
-                    project.is_admin_approved=True
-                    project.save()
+                    # user = User.objects.filter(email=assigned_to).first()
+                    # project.users.add(user)
+                    # project.is_admin_approved=True
+                    # project.save()
+                    for email in assigned_to:
+                        user = User.objects.filter(email=email).first()
+                        if user:
+                            project.users.add(user)
+                            project.is_admin_approved=True
+                            project.save()
                     return CustomResponse({"message": "Project approved sucessfully"})
                 else:
                     project=Project.objects.filter(id=project_id).update(project_name=project_name,project_number=project_number)
