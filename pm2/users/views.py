@@ -292,7 +292,7 @@ class FileDetailsViewSet(viewsets.ModelViewSet):
         location = request.GET.get('location', None)
         manufacturer_name = request.GET.get('manufacturer_name', None)
         manufacturing_number = request.GET.get('manufacturing_number', None)
-        user = Files.objects.filter(id=id).all().values('file_name', 'thumbnail', 'manufacturer_name__full_name', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording')
+        user = Files.objects.filter(id=id).all().values('file_name', 'manufacturer_name__full_name', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording')
         return CustomResponse(user)
 
         
