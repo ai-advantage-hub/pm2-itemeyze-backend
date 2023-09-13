@@ -405,7 +405,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
         project_id = data.get("project_id")
         project_name = data.get("project_name")
         project_number = data.get("project_number")
-        assigned_to = data.get("assigned_to")
+        assigned_to = data.get("assigned_to", [])
         status = data.get("status")
 
         # if status == 2:
