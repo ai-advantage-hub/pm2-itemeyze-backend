@@ -109,3 +109,9 @@ class FilesSerializer(serializers.ModelSerializer):
     class Meta:
         model = Files
         fields = '__all__'
+    
+    def update(self, instance, validated_data):
+        validated_data['is_admin_approved'] = True
+        validated_data['is_marked_deleted'] = False
+
+        return super().update(instance, validated_data)
