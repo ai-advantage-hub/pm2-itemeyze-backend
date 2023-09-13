@@ -197,13 +197,6 @@ class CreateProjectSerializer(serializers.ModelSerializer):
         CreateProjectSerializer for project creating project
     """
 
-    # def create(self, validated_data):
-    #     """
-    #     """
-    #     instance = Project.objects.create(validated_data)
-    #     instance.users.add()
-    #     return instance
-
     class Meta:
         model = Project
         fields = ("id", "project_name", "created_by")
@@ -229,12 +222,7 @@ class CreateFileDetailsSerializer(serializers.ModelSerializer):
 
         c = Files.objects.filter(manufacturing_number=manufacturing_number).first()
         if c is not None:
-            a = c.manufacturing_number
-            # if Files.objects.filter(manufacturing_number=a).exists():
-            #     raise serializers.ValidationError("A file with this manufacturing number already exists for the project.")
-            # else:
-            #     print("No Files object found with the given manufacturing number.")
-        return data
+            return data
     
     def create(self, validated_data):
         # Retrieve the project_id from the context
@@ -375,10 +363,6 @@ class UserChangePasswordSerializer(serializers.Serializer):
         return data
 
     def update_password(self, user):
-        # user = self.context['request'].user
-        # new_password = self.validated_data.get("new_password")
-        # user.set_password(new_password)
-        # user.save()
         new_password = self.validated_data.get("new_password")
         user.set_password(new_password)
         user.save()

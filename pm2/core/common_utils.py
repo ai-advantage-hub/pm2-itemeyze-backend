@@ -11,20 +11,6 @@ from fcm_django.models import FCMDevice
 from core.messages import VARIABLES
 
 
-def send_signup_verification_email(email, otp):
-    """
-        function to send the verification email.
-    """
-    try:
-        logging.info("try")
-        ctx_dict = {"email": email, "otp": otp}
-        html_template = "signup_verification.html"
-        subject = "OTP verification"
-
-    except Exception as e:
-        logging.info("error" + str(e))
-
-
 def generate_otp():
     """
         function to generate a 4 digit random OTP.
@@ -72,7 +58,6 @@ def send_verification_email(email, otp):
         send_html_mail_to_single_user(subject, email, html_template, ctx_dict)
     except Exception as e:
         print("error", e)
-        pass
 
 
 def send_verification_link(email, otp):
@@ -85,7 +70,6 @@ def send_verification_link(email, otp):
         send_html_mail_to_single_user(subject, email, html_template, ctx_dict)
     except Exception as e:
         print("error", e)
-        pass
 
 
 def check_file_size(file_obj):

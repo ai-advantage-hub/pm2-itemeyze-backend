@@ -91,7 +91,7 @@ class UploadFileView(views.APIView):
         result = request.data.getlist("file")
         for upload in result:
             s3 = boto3.resource('s3', aws_access_key_id=AWS_S3_ACCESS_KEY_ID, aws_secret_access_key=AWS_S3_SECRET_ACCESS_KEY)
-            file_name, file_extension = os.path.splitext(upload.name)
+            file_extension = os.path.splitext(upload.name)
             file_full_name = upload.name
             updated_filename = file_full_name.replace(' ', '_')
             if file_extension.lower() in [".jpg", ".jpeg", ".png"]:
@@ -139,7 +139,7 @@ class UploadFileView(views.APIView):
             output_buffer.seek(0)
             print("Compressed image...")
             return output_buffer
-        except Exception as e:
+        except Exception:
             return None
 
     def compress_audio(self, audio):
@@ -152,6 +152,6 @@ class UploadFileView(views.APIView):
             output_buffer = BytesIO()
             compressed_audio.export(output_buffer, format="mp3")
             return output_buffer
-        except Exception as e:
+        except Exception:
             return None
         
