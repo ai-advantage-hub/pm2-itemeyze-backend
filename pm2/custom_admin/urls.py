@@ -40,15 +40,18 @@ urlpatterns = [
     path("create_file", views.ManageProjectViewSet.as_view({"post": "file_create"}), name="create_file"),
     path("un_approved_project", views.ManageProjectViewSet.as_view({"get": "un_approved_project"}), name="un_approved_project"),
     path("approve_project", views.ManageProjectViewSet.as_view({"post": "approve_project"}), name="approve_project"),
-    path("un_approved_file", views.ManageProjectViewSet.as_view({"get": "un_approved_file"}), name="un_approved_file"),
-    path("view_file<int:id>", views.ManageProjectViewSet.as_view({"get": "view_file"}), name="view_file"),
-    path("destroy_file<int:id>", views.ManageProjectViewSet.as_view({"put": "destroy_file"}), name="destroy_file"),
-    path("update_file<int:pk>", views.ManageProjectViewSet.as_view({"put": "update_file"}), name="update_file"),
+    path("un_approved_file/<int:id>", views.ManageProjectViewSet.as_view({"get": "un_approved_file"}), name="un_approved_file"),
+    path("view_file/<int:id>", views.ManageProjectViewSet.as_view({"get": "view_file"}), name="view_file"),
+    path("destroy_file/<int:id>", views.ManageProjectViewSet.as_view({"put": "destroy_file"}), name="destroy_file"),
+    path("update_file/<int:pk>", views.ManageProjectViewSet.as_view({"put": "update_file"}), name="update_file"),
     path("approve_file", views.ManageProjectViewSet.as_view({"put": "approve_file"}), name="approve_file"),
     path("delete_file_list", views.ManageProjectViewSet.as_view({"get": "delete_file_list"}), name="delete_file_list"),
-    path("delete_file_admin", views.ManageProjectViewSet.as_view({"put": "delete_file_admin"}), name="delete_file_admin"),
-    path("view_file_unapproved<int:id>", views.ManageProjectViewSet.as_view({"get": "view_file_unapproved"}), name="view_file_unapproved"),
+    path("delete_file_admin", views.ManageProjectViewSet.as_view({"delete": "delete_file_admin"}), name="delete_file_admin"),
+    path("view_file_unapproved/<int:id>", views.ManageProjectViewSet.as_view({"get": "view_file_unapproved"}), name="view_file_unapproved"),
     path("project/<int:pk>/download_csv/", views.ManageProjectViewSet.as_view({"get": "save_to_csv"}), name="save_to_csv"),
+
+    #ManageSubAdmin
+    path("search_sub_admin", views.ManageSubadminViewSet.as_view({"get": "search"}), name="earch_sub_admin"),
 
     
 

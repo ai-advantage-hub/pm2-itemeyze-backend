@@ -318,7 +318,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
     """
         This view is of crud operations for manage Project
     """
-    #permission_classes = (IsAuthenticated, CheckAdminRoleStatusPermission,)
+    permission_classes = (IsAuthenticated, CheckAdminRoleStatusPermission,)
 
     def search(self, request):
         name = request.GET.get('name', None)
@@ -450,8 +450,8 @@ class ManageProjectViewSet(viewsets.ViewSet):
                     project.save()
                     return CustomResponse({"message": "Project approved sucessfully"})
 
-    def un_approved_file(self, request):
-        file = Files.objects.filter(is_admin_approved=False).all().values('file_name','created_at')
+    def un_approved_file(self, request,id):
+        file = Files.objects.filter(project_id=id,is_admin_approved=False).all().values('file_name','created_at')
         return CustomResponse(file)
     
     def view_file(self, request,id):
@@ -595,6 +595,35 @@ class ManageProjectViewSet(viewsets.ViewSet):
                                   status=status_code.HTTP_400_BAD_REQUEST)
         created_url = f'https://{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com/{path_key}'
         return CustomResponse({"file_path": created_url})
+    
+
+class ManageSubadminViewSet(viewsets.ViewSet):
+
+    """
+        This view is of crud operations for manage Project
+    """
+    #permission_classes = (IsAuthenticated, CheckAdminRoleStatusPermission,)
+
+    def search(self, request):
+        query = request.GET.get('query',None)
+        users_query = User.objects.filter(user_role=3).values('id', 'full_name', 'email', 'is_active','phone_number')
+        if query:
+            users_query=users_query.filter(full_name__icontains=query)
+
+        users_with_modules = []
+        for user in users_query:
+            user_data = {
+                **user,
+                "Modules_accessible": ["ManageUsers", "ManageProject"]
+            }
+            users_with_modules.append(user_data)
+        data = {
+            "users": users_with_modules
+        }
+        return CustomResponse(data)
+        
+
+    
 
 
         

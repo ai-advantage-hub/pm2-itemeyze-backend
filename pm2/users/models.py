@@ -42,16 +42,19 @@ class ActiveObjectsManager(UserManager):
 class User(AbstractBaseUser, BaseModel):
     ADMIN = 1
     USER = 2
+    SUB_ADMIN = 3
 
     ROLE = (
         (ADMIN, "Admin"),
-        (USER, "User")
+        (USER, "User"),
+        (SUB_ADMIN, "Sub Admin")
     )
 
     full_name = models.CharField(max_length=50, blank=False, null=True, verbose_name='Full Name')
     email = models.EmailField("Email", max_length=70, unique=True, blank=True, null=True)
     user_role = models.IntegerField("User role", choices=ROLE, default=USER)
     profile_pic = models.CharField(blank=True, null=True, max_length=254)
+    phone_number = models.CharField("Phone Number", max_length=15, blank=True, null=True) 
     
     is_active = models.BooleanField(default=True)
     is_email_verified = models.BooleanField(default=False)
