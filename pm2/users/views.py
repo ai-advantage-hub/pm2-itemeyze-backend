@@ -514,6 +514,7 @@ class UserEditProfileViewSet(viewsets.ViewSet):
             # Check if the email field was modified
             if serializer.email_changed:
                 otp = generate_otp()
+                OTP.objects.update_or_create(user_id=instance.id, otp=otp, otp_type=1)
                 instance.otp = otp
                 instance.is_email_verified = False
                 instance.save()
