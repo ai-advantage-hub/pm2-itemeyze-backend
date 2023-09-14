@@ -65,7 +65,6 @@ class SignupSerializer(serializers.ModelSerializer):
 
         if password != confirm_password:
             raise CustomException(status_code=400, message="Passwords do not match.", location="LOCATION")
-            # raise serializers.ValidationError("Passwords do not match.")
 
         return data
     
@@ -150,7 +149,6 @@ class ForgotPasswordSerializer(serializers.Serializer):
         instance = User.objects.filter(user_role=User.USER,
                                        email=validated_data.get('email').lower()).only('id', 'email', ).first()
         if not instance:
-            #raise serializers.ValidationError({"message": "User not found."})
             raise CustomException(status_code=400, message="User Not Found.", location="LOCATION")
 
         # Generate forgot password OTP
@@ -178,7 +176,6 @@ class ResetPasswordSerializer(serializers.Serializer):
         confirm_password = data.get('confirm_password')
 
         if new_password != confirm_password:
-            #raise serializers.ValidationError({"message": "Passwords do not match."})
             raise CustomException(status_code=400, message="Passwords do not match.", location="LOCATION")
         user = User.objects.filter(email=email.lower()).first()
 
@@ -199,13 +196,6 @@ class CreateProjectSerializer(serializers.ModelSerializer):
     """
         CreateProjectSerializer for project creating project
     """
-
-    # def create(self, validated_data):
-    #     """
-    #     """
-    #     instance = Project.objects.create(validated_data)
-    #     instance.users.add()
-    #     return instance
 
     class Meta:
         model = Project
@@ -232,12 +222,7 @@ class CreateFileDetailsSerializer(serializers.ModelSerializer):
 
         c = Files.objects.filter(manufacturing_number=manufacturing_number).first()
         if c is not None:
-            a = c.manufacturing_number
-            # if Files.objects.filter(manufacturing_number=a).exists():
-            #     raise serializers.ValidationError("A file with this manufacturing number already exists for the project.")
-            # else:
-            #     print("No Files object found with the given manufacturing number.")
-        return data
+            return data
     
     def create(self, validated_data):
         # Retrieve the project_id from the context
@@ -290,12 +275,7 @@ class ContentManagementSerializer(serializers.ModelSerializer):
     class Meta:
         model = ContentManagement
         fields = ('content',)
-    
 
-# class ViewProfileSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = User
-#         fields = ('full_name', 'email', 'profile_pic',)
 class ViewUserCompanySerializer(serializers.ModelSerializer):
     class Meta:
         model = Company
@@ -306,6 +286,7 @@ class UserCompanySerializer(serializers.ModelSerializer):
     class Meta:
         model = UserCompany
         fields = ('id', 'company')
+
 
 class ViewProfileSerializer(serializers.ModelSerializer):
     user_company=UserCompanySerializer(many=True)
@@ -344,7 +325,6 @@ class UserEditProfileSerializer(serializers.Serializer):
         company = validated_data.get("company")
 
         if not full_name:
-            #raise serializers.ValidationError({"message": "Please provide full name."})
             raise CustomException(status_code=400, message="Please Provide Full Name.", location="LOCATION")
 
         if profile_pic:
@@ -384,24 +364,17 @@ class UserChangePasswordSerializer(serializers.Serializer):
         confirm_password = data.get("confirm_password")
 
         if not user:
-            #raise serializers.ValidationError({"message": "User not found."})
             raise CustomException(status_code=400, message="User Not Found.", location="LOCATION")
 
         if not check_password(old_password, user.password):
-            #raise serializers.ValidationError({"message": "Incorrect old password."})
             raise CustomException(status_code=400, message="Incorrect Old Password.", location="LOCATION")
 
         if new_password != confirm_password:
-            #raise serializers.ValidationError({"message": "New password and Confirm password should be same."})
             raise CustomException(status_code=400, message="New Password and Confirm Password Should be Same.", location="LOCATION")
 
         return data
 
     def update_password(self, user):
-        # user = self.context['request'].user
-        # new_password = self.validated_data.get("new_password")
-        # user.set_password(new_password)
-        # user.save()
         new_password = self.validated_data.get("new_password")
         user.set_password(new_password)
         user.save()

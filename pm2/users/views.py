@@ -78,7 +78,6 @@ class ReSendOtpViewSet(viewsets.ViewSet):
             send_verification_email(user.email, otp)
         except Exception as e:
             print(e)
-        pass
         return CustomResponse({"message": gettext(SUCCESS_MESSAGES.get('RESEND_EMAIL_OTP')), "otp": otp}, status=status_code.HTTP_200_OK)
     
 
@@ -100,7 +99,6 @@ class VerifyOTPViewSet(viewsets.ViewSet):
             return CustomResponse({"message": "OTP Verified, User created Successfully", "user_id": user.id}, status=status_code.HTTP_200_OK)
 
         user = OTP.objects.filter(otp=otp, otp_type=type, is_used=False).first()
-        #user = OTP.objects.filter(otp=otp, otp_type=type, is_used=False).order_by('-created_at')[0]
         if not user:
             return CustomResponse({"message": "Wrong OTP"})
         if user.expired_at and user.expired_at < timezone.now():
@@ -176,11 +174,11 @@ class ProjectViewSet(viewsets.ModelViewSet):
         project_name = request.data.get('project_name')
         user = request.user 
         if not project_name:
-            return CustomResponse({"message": "Project name cannot be empty."})
+            return CustomResponse({"message": "Project name cannot be empty."}, status=status_code.HTTP_400_BAD_REQUEST)
 
         # Check if the project name is unique
         if Project.objects.filter(project_name=project_name).exists():
-            return CustomResponse({"message": "Project with this name already exists."})
+            return CustomResponse({"message": "Project with this name already exists."}, status=status_code.HTTP_400_BAD_REQUEST)
 
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -188,16 +186,6 @@ class ProjectViewSet(viewsets.ModelViewSet):
 
         return CustomResponse(serializer.data, status=status_code.HTTP_201_CREATED)
 
-    # def search(self, request):
-    #     project_name = request.GET.get('project_name', None)
-    #     project = Project.objects.filter(created_by=request.user).all().values()
-    #     if project_name:
-    #         project=project.filter(project_name__icontains=project_name)
-    #         if not project:
-    #             return CustomResponse({"message": "No Data Found."})
-    #         return CustomResponse(project, status=status_code.HTTP_200_OK)
-    #     else:
-    #         return CustomResponse(project, status=status_code.HTTP_200_OK)
     def search(self, request):
 
         project_name = request.GET.get('project_name', None)
@@ -215,10 +203,10 @@ class ProjectViewSet(viewsets.ModelViewSet):
         except EmptyPage:
             paginated_projects = paginator.page(paginator.num_pages)    
         if not paginated_projects:
-            return CustomResponse({"message": "No Data Found."})    
+            return CustomResponse({"message": "No Data Found."}, status=status_code.HTTP_400_BAD_REQUEST)    
         # Return paginated results
         results = {
-            "data": list(paginated_projects.object_list.values()),  # Convert the queryset to a list of dictionaries           
+            "data": list(paginated_projects.object_list.values()),           
         }    
         return CustomResponse(results, status=status_code.HTTP_200_OK)
     
@@ -454,7 +442,7 @@ class ViewProfileViewSet(viewsets.ViewSet):
 
         serializer = ViewProfileSerializer(user)
 
-        return CustomResponse(serializer.data)
+        return CustomResponse(serializer.data, status=status_code.HTTP_200_OK)
     
 
 class CompanyNameViewSet(viewsets.ViewSet):
@@ -467,7 +455,7 @@ class CompanyNameViewSet(viewsets.ViewSet):
         companies = Company.objects.all()
         serializer = CompanyNameSerializer(companies, many=True)
 
-        return CustomResponse(serializer.data)
+        return CustomResponse(serializer.data, status=status_code.HTTP_200_OK)
     
 
 class UserListingViewSet(viewsets.ViewSet):
@@ -481,19 +469,33 @@ class UserListingViewSet(viewsets.ViewSet):
         users = User.objects.filter(is_admin_approved=True, full_name__icontains= name).all()
         serializer = UserListingSerializer(users, many=True)
 
-        return CustomResponse(serializer.data)
-    # def list(self, request):
-    #     name = request.GET.get('name', None)
-    #     users = User.objects.filter(is_admin_approved=True).all().values('id', 'full_name')
-    #     if name:
-    #         users = users.filter(full_name__icontains= name)
-    #         if not users:
-    #             return CustomResponse({"message": "User not Found"})
-    #         return CustomResponse(users)
-    #     else:
-    #         return CustomResponse(users)
+        return CustomResponse(serializer.data, status=status_code.HTTP_200_OK)
 
             
+# class UserEditProfileViewSet(viewsets.ViewSet):
+#     """
+#         UserEditProfileViewSet to Edit the Personal Details of User
+#     """
+#     permission_classes = (IsAuthenticated,)
+
+#     def update(self, request):
+#         data = request.data
+#         email = data.get('email')
+#         serializer = UserEditProfileSerializer(
+#             instance=request.user, data=request.data, partial=True
+#         )
+
+#         serializer.is_valid(raise_exception=True)
+
+#         serializer.save()
+#         if email:
+#             if email and User.objects.filter(email=email).exclude(id=request.user.id).exists():
+#                 return CustomResponse({"message": "Email already exists."})
+#             else:
+#                 return CustomResponse({"message": "OTP sent successfully"}, status=status_code.HTTP_200_OK)
+#         else:
+#             return CustomResponse({"message": "Profile information updated successfully"}, status=status_code.HTTP_200_OK)
+    
 class UserEditProfileViewSet(viewsets.ViewSet):
     """
         UserEditProfileViewSet to Edit the Personal Details of User
@@ -509,7 +511,6 @@ class UserEditProfileViewSet(viewsets.ViewSet):
 
         serializer.save()
         return CustomResponse({"message": "Profile information updated successfully"}, status=status_code.HTTP_200_OK)
-    
 
 class UserChangePasswordViewSet(viewsets.ViewSet):
     """
@@ -522,7 +523,7 @@ class UserChangePasswordViewSet(viewsets.ViewSet):
             data=request.data, context={"request": request}
         )
 
-        serializer.is_valid(raise_exception=True)  # Use raise_exception=True
+        serializer.is_valid(raise_exception=True)  
 
         serializer.update_password(request.user)
         return CustomResponse({"message": "Password updated successfully."}, status=status_code.HTTP_200_OK)
@@ -581,7 +582,7 @@ class UpdateDeviceDetailViewSet(viewsets.ViewSet):
             'user').filter(user=request.user, active=True)
         serializer = self.action_serializer.get(
             self.action)(fcm_user, many=True)
-        return CustomResponse(serializer.data)
+        return CustomResponse(serializer.data, status=status_code.HTTP_200_OK)
 
     def perform_update(self, request):
         """
@@ -597,7 +598,7 @@ class UpdateDeviceDetailViewSet(viewsets.ViewSet):
             data=request.data, instance=request.user)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return CustomResponse({"message": "DEVICE_SUCCESS_MESSAGE"})
+        return CustomResponse({"message": "DEVICE_SUCCESS_MESSAGE"}, status=status_code.HTTP_200_OK)
 
     # def perform_destroy(self, request):
     #     """

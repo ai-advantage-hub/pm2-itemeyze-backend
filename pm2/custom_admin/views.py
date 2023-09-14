@@ -477,7 +477,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
                         return CustomResponse({"message": "Project approved sucessfully"})
 
     def un_approved_file(self, request,id):
-        file = Files.objects.filter(project_id=id,is_admin_approved=False).all().values('file_name','created_at')
+        file = Files.objects.filter(project_id=id,is_admin_approved=False).all().values('file_name', 'id', 'thumbnail', 'created_at')
         return CustomResponse(file)
     
     def view_file(self, request,id):
