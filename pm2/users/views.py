@@ -479,6 +479,8 @@ class UserEditProfileViewSet(viewsets.ViewSet):
     permission_classes = (IsAuthenticated,)
 
     def update(self, request):
+        data = request.data
+        email = data.get('email')
         serializer = UserEditProfileSerializer(
             instance=request.user, data=request.data, partial=True
         )
@@ -486,7 +488,13 @@ class UserEditProfileViewSet(viewsets.ViewSet):
         serializer.is_valid(raise_exception=True)
 
         serializer.save()
-        return CustomResponse({"message": "Profile information updated successfully"}, status=status_code.HTTP_200_OK)
+        if email:
+            if email and User.objects.filter(email=email).exclude(id=request.user.id).exists():
+                return CustomResponse({"message": "Email already exists."})
+            else:
+                return CustomResponse({"message": "OTP sent successfully"}, status=status_code.HTTP_200_OK)
+        else:
+            return CustomResponse({"message": "Profile information updated successfully"}, status=status_code.HTTP_200_OK)
     
 
 class UserChangePasswordViewSet(viewsets.ViewSet):

@@ -288,21 +288,6 @@ class UserCompanySerializer(serializers.ModelSerializer):
         fields = ('id', 'company')
 
 
-# class ViewProfileSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = User
-#         fields = ('full_name', 'email', 'profile_pic',)
-class ViewUserCompanySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Company
-        fields = ('name',)
-
-class UserCompanySerializer(serializers.ModelSerializer):
-    company=ViewUserCompanySerializer()
-    class Meta:
-        model = UserCompany
-        fields = ('id', 'company')
-
 class ViewProfileSerializer(serializers.ModelSerializer):
     user_company=UserCompanySerializer(many=True)
     class Meta:
