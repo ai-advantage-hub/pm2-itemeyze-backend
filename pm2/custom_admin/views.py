@@ -2,7 +2,7 @@ from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, viewsets, mixins, generics, filters
-from custom_admin.serializers import AdminLoginSerializer,AdminResetPasswordSerializer, ForgotPasswordSerializer, ProjectDetailSerializer,FilesSerializer
+from custom_admin.serializers import AdminLoginSerializer,AdminResetPasswordSerializer, ForgotPasswordSerializer, ProjectDetailSerializer,FilesSerializer,FilesPointSerializer
 from django.contrib.auth import authenticate
 from rest_framework.authtoken.models import Token
 from users.models import Company, UserCompany, User,Project,Files
@@ -319,7 +319,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
     """
         This view is of crud operations for manage Project
     """
-    #permission_classes = (IsAuthenticated, CheckAdminRoleStatusPermission,)
+    permission_classes = (IsAuthenticated, CheckAdminRoleStatusPermission,)
 
     def search(self, request):
         name = request.GET.get('name', None)
@@ -521,8 +521,11 @@ class ManageProjectViewSet(viewsets.ViewSet):
         return CustomResponse(file)
     
     def view_file(self, request,id):
-        file = Files.objects.filter(id=id).all().values()
-        return CustomResponse(file)
+        file = Files.objects.filter(id=id)
+        if not file.exists():
+            return CustomResponse({"error": "File not found."} ,status=status.HTTP_400_BAD_REQUEST)
+        serialized_file = FilesPointSerializer(file, many=True).data
+        return CustomResponse(serialized_file)
     
     def destroy_file(self,request,id):
         file=Files.objects.filter(id=id).first()
@@ -550,13 +553,14 @@ class ManageProjectViewSet(viewsets.ViewSet):
     def approve_file(self,request):
         data = request.data
         id = data.get("id")
-        status = data.get("status")
+        status_value = data.get("status_value")
 
         file=Files.objects.filter(id=id).first()
         if not file:
             return CustomResponse({"error": "File not found."}, status=status.HTTP_400_BAD_REQUEST)
-        if status == 2:
-            return CustomResponse({"message": "Request Denied"})
+        if status_value == 2:
+            file.delete()
+            return CustomResponse({"message": "File deleted sucessfully"})
         else:
             file.is_admin_approved=True
             file.save()
@@ -583,9 +587,12 @@ class ManageProjectViewSet(viewsets.ViewSet):
             file.save()
             return CustomResponse({"message":"File delete denied by admin"})
     
-    def view_file_unapproved(self, request,id):
-        file = Files.objects.filter(id=id).all().values()
-        return CustomResponse(file)
+    def view_file_unapproved(self, request, id):
+        file = Files.objects.filter(id=id)
+        if not file.exists():
+            return CustomResponse({"error": "File not found."} ,status=status.HTTP_400_BAD_REQUEST)
+        serialized_file = FilesPointSerializer(file, many=True).data
+        return CustomResponse(serialized_file)
         
     # @action(detail=True, methods=['get'])
     # def save_to_csv(self, request, pk=None):
@@ -666,9 +673,9 @@ class ManageProjectViewSet(viewsets.ViewSet):
 class ManageSubadminViewSet(viewsets.ViewSet):
 
     """
-        This view is of crud operations for manage Project
+        This view is of crud operations for manage Subadmin
     """
-    #permission_classes = (IsAuthenticated, CheckAdminRoleStatusPermission,)
+    permission_classes = (IsAuthenticated, CheckAdminRoleStatusPermission,)
 
     def search(self, request):
         query = request.GET.get('query',None)
@@ -689,10 +696,37 @@ class ManageSubadminViewSet(viewsets.ViewSet):
         return CustomResponse(data)
         
 
+class DashBoardViewSet(viewsets.ViewSet):
+    """
+        This view is of Dashboard
+    """
+
+    def get(self, request, *args, **kwargs):
+        month = self.request.query_params.get('month', None)
+        year = self.request.query_params.get('year', None)
+
+        filters = {}
+        if month:
+            filters['created_at__month'] = int(month)
+        if year:
+            filters['created_at__year'] = int(year)
+
+        total_users = User.objects.filter(user_role=User.USER, **filters).count()
+        total_subadmins = User.objects.filter(user_role=User.SUB_ADMIN, **filters).count()
+        total_projects = Project.objects.filter(**filters).count()
+        total_companies = Company.objects.filter(**filters).count()
+
+        data = {
+            'total_users': total_users,
+            'total_subadmins': total_subadmins,
+            'total_projects': total_projects,
+            'total_companies': total_companies
+        }
+
+        return CustomResponse(data)
     
 
-
-        
+    
                 
 
 
