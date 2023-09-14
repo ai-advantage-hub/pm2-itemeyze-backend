@@ -498,7 +498,7 @@ class UserListingViewSet(viewsets.ViewSet):
     
 class UserEditProfileViewSet(viewsets.ViewSet):
     """
-        UserEditProfileViewSet to Edit the Personal Details of User
+    UserEditProfileViewSet to Edit the Personal Details of User
     """
     permission_classes = (IsAuthenticated,)
 
@@ -507,10 +507,43 @@ class UserEditProfileViewSet(viewsets.ViewSet):
             instance=request.user, data=request.data, partial=True
         )
 
-        serializer.is_valid(raise_exception=True)
+        if serializer.is_valid():
+            instance = serializer.save()
+            message = "Profile information updated successfully"
 
-        serializer.save()
-        return CustomResponse({"message": "Profile information updated successfully"}, status=status_code.HTTP_200_OK)
+            # Check if the email field was modified
+            if serializer.email_changed:
+                otp = generate_otp()
+                OTP.objects.update_or_create(user_id=instance.id, otp=otp, otp_type=1)
+                instance.otp = otp
+                instance.is_email_verified = False
+                instance.save()
+
+                try:
+                    send_verification_email(instance.email, otp)
+                    message = "OTP sent successfully."
+                except Exception as e:
+                    message = f"Profile information updated successfully. Failed to send OTP: {str(e)}"
+
+            return Response({"message": message}, status=status_code.HTTP_200_OK)
+        
+        return Response(serializer.errors, status=status_code.HTTP_400_BAD_REQUEST)
+    
+# class UserEditProfileViewSet(viewsets.ViewSet):
+#     """
+#         UserEditProfileViewSet to Edit the Personal Details of User
+#     """
+#     permission_classes = (IsAuthenticated,)
+
+#     def update(self, request):
+#         serializer = UserEditProfileSerializer(
+#             instance=request.user, data=request.data, partial=True
+#         )
+
+#         serializer.is_valid(raise_exception=True)
+
+#         serializer.save()
+#         return CustomResponse({"message": "Profile information updated successfully"}, status=status_code.HTTP_200_OK)
 
 class UserChangePasswordViewSet(viewsets.ViewSet):
     """
@@ -556,8 +589,18 @@ class DeleteUserViewSet(viewsets.GenericViewSet):
         user.is_deleted = True
         user.save()
             
-        return CustomResponse({"message": "Your account has been deactivated successfully."}, status=status_code.HTTP_204_NO_CONTENT)
+        return CustomResponse({"message": "Your account has been deactivated successfully."}, status=status_code.HTTP_200_OK)
 
+
+#About the App
+
+class AboutAppViewset(viewsets.GenericViewSet):
+    permission_classes = (IsAuthenticated,)
+    def list(self, request):
+        type = request.GET.get('type')
+        user=ContentManagement.objects.filter(content_type=type).all().values("content")
+        return CustomResponse(user, status=status_code.HTTP_200_OK)
+        
 
 #FCM
     
