@@ -307,9 +307,50 @@ class CompanyNameSerializer(serializers.ModelSerializer):
         fields = ('id', 'name')
 
 
+# class UserEditProfileSerializer(serializers.Serializer):
+#     """
+#         UserEditProfileSerializer to Edit Personal Details of Users
+#     """
+#     full_name = serializers.CharField()
+#     email = serializers.EmailField()
+#     profile_pic = serializers.CharField(required=False)
+#     company = serializers.PrimaryKeyRelatedField(
+#         queryset=Company.objects.all(), required=False
+#     )
+
+#     def update(self, instance, validated_data):
+#         full_name = validated_data.get("full_name")
+#         email = validated_data.get("email")
+#         profile_pic = validated_data.get("profile_pic")
+#         company = validated_data.get("company")
+
+#         if not full_name:
+#             raise CustomException(status_code=400, message="Please Provide Full Name.", location="LOCATION")
+
+#         if profile_pic:
+#             instance.profile_pic = profile_pic
+
+#         instance.full_name = full_name
+
+#         if email:
+#             otp = generate_otp()
+#             OTP.objects.update_or_create(user_id=instance.id, otp=otp, otp_type=1)
+#             try:
+#                 send_verification_email(email, otp)
+#             except BaseException:
+#                 pass
+#             instance.email = email
+#             instance.is_email_verified = False
+
+#         if company:
+#             instance.company = company
+
+#         instance.save()
+#         return instance
+
 class UserEditProfileSerializer(serializers.Serializer):
     """
-        UserEditProfileSerializer to Edit Personal Details of Users
+    UserEditProfileSerializer to Edit Personal Details of Users
     """
     full_name = serializers.CharField()
     email = serializers.EmailField()
@@ -318,6 +359,15 @@ class UserEditProfileSerializer(serializers.Serializer):
         queryset=Company.objects.all(), required=False
     )
 
+    def validate(self, data):
+        email = data.get("email")
+        if email != self.instance.email:
+            # Email has changed, set a flag
+            self.email_changed = True
+        else:
+            self.email_changed = False
+        return data
+
     def update(self, instance, validated_data):
         full_name = validated_data.get("full_name")
         email = validated_data.get("email")
@@ -325,7 +375,7 @@ class UserEditProfileSerializer(serializers.Serializer):
         company = validated_data.get("company")
 
         if not full_name:
-            raise CustomException(status_code=400, message="Please Provide Full Name.", location="LOCATION")
+            raise serializers.ValidationError("Please provide a full name.")
 
         if profile_pic:
             instance.profile_pic = profile_pic
@@ -334,20 +384,20 @@ class UserEditProfileSerializer(serializers.Serializer):
 
         if email:
             otp = generate_otp()
-            OTP.objects.update_or_create(user_id=instance.id, otp=otp, otp_type=1)
+            instance.otp = otp
+            instance.is_email_verified = False
+            instance.email = email
+
             try:
                 send_verification_email(email, otp)
-            except BaseException:
-                pass
-            instance.email = email
-            instance.is_email_verified = False
+            except Exception as e:
+                raise serializers.ValidationError(f"Failed to send OTP: {str(e)}")
 
         if company:
             instance.company = company
 
         instance.save()
         return instance
-
 
 class UserChangePasswordSerializer(serializers.Serializer):
     """

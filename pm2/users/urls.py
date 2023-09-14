@@ -44,6 +44,8 @@ urlpatterns = [
         {"put": "create"}, name="change_password")),
     path("user_listing", views.UserListingViewSet.as_view(
         {"get": "list"}, name="user_listing")),
+    path("about_the_app", views.AboutAppViewset.as_view(
+        {"get": "list"}, name="about_the_app")),
 
     #FCM
     path("user_device", views.UpdateDeviceDetailViewSet.as_view(
