@@ -556,7 +556,7 @@ class DeleteUserViewSet(viewsets.GenericViewSet):
         user.is_deleted = True
         user.save()
             
-        return CustomResponse({"message": "Your account has been deactivated successfully."}, status=status_code.HTTP_204_NO_CONTENT)
+        return CustomResponse({"message": "Your account has been deactivated successfully."}, status=status_code.HTTP_200_OK)
 
 
 #FCM

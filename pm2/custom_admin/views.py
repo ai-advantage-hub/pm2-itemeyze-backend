@@ -124,9 +124,10 @@ class AdminProfileViewSet(viewsets.ViewSet):
             return CustomResponse({"message": "Email already exists."})    
 
         update_data = {"full_name": full_name}
+        d=User.objects.filter(id=request.user.id).first()
 
         # Update email and its verification status if provided
-        if email:
+        if email and email != d.email:
             update_data["email"] = email
             update_data["is_email_verified"] = False
             otp = generate_otp()
@@ -391,7 +392,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
         project_details = data.get("project_details")
         additional_details = data.get("additional_details")
         if Files.objects.filter(manufacturing_number=manufacturing_number).exists():
-             return CustomResponse({"message": "This File name already exists"}, status=status.HTTP_400_BAD_REQUEST)
+             return CustomResponse({"message": "This manufacturing number already exists"}, status=status.HTTP_400_BAD_REQUEST)
         else:
             Files.objects.create(file_name=file_name,thumbnail=thumbnail,manufacturing_number=manufacturing_number,project_id=project_id,location=location,manufacturer_name_id=manufacturer_name,quantity=quantity,project_details=project_details,additional_details=additional_details)
             return CustomResponse({"message": "File created sucessfully"})
