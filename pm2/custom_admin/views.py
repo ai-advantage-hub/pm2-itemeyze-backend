@@ -117,7 +117,7 @@ class AdminProfileViewSet(viewsets.ViewSet):
 
         # Validate full name
         if not full_name:
-            return CustomResponse({"message": "Please provide full name."})
+            return CustomResponse({"message": "Please provide full name."}, status=status.HTTP_400_BAD_REQUEST)
 
         # Check if email already exists, but ignore the current user's email
         if email and User.objects.filter(email=email).exclude(id=request.user.id).exists():
@@ -195,7 +195,7 @@ class ContentManagementViewSet(viewsets.ViewSet):
         type=data.get("type")
         content=data.get("content")
         if not content:
-            return CustomResponse({"message": "Please provide content."})
+            return CustomResponse({"message": "Please provide content."}, status=status.HTTP_400_BAD_REQUEST)
 
         c=ContentManagement.objects.filter(content_type=type).update(content=content)
         if not c:
@@ -234,10 +234,10 @@ class ManageCompanyView(viewsets.ViewSet):
         company_title = data.get("company_title")
 
         if not company_title:
-            return CustomResponse({"message": "Please provide company name"})
+            return CustomResponse({"message": "Please provide company name"}, status=status.HTTP_400_BAD_REQUEST)
 
         if Company.objects.filter(name=company_title).exists():
-            return CustomResponse({"message": "this company name already registered"})
+            return CustomResponse({"message": "this company name already registered"}, status=status.HTTP_400_BAD_REQUEST)
         else:
             #Company.objects.create(name=company_title)
             company = Company.objects.create(name=company_title)
@@ -255,9 +255,9 @@ class ManageCompanyView(viewsets.ViewSet):
         id=data.get("id")
         company_title=data.get("company_title")
         if not company_title:
-            return CustomResponse({"message":"Please provide company name"})
+            return CustomResponse({"message":"Please provide company name"}, status=status.HTTP_400_BAD_REQUEST)
         if Company.objects.filter(name=company_title).exists():
-            return CustomResponse({"message":"this company name already registered"})
+            return CustomResponse({"message":"this company name already registered"}, status=status.HTTP_400_BAD_REQUEST)
         else:
             Company.objects.filter(id=id).update(name=company_title)
             return CustomResponse({"message":"company name updated"})
@@ -272,7 +272,7 @@ class ManageCompanyView(viewsets.ViewSet):
         id = request.GET.get('id')
         c =  Company.objects.filter(id=id).first()
         if not c:
-            return CustomResponse({"message":"company Does not exist"})
+            return CustomResponse({"message":"company Does not exist"}, status=status.HTTP_400_BAD_REQUEST)
         Company.objects.filter(id=id).delete()
         return CustomResponse({"message":"company Deleted sucessfully"})
     
@@ -357,15 +357,15 @@ class ManageProjectViewSet(viewsets.ViewSet):
 
         # Validations
         if not project_name:
-            return CustomResponse({"message": "Please provide project_name"})
+            return CustomResponse({"message": "Please provide project_name"}, status=status.HTTP_400_BAD_REQUEST)
         if not project_number:
-            return CustomResponse({"message": "Please provide project_number"})
+            return CustomResponse({"message": "Please provide project_number"}, status=status.HTTP_400_BAD_REQUEST)
         if not assigned_to:
-            return CustomResponse({"message": "Please provide assigned_to"})
+            return CustomResponse({"message": "Please provide assigned_to"}, status=status.HTTP_400_BAD_REQUEST)
         if Project.objects.filter(project_name=project_name).exists():
-            return CustomResponse({"message": "Project of this name already exists"})
+            return CustomResponse({"message": "Project of this name already exists"}, status=status.HTTP_400_BAD_REQUEST)
         if Project.objects.filter(project_number=project_number).exists():
-            return CustomResponse({"message": "Project Number of this name already exists"})
+            return CustomResponse({"message": "Project Number already exists"}, status=status.HTTP_400_BAD_REQUEST)
 
         # Create project without assigning users
         project = Project.objects.create(project_name=project_name, project_number=project_number, created_by_id=request.user.id,is_admin_approved=True)
@@ -391,7 +391,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
         project_details = data.get("project_details")
         additional_details = data.get("additional_details")
         if Files.objects.filter(manufacturing_number=manufacturing_number).exists():
-             return CustomResponse({"message": "This File name already exists"})
+             return CustomResponse({"message": "This File name already exists"}, status=status.HTTP_400_BAD_REQUEST)
         else:
             Files.objects.create(file_name=file_name,thumbnail=thumbnail,manufacturing_number=manufacturing_number,project_id=project_id,location=location,manufacturer_name_id=manufacturer_name,quantity=quantity,project_details=project_details,additional_details=additional_details)
             return CustomResponse({"message": "File created sucessfully"})
@@ -412,46 +412,26 @@ class ManageProjectViewSet(viewsets.ViewSet):
         #     Project.objects.filter(id=project_id).delete()
         #     return CustomResponse({"message": "Project deleted"})
         if not Project.objects.filter(id=project_id).first():
-            return CustomResponse({"message": "Project of this id dont exists"})
+            return CustomResponse({"message": "Project of this id dont exists"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # if status == 2:
+        #     Project.objects.filter(id=project_id).delete()
+        #     return CustomResponse({"message": "Project deleted"})
+        
+        if not project_name:
+            return CustomResponse({"message": "Please provide project_name"}, status=status.HTTP_400_BAD_REQUEST)
+        if not project_number:
+            return CustomResponse({"message": "Please provide project_number"}, status=status.HTTP_400_BAD_REQUEST)
         
         if status == 2:
             Project.objects.filter(id=project_id).delete()
             return CustomResponse({"message": "Project deleted"})
         
-        if not project_name:
-            return CustomResponse({"message": "Please provide project_name"})
-        if not project_number:
-            return CustomResponse({"message": "Please provide project_number"})
+        if status == 1:
         
-        if Project.objects.filter(id=project_id,project_name=project_name,project_number=project_number).exists():
-            if assigned_to:
-                project=Project.objects.filter(id=project_id,project_name=project_name,project_number=project_number).first()
-                # user = User.objects.filter(email=assigned_to).first()
-                # project.users.add(user)
-                # project.is_admin_approved=True
-                # project.save()
-                for email in assigned_to:
-                    user = User.objects.filter(email=email).first()
-                    if user:
-                        project.users.add(user)
-                        project.is_admin_approved=True
-                        project.save() 
-                return CustomResponse({"message": "Project approved sucessfully"})
-            else:
-                project=Project.objects.filter(id=project_id).first()
-                project.is_admin_approved=True
-                project.save()
-                return CustomResponse({"message": "Project approved sucessfully"})
-
-        else:
-            if Project.objects.filter(project_name=project_name).exclude(id=project_id).exists():
-                return CustomResponse({"message": "Project of this name already exists"})
-            elif Project.objects.filter(project_number=project_number).exclude(id=project_id).exists():
-                return CustomResponse({"message": "Project Number of this name already exists"})
-            else:
+            if Project.objects.filter(id=project_id,project_name=project_name,project_number=project_number).exists():
                 if assigned_to:
-                    project=Project.objects.filter(id=project_id).update(project_name=project_name,project_number=project_number)
-                    project=Project.objects.filter(id=project_id).first()
+                    project=Project.objects.filter(id=project_id,project_name=project_name,project_number=project_number).first()
                     # user = User.objects.filter(email=assigned_to).first()
                     # project.users.add(user)
                     # project.is_admin_approved=True
@@ -461,14 +441,40 @@ class ManageProjectViewSet(viewsets.ViewSet):
                         if user:
                             project.users.add(user)
                             project.is_admin_approved=True
-                            project.save()
+                            project.save() 
                     return CustomResponse({"message": "Project approved sucessfully"})
                 else:
-                    project=Project.objects.filter(id=project_id).update(project_name=project_name,project_number=project_number)
                     project=Project.objects.filter(id=project_id).first()
                     project.is_admin_approved=True
                     project.save()
                     return CustomResponse({"message": "Project approved sucessfully"})
+
+            else:
+                if Project.objects.filter(project_name=project_name).exclude(id=project_id).exists():
+                    return CustomResponse({"message": "Project of this name already exists"}, status=status.HTTP_400_BAD_REQUEST)
+                elif Project.objects.filter(project_number=project_number).exclude(id=project_id).exists():
+                    return CustomResponse({"message": "Project Number of this name already exists"}, status=status.HTTP_400_BAD_REQUEST)
+                else:
+                    if assigned_to:
+                        project=Project.objects.filter(id=project_id).update(project_name=project_name,project_number=project_number)
+                        project=Project.objects.filter(id=project_id).first()
+                        # user = User.objects.filter(email=assigned_to).first()
+                        # project.users.add(user)
+                        # project.is_admin_approved=True
+                        # project.save()
+                        for email in assigned_to:
+                            user = User.objects.filter(email=email).first()
+                            if user:
+                                project.users.add(user)
+                                project.is_admin_approved=True
+                                project.save()
+                        return CustomResponse({"message": "Project approved sucessfully"})
+                    else:
+                        project=Project.objects.filter(id=project_id).update(project_name=project_name,project_number=project_number)
+                        project=Project.objects.filter(id=project_id).first()
+                        project.is_admin_approved=True
+                        project.save()
+                        return CustomResponse({"message": "Project approved sucessfully"})
 
     def un_approved_file(self, request,id):
         file = Files.objects.filter(project_id=id,is_admin_approved=False).all().values('file_name','created_at')
@@ -508,7 +514,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
 
         file=Files.objects.filter(id=id).first()
         if not file:
-            return CustomResponse({"error": "File not found."})
+            return CustomResponse({"error": "File not found."}, status=status.HTTP_400_BAD_REQUEST)
         if status == 2:
             return CustomResponse({"message": "Request Denied"})
         else:
