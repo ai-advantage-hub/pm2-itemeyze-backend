@@ -120,7 +120,11 @@ class FilesSerializer(serializers.ModelSerializer):
 
         return super().update(instance, validated_data)
     
+    
 class FilesPointSerializer(serializers.ModelSerializer):
+    """
+       Serializer for view file details
+    """
 
     location_points = serializers.SerializerMethodField()
     class Meta:
