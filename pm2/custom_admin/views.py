@@ -378,7 +378,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
                 project.users.add(user)  
             print(email)
 
-        return CustomResponse({"message": "Project created successfully"})
+        return CustomResponse({"message": "Project created successfully", "project_id":project.id})
     
     def file_create(self, request):
         data = request.data
@@ -394,8 +394,8 @@ class ManageProjectViewSet(viewsets.ViewSet):
         if Files.objects.filter(manufacturing_number=manufacturing_number).exists():
              return CustomResponse({"message": "This manufacturing number already exists"}, status=status.HTTP_400_BAD_REQUEST)
         else:
-            Files.objects.create(file_name=file_name,thumbnail=thumbnail,manufacturing_number=manufacturing_number,project_id=project_id,location=location,manufacturer_name_id=manufacturer_name,quantity=quantity,project_details=project_details,additional_details=additional_details)
-            return CustomResponse({"message": "File created sucessfully"})
+            file = Files.objects.create(file_name=file_name,thumbnail=thumbnail,manufacturing_number=manufacturing_number,project_id=project_id,location=location,manufacturer_name_id=manufacturer_name,quantity=quantity,project_details=project_details,additional_details=additional_details)
+            return CustomResponse({"message": "File created sucessfully", "file_id": file.id})
         
     def un_approved_project(self, request):
         projects = Project.objects.filter(is_admin_approved=False).annotate(num_files=Count('project_files')).values('id','project_name', 'created_by__full_name', 'num_files','created_at')
