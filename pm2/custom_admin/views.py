@@ -66,36 +66,36 @@ class ResetPasswordViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
         confirm_password = data.get("confirm_password")
         email = data.get("email")
         if not otp:
-            return CustomResponse({"message":"Please provide otp"})
+            return CustomResponse({"message":"Please provide otp"}, status=status.HTTP_400_BAD_REQUEST)
         if not new_password:
-            return CustomResponse({"message":"Please provide new_password"})
+            return CustomResponse({"message":"Please provide new_password"}, status=status.HTTP_400_BAD_REQUEST)
         if not confirm_password:
-            return CustomResponse({"message":"Please provide confirm_password"})
-        if not email:
-            return CustomResponse({"message":"Please provide email"})
+            return CustomResponse({"message":"Please provide confirm_password"}, status=status.HTTP_400_BAD_REQUEST)
+        # if not email:
+        #     return CustomResponse({"message":"Please provide email"}, status=status.HTTP_400_BAD_REQUEST)
         
 
         user=OTP.objects.filter(otp=otp,otp_type=3).first()
         if not user:
-            return CustomResponse({"message": "Wrong OTP"})
+            return CustomResponse({"message": "Wrong OTP"}, status=status.HTTP_400_BAD_REQUEST)
         if user.expired_at and user.expired_at < timezone.now():
             return CustomResponse({"message": "OTP expired"}, status=status.HTTP_400_BAD_REQUEST)
         if not user:
             return CustomResponse({"message": "OTP incorrect"}, status=status.HTTP_400_BAD_REQUEST)
         if new_password != confirm_password:
             return CustomResponse({"message": "Both Password are not same"}, status=status.HTTP_400_BAD_REQUEST)
-        else:
-            c=User.objects.filter(email=email).first()
-            if not c:
-                return CustomResponse({"message": "No user found with the provided email"}, status=status.HTTP_400_BAD_REQUEST)
-            if c.id == user.user_id:
-                admin_user = User.objects.filter(id=user.user_id).first()
-                admin_user.set_password(confirm_password)
-                admin_user.is_email_verified = True 
-                admin_user.save()
-                return CustomResponse({"message": "Password Changed sucessfully"}, status=status.HTTP_200_OK)
-            else:
-                return CustomResponse({"message": "OTP is not matching with Email"}, status=status.HTTP_400_BAD_REQUEST)
+        
+            # c=User.objects.filter(email=email).first()
+            # if not c:
+            #     return CustomResponse({"message": "No user found with the provided email"}, status=status.HTTP_400_BAD_REQUEST)
+            # if c.id == user.user_id:
+        admin_user = User.objects.filter(id=user.user_id).first()
+        admin_user.set_password(confirm_password)
+        admin_user.is_email_verified = True 
+        admin_user.save()
+        return CustomResponse({"message": "Password Changed sucessfully"}, status=status.HTTP_200_OK)
+            # else:
+            #     return CustomResponse({"message": "OTP is not matching with Email"}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class AdminProfileViewSet(viewsets.ViewSet):
@@ -121,7 +121,7 @@ class AdminProfileViewSet(viewsets.ViewSet):
 
         # Check if email already exists, but ignore the current user's email
         if email and User.objects.filter(email=email).exclude(id=request.user.id).exists():
-            return CustomResponse({"message": "Email already exists."})    
+            return CustomResponse({"message": "Email already exists."}, status=status.HTTP_400_BAD_REQUEST)    
 
         update_data = {"full_name": full_name}
         d=User.objects.filter(id=request.user.id).first()
@@ -150,10 +150,10 @@ class AdminProfileViewSet(viewsets.ViewSet):
         data = request.data
         otp=data.get("otp")
         if not otp:
-            return CustomResponse({"message":"Please provide otp"})
+            return CustomResponse({"message":"Please provide otp"}, status=status.HTTP_400_BAD_REQUEST)
         user=OTP.objects.filter(otp_type=1,is_used=False,otp=otp).first()
         if not user:
-            return CustomResponse({"message": "Wrong OTP"})
+            return CustomResponse({"message": "Wrong OTP"}, status=status.HTTP_400_BAD_REQUEST)
         if user.expired_at and user.expired_at < timezone.now():
             return CustomResponse({"message": "OTP expired"}, status=status.HTTP_400_BAD_REQUEST)
         if not user:
@@ -287,7 +287,7 @@ class ManageCompanyView(viewsets.ViewSet):
         if company_name:
             user = user.filter(name__icontains=company_name)
             if not user:
-                return CustomResponse({"message":"Data not found"})
+                return CustomResponse({"message":"Data not found"}, status=status.HTTP_400_BAD_REQUEST)
 
             return CustomResponse(user)
         else:
@@ -327,7 +327,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
         if name:
             projects=projects.filter(project_name__icontains=name)
             if not projects:
-                return CustomResponse({"message":"Data not found"})
+                return CustomResponse({"message":"Data not found"}, status=status.HTTP_400_BAD_REQUEST)
 
             return CustomResponse(projects)
         else:
@@ -348,7 +348,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
             instance.delete()
             return Response({'message': 'Project deleted successfully'})
         except Project.DoesNotExist:
-            return Response({'message': 'Project not found'})
+            return Response({'message': 'Project not found'}, status=status.HTTP_400_BAD_REQUEST)
 
     def create(self, request):
         data = request.data
@@ -415,28 +415,28 @@ class ManageProjectViewSet(viewsets.ViewSet):
         project_name = data.get("project_name")
         project_number = data.get("project_number")
         assigned_to = data.get("assigned_to", [])
-        status = data.get("status")
+        status_value = data.get("status_value")
 
         # if status == 2:
         #     Project.objects.filter(id=project_id).delete()
         #     return CustomResponse({"message": "Project deleted"})
         if not Project.objects.filter(id=project_id).first():
-            return CustomResponse({"message": "Project of this id dont exists"})
+            return CustomResponse({"message": "Project of this id dont exists"}, status=status.HTTP_400_BAD_REQUEST)
         
         # if status == 2:
         #     Project.objects.filter(id=project_id).delete()
         #     return CustomResponse({"message": "Project deleted"})
         
         if not project_name:
-            return CustomResponse({"message": "Please provide project_name"})
+            return CustomResponse({"message": "Please provide project_name"}, status=status.HTTP_400_BAD_REQUEST)
         if not project_number:
-            return CustomResponse({"message": "Please provide project_number"})
+            return CustomResponse({"message": "Please provide project_number"}, status=status.HTTP_400_BAD_REQUEST)
         
-        if status == 2:
+        if status_value == 2:
             Project.objects.filter(id=project_id).delete()
             return CustomResponse({"message": "Project deleted"})
         
-        if status == 1:
+        if status_value == 1:
         
             if Project.objects.filter(id=project_id,project_name=project_name,project_number=project_number).exists():
                 if assigned_to:
@@ -460,9 +460,9 @@ class ManageProjectViewSet(viewsets.ViewSet):
 
             else:
                 if Project.objects.filter(project_name=project_name).exclude(id=project_id).exists():
-                    return CustomResponse({"message": "Project of this name already exists"})
+                    return CustomResponse({"message": "Project of this name already exists"}, status=status.HTTP_400_BAD_REQUEST)
                 elif Project.objects.filter(project_number=project_number).exclude(id=project_id).exists():
-                    return CustomResponse({"message": "Project Number of this name already exists"})
+                    return CustomResponse({"message": "Project Number of this name already exists"}, status=status.HTTP_400_BAD_REQUEST)
                 else:
                     if assigned_to:
                         project=Project.objects.filter(id=project_id).update(project_name=project_name,project_number=project_number)
@@ -546,7 +546,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
     def destroy_file(self,request,id):
         file=Files.objects.filter(id=id).first()
         if not file:
-            return CustomResponse({"message": "File not found"},status=status.HTTP_404_NOT_FOUND)
+            return CustomResponse({"message": "File not found"},status=status.HTTP_400_BAD_REQUEST)
         else:
             file.delete()
             return CustomResponse({"message": "File deleted sucessfully"})
@@ -557,7 +557,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
         instance = queryset.filter(pk=pk).first()
 
         if instance is None:
-            return Response({"error": "File not found."}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "File not found."}, status=status.HTTP_400_BAD_REQUEST)
         serializer = FilesSerializer(instance, data=request.data, partial=True)
         
         if serializer.is_valid(raise_exception=True):
@@ -584,18 +584,18 @@ class ManageProjectViewSet(viewsets.ViewSet):
             return CustomResponse({"message": "File approved by the admin"})
         
 
-    def delete_file_list(self,request):
-        file=Files.objects.filter(is_marked_deleted=True).all().values("id","file_name")
+    def delete_file_list(self,request, id):
+        file=Files.objects.filter(project_id=id, is_marked_deleted=True).all().values("id","file_name")
         return CustomResponse(file)
     
     def delete_file_admin(self,request):
         data = request.data
         id = data.get("id")
-        status = data.get("status")
+        status_value = data.get("status_value")
         file=Files.objects.filter(id=id).first()
         if not file:
-            return CustomResponse({"message":"File dont exist"})
-        if status == 1:
+            return CustomResponse({"message":"File dont exist"}, status=status.HTTP_400_BAD_REQUEST)
+        if status_value == 1:
             file.delete()
             return CustomResponse({"message":"File deleted sucessfully"})
         else:
