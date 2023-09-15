@@ -56,6 +56,7 @@ urlpatterns = [
 
     #Dashboard
     path("admin_dashboard", views.DashBoardViewSet.as_view({"get": "get"}), name="admin_dashboard"),
+    path("user_email_list", views.UseremailViewSet.as_view({"get": "get"}), name="user_email_list"),
 
     
 

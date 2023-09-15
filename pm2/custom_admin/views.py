@@ -725,7 +725,10 @@ class DashBoardViewSet(viewsets.ViewSet):
 
         return CustomResponse(data)
     
-
+class UseremailViewSet(viewsets.ViewSet):
+    def get(self, request, *args, **kwargs):
+        email=User.objects.filter(user_role=2).all().values('id','email')
+        return CustomResponse(email)
     
                 
 
