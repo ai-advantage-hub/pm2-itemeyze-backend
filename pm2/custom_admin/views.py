@@ -310,7 +310,7 @@ class ManageCompanyView(viewsets.ViewSet):
             return CustomResponse({"message":"Status Activated sucessfully"})
         else:
             Company.objects.filter(id=id).update(is_active=False)
-            return CustomResponse({"message":"Status dectivated sucessfully"})
+            return CustomResponse({"message":"Status deactivated sucessfully"})
 
 
 
