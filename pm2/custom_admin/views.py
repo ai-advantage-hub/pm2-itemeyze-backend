@@ -397,10 +397,18 @@ class ManageProjectViewSet(viewsets.ViewSet):
             file = Files.objects.create(file_name=file_name,thumbnail=thumbnail,manufacturing_number=manufacturing_number,project_id=project_id,location=location,manufacturer_name_id=manufacturer_name,quantity=quantity,project_details=project_details,additional_details=additional_details)
             return CustomResponse({"message": "File created sucessfully", "file_id": file.id})
         
+    # def un_approved_project(self, request):
+    #     projects = Project.objects.filter(is_admin_approved=False).annotate(num_files=Count('project_files')).values('id','project_name', 'created_by__full_name', 'num_files','created_at')
+    #     return CustomResponse(projects)
     def un_approved_project(self, request):
-        projects = Project.objects.filter(is_admin_approved=False).annotate(num_files=Count('project_files')).values('id','project_name', 'created_by__full_name', 'num_files','created_at')
-        return CustomResponse(projects)
-        
+        unapproved_projects = Project.objects.filter(is_admin_approved=False).annotate(num_files=Count('project_files')).values('id','project_name', 'created_by__full_name', 'num_files','created_at')
+        count = unapproved_projects.count()
+        response_data = {
+            "unapproved_projects": list(unapproved_projects),
+            "count": count
+        }
+        return CustomResponse(response_data)
+
     def approve_project(self, request):
         data = request.data
         project_id = data.get("project_id")
