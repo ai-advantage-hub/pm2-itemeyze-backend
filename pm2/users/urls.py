@@ -19,6 +19,9 @@ urlpatterns = [
         {"put": "update"}, name="reset_password")),
     path("company_list", views.CompanyNameViewSet.as_view(
         {"get": "list"}, name="company_list")),
+
+    path("welcome_name", views.UserNameViewSet.as_view(
+        {"get": "get"}, name="welcome_name")),
     
 
     #Home
