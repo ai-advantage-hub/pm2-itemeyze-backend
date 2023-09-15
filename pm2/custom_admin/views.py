@@ -716,7 +716,8 @@ class DashBoardViewSet(viewsets.ViewSet):
     """
         This view is of Dashboard
     """
-
+    permission_classes = (IsAuthenticated, CheckAdminRoleStatusPermission,)
+    
     def get(self, request, *args, **kwargs):
         month = self.request.query_params.get('month', None)
         year = self.request.query_params.get('year', None)
@@ -746,7 +747,12 @@ class UseremailViewSet(viewsets.ViewSet):
         email=User.objects.filter(user_role=2).all().values('id','email')
         return CustomResponse(email)
     
-                
+
+class AdminNameViewset(viewsets.ViewSet):
+    permission_classes = (IsAuthenticated, CheckAdminRoleStatusPermission,)
+    def get(self, request, *args, **kwargs):
+        name=User.objects.filter(id = request.user.id).all().values('id', 'full_name')
+        return CustomResponse(name)              
 
 
             

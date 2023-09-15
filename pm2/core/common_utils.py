@@ -9,6 +9,7 @@ from sendgrid.helpers.mail import Content, Email, Mail, To
 from users.templates import *
 from fcm_django.models import FCMDevice
 from core.messages import VARIABLES
+from users.models import User
 
 
 def generate_otp():
@@ -62,9 +63,11 @@ def send_verification_email(email, otp):
 
 def send_verification_link(email, otp):
     """to send verification email"""
+    user = User.objects.filter(email=email).first()
+    c = user.full_name
     try:
-        reset_link = f"https://d29zp2hclzhanw.cloudfront.net/reset-password?otp={otp}"
-        ctx_dict = {"email": email, "verification_code": otp, "reset_link": reset_link}
+        reset_link = f"http://d29zp2hclzhanw.cloudfront.net/reset-password?otp={otp}"
+        ctx_dict = {"email": c, "verification_code": otp, "reset_link": reset_link}
         html_template = "forgot_password_admin.html"
         subject = "YOUR LOGIN Link"
         send_html_mail_to_single_user(subject, email, html_template, ctx_dict)

@@ -9,6 +9,7 @@ urlpatterns = [
     path("forgot_password", views.ForgotPasswordViewSet.as_view({"post": "create"}), name="forgot_password"),
     path("ConfirmPassword", views.ResetPasswordViewSet.as_view({"post": "create"}), name="ConfirmPassword"),
 
+    path("welcome_name", views.AdminNameViewset.as_view({"get": "get"}), name="welcome_name"),
 
     #Admin profile
 
