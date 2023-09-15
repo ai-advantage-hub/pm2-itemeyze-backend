@@ -5,6 +5,7 @@ from rest_framework import serializers
 from rest_framework.authtoken.models import Token
 from django.contrib.auth.hashers import check_password
 from core.common_utils import generate_otp, send_verification_email, send_verification_link
+from django.contrib.gis.geos import Point
 
 class AdminLoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
@@ -84,18 +85,21 @@ class ForgotPasswordSerializer(serializers.Serializer):
 class FileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Files
-        fields = ['file_name', 'thumbnail', 'manufacturing_number', 'quantity', 'project_details', 'additional_details', 'recording', 'location', 'location_points']
+        fields = ['id','file_name', 'thumbnail', 'manufacturing_number', 'quantity', 'project_details', 'additional_details', 'recording', 'location', 'location_points']
 
 class ProjectDetailSerializer(serializers.ModelSerializer):
     created_by = serializers.SerializerMethodField()
-    files = FileSerializer(source='project_files', many=True, read_only=True)
+    files = serializers.SerializerMethodField()
 
     class Meta:
         model = Project
         fields = ['id','project_name', 'project_number','created_by','created_at', 'files']
 
     def get_created_by(self, obj):
-        return obj.created_by.full_name
+        try:
+            return obj.created_by.full_name
+        except AttributeError:            
+            return None
     
     def get_files(self, obj):
         approved_files = obj.project_files.filter(is_admin_approved=True)
@@ -115,3 +119,19 @@ class FilesSerializer(serializers.ModelSerializer):
         validated_data['is_marked_deleted'] = False
 
         return super().update(instance, validated_data)
+    
+    
+class FilesPointSerializer(serializers.ModelSerializer):
+    """
+       Serializer for view file details
+    """
+
+    location_points = serializers.SerializerMethodField()
+    class Meta:
+        model = Files
+        fields = '__all__'
+
+    def get_location_points(self, obj):
+        if obj.location_points:
+            return {'longitude': obj.location_points.x, 'latitude': obj.location_points.y}
+        return None
