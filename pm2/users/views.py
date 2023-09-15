@@ -439,9 +439,10 @@ class ViewProfileViewSet(viewsets.ViewSet):
         user = User.objects.filter(id = request.user.id).first()
         if not user:
             return CustomResponse({"message": "User Not Found"})
+        print("user-====", user.profile_pic)
 
         serializer = ViewProfileSerializer(user)
-
+        
         return CustomResponse(serializer.data, status=status_code.HTTP_200_OK)
     
 
