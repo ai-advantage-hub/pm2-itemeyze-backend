@@ -361,8 +361,8 @@ class ManageProjectViewSet(viewsets.ViewSet):
             return CustomResponse({"message": "Please provide project_name"}, status=status.HTTP_400_BAD_REQUEST)
         if not project_number:
             return CustomResponse({"message": "Please provide project_number"}, status=status.HTTP_400_BAD_REQUEST)
-        if not assigned_to:
-            return CustomResponse({"message": "Please provide assigned_to"}, status=status.HTTP_400_BAD_REQUEST)
+        # if not assigned_to:
+        #     return CustomResponse({"message": "Please provide assigned_to"}, status=status.HTTP_400_BAD_REQUEST)
         if Project.objects.filter(project_name=project_name).exists():
             return CustomResponse({"message": "Project of this name already exists"}, status=status.HTTP_400_BAD_REQUEST)
         if Project.objects.filter(project_number=project_number).exists():
@@ -397,17 +397,22 @@ class ManageProjectViewSet(viewsets.ViewSet):
             file = Files.objects.create(file_name=file_name,thumbnail=thumbnail,manufacturing_number=manufacturing_number,project_id=project_id,location=location,manufacturer_name_id=manufacturer_name,quantity=quantity,project_details=project_details,additional_details=additional_details)
             return CustomResponse({"message": "File created sucessfully", "file_id": file.id})
         
-    # def un_approved_project(self, request):
-    #     projects = Project.objects.filter(is_admin_approved=False).annotate(num_files=Count('project_files')).values('id','project_name', 'created_by__full_name', 'num_files','created_at')
-    #     return CustomResponse(projects)
     def un_approved_project(self, request):
-        unapproved_projects = Project.objects.filter(is_admin_approved=False).annotate(num_files=Count('project_files')).values('id','project_name', 'created_by__full_name', 'num_files','created_at')
-        count = unapproved_projects.count()
-        response_data = {
-            "unapproved_projects": list(unapproved_projects),
-            "count": count
-        }
-        return CustomResponse(response_data)
+        projects = Project.objects.filter(is_admin_approved=False).annotate(num_files=Count('project_files')).values('id','project_name', 'created_by__full_name', 'num_files','created_at')
+        return CustomResponse(projects)
+    
+    def un_approved_project_count(self, request):
+        projects = Project.objects.filter(is_admin_approved=False).count()
+        return CustomResponse(projects)
+
+    # def un_approved_project(self, request):
+    #     unapproved_projects = Project.objects.filter(is_admin_approved=False).annotate(num_files=Count('project_files')).values('id','project_name', 'created_by__full_name', 'num_files','created_at')
+    #     count = unapproved_projects.count()
+    #     response_data = {
+    #         "unapproved_projects": list(unapproved_projects),
+    #         "count": count
+    #     }
+    #     return CustomResponse(response_data)
 
     def approve_project(self, request):
         data = request.data
@@ -524,17 +529,22 @@ class ManageProjectViewSet(viewsets.ViewSet):
     #         return CustomResponse({"message": "Project approved successfully"})
 
 
-    # def un_approved_file(self, request,id):
-    #     file = Files.objects.filter(project_id=id,is_admin_approved=False).all().values('file_name', 'id', 'thumbnail', 'created_at')
-    #     return CustomResponse(file)
-    def un_approved_file(self, request, id):
-        unapproved_files = Files.objects.filter(project_id=id, is_admin_approved=False).all().values('file_name', 'id', 'thumbnail', 'created_at')
-        count = unapproved_files.count()
-        response_data = {
-            "unapproved_files": list(unapproved_files),
-            "count": count
-        }
-        return CustomResponse(response_data)
+    def un_approved_file(self, request,id):
+        file = Files.objects.filter(project_id=id,is_admin_approved=False).all().values('file_name', 'id', 'thumbnail', 'created_at')
+        return CustomResponse(file)
+    
+    def un_approved_files_count(self, rwquest, id):
+        file = Files.objects.filter(project_id=id,is_admin_approved=False).count()
+        return CustomResponse(file)
+    
+    # def un_approved_file(self, request, id):
+    #     unapproved_files = Files.objects.filter(project_id=id, is_admin_approved=False).all().values('file_name', 'id', 'thumbnail', 'created_at')
+    #     count = unapproved_files.count()
+    #     response_data = {
+    #         "unapproved_files": list(unapproved_files),
+    #         "count": count
+    #     }
+    #     return CustomResponse(response_data)
     
     def view_file(self, request,id):
         file = Files.objects.filter(id=id)
@@ -717,7 +727,7 @@ class DashBoardViewSet(viewsets.ViewSet):
         This view is of Dashboard
     """
     permission_classes = (IsAuthenticated, CheckAdminRoleStatusPermission,)
-    
+
     def get(self, request, *args, **kwargs):
         month = self.request.query_params.get('month', None)
         year = self.request.query_params.get('year', None)
