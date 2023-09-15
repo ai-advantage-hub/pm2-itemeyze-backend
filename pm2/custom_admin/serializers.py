@@ -85,7 +85,7 @@ class ForgotPasswordSerializer(serializers.Serializer):
 class FileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Files
-        fields = ['id','file_name', 'thumbnail', 'manufacturing_number', 'quantity', 'project_details', 'additional_details', 'recording', 'location', 'location_points']
+        fields = ['id','file_name', 'thumbnail', 'manufacturing_number', 'quantity', 'project_details', 'additional_details', 'recording', 'location', 'location_points','created_at']
 
 class ProjectDetailSerializer(serializers.ModelSerializer):
     created_by = serializers.SerializerMethodField()
