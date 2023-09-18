@@ -25,6 +25,7 @@ from config.local import AWS_S3_ACCESS_KEY_ID, AWS_S3_SECRET_ACCESS_KEY, AWS_STO
 import boto3
 import uuid
 from rest_framework import status as status_code
+from django.db.models import Q
 
 
 
@@ -410,7 +411,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
         if manual_manufacturer_name:
             new_user = User.objects.create(full_name=manual_manufacturer_name)
             print("newwwwww", new_user.id)
-            file = Files.objects.create(manufacturer_name_id=new_user.id, manual_manufacturer_name=manual_manufacturer_name, project_id=project_id, manufacturing_number=manufacturing_number, quantity=quantity, project_details=project_details, additional_details=additional_details,location=location, location_points=location_points,is_admin_approved=True)
+            file = Files.objects.create(manufacturer_name_id=new_user.id, manual_manufacturer_name=manual_manufacturer_name, project_id=project_id, manufacturing_number=manufacturing_number, quantity=quantity, project_details=project_details, additional_details=additional_details,location=location,file_name=file_name, location_points=location_points,is_admin_approved=True)
             # c = str(project_id)+'_'+str(file.id)+'_'+'filename'
             # print("ccccccccc",c)
             # b = Files.objects.filter(id=file.id).update(file_name=c)
@@ -776,7 +777,7 @@ class DashBoardViewSet(viewsets.ViewSet):
         return CustomResponse(data)
     
 class UseremailViewSet(viewsets.ViewSet):
-    
+
     def get(self, request, *args, **kwargs):
         search_query = request.query_params.get('search', None)
         
