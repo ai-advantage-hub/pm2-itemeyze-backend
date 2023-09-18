@@ -72,6 +72,7 @@ class SignupSerializer(serializers.ModelSerializer):
     def validate_company(self, request):
         data = request.data
         company_id = data.get('company_id')
+        company_id = 27 # hardcoded for now.
         c = Company.objects.filter(id=company_id).first()
         if not c:
             raise CustomException(status_code=400, message="Company Not Found.", location="LOCATION")
