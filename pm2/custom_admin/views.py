@@ -283,15 +283,23 @@ class ManageCompanyView(viewsets.ViewSet):
             method to list and search for the company.
         """
         company_name = request.GET.get('company_name', None)
+        is_active = request.GET.get('is_active', None)
         user = Company.objects.annotate(num_users=Count('company')).values('id', 'name', 'num_users', 'is_active')
         if company_name:
             user = user.filter(name__icontains=company_name)
-            if not user:
-                return CustomResponse({"message":"Data not found"}, status=status.HTTP_400_BAD_REQUEST)
+            # if not user:
+            #     return CustomResponse({"message":"Data not found"}, status=status.HTTP_400_BAD_REQUEST)
+        if is_active:
+            if is_active == "true":
+                user=user.filter(is_active=True)
+            if is_active == "false":
+                user=user.filter(is_active=False)
 
-            return CustomResponse(user)
-        else:
-            return CustomResponse(user)
+
+        
+        return CustomResponse(user)
+        
+        
     
     def status(self, request):
         """
@@ -299,16 +307,16 @@ class ManageCompanyView(viewsets.ViewSet):
         """
         data = request.data
         id=data.get("id")
-        status=data.get("status")
+        status_value=data.get("status_value")
 
         company=Company.objects.filter(id=id).first()
         if not company:
-            return CustomResponse({"message":"Company dont exist for this ID"})
+            return CustomResponse({"message":"Company dont exist for this ID"},status=status.HTTP_400_BAD_REQUEST)
 
-        if status==1:
+        if status_value == 1:
             Company.objects.filter(id=id).update(is_active=True)
             return CustomResponse({"message":"Status Activated sucessfully"})
-        else:
+        if status_value == 2:
             Company.objects.filter(id=id).update(is_active=False)
             return CustomResponse({"message":"Status deactivated sucessfully"})
 
@@ -319,15 +327,18 @@ class ManageProjectViewSet(viewsets.ViewSet):
     """
         This view is of crud operations for manage Project
     """
-    #permission_classes = (IsAuthenticated, CheckAdminRoleStatusPermission,)
+    permission_classes = (IsAuthenticated, CheckAdminRoleStatusPermission,)
 
     def search(self, request):
         name = request.GET.get('name', None)
-        projects = Project.objects.filter(is_admin_approved=True).annotate(num_files=Count('project_files')).values('id','project_name', 'created_by__full_name', 'num_files')
+        #projects = Project.objects.filter(is_admin_approved=True).annotate(num_files=Count('project_files')).values('id','project_name', 'created_by__full_name', 'num_files')
+        projects = Project.objects.filter(is_admin_approved=True).annotate(
+        num_files=Count('project_files', filter=Q(project_files__is_admin_approved=True))
+        ).values('id', 'project_name', 'created_by__full_name', 'num_files')
         if name:
             projects=projects.filter(project_name__icontains=name)
-            if not projects:
-                return CustomResponse({"message":"Data not found"}, status=status.HTTP_400_BAD_REQUEST)
+            # if not projects:
+            #     return CustomResponse({"message":"Data not found"}, status=status.HTTP_400_BAD_REQUEST)
 
             return CustomResponse(projects)
         else:
@@ -384,6 +395,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
         data = request.data
         thumbnail = data.get("thumbnail")
         file_name = data.get("file_name")
+        manual_manufacturer_name = data.get('manual_manufacturer_name')
         manufacturer_name = data.get("manufacturer_name")
         manufacturing_number = data.get("manufacturing_number")
         project_id = data.get("project_id")
@@ -391,10 +403,21 @@ class ManageProjectViewSet(viewsets.ViewSet):
         quantity = data.get("quantity")
         project_details = data.get("project_details")
         additional_details = data.get("additional_details")
+        location_points = data.get('location_points')
+
         if Files.objects.filter(manufacturing_number=manufacturing_number).exists():
              return CustomResponse({"message": "This manufacturing number already exists"}, status=status.HTTP_400_BAD_REQUEST)
+        if manual_manufacturer_name:
+            new_user = User.objects.create(full_name=manual_manufacturer_name)
+            print("newwwwww", new_user.id)
+            file = Files.objects.create(manufacturer_name_id=new_user.id, manual_manufacturer_name=manual_manufacturer_name, project_id=project_id, manufacturing_number=manufacturing_number, quantity=quantity, project_details=project_details, additional_details=additional_details,location=location, location_points=location_points,is_admin_approved=True)
+            # c = str(project_id)+'_'+str(file.id)+'_'+'filename'
+            # print("ccccccccc",c)
+            # b = Files.objects.filter(id=file.id).update(file_name=c)
+            # print("new filleeeee", file)
+            return CustomResponse({"message": "File Created with new user Successfully", "file_id": file.id})
         else:
-            file = Files.objects.create(file_name=file_name,thumbnail=thumbnail,manufacturing_number=manufacturing_number,project_id=project_id,location=location,manufacturer_name_id=manufacturer_name,quantity=quantity,project_details=project_details,additional_details=additional_details)
+            file = Files.objects.create(file_name=file_name,thumbnail=thumbnail,manufacturing_number=manufacturing_number,project_id=project_id,location=location,manufacturer_name_id=manufacturer_name,quantity=quantity,project_details=project_details,additional_details=additional_details,location_points=location_points,is_admin_approved=True)
             return CustomResponse({"message": "File created sucessfully", "file_id": file.id})
         
     def un_approved_project(self, request):
@@ -567,14 +590,14 @@ class ManageProjectViewSet(viewsets.ViewSet):
         instance = queryset.filter(pk=pk).first()
 
         if instance is None:
-            return Response({"error": "File not found."}, status=status.HTTP_400_BAD_REQUEST)
+            return CustomResponse({"error": "File not found."}, status=status.HTTP_400_BAD_REQUEST)
         serializer = FilesSerializer(instance, data=request.data, partial=True)
         
         if serializer.is_valid(raise_exception=True):
             serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
+            return CustomResponse(serializer.data, status=status.HTTP_200_OK)
         else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return CustomResponse(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def approve_file(self,request):
         data = request.data
@@ -753,10 +776,20 @@ class DashBoardViewSet(viewsets.ViewSet):
         return CustomResponse(data)
     
 class UseremailViewSet(viewsets.ViewSet):
-    def get(self, request, *args, **kwargs):
-        email=User.objects.filter(user_role=2).all().values('id','email')
-        return CustomResponse(email)
     
+    def get(self, request, *args, **kwargs):
+        search_query = request.query_params.get('search', None)
+        
+        users_query = User.objects.filter(user_role=2)
+        
+        if search_query:
+            users_query = users_query.filter(email__icontains=search_query)
+        
+        users = users_query.values('id', 'email')
+        
+        return CustomResponse(users)
+
+        
 
 class AdminNameViewset(viewsets.ViewSet):
     permission_classes = (IsAuthenticated, CheckAdminRoleStatusPermission,)
