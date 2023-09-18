@@ -85,6 +85,7 @@ class SignupSerializer(serializers.ModelSerializer):
             self.validate_email(validated_data.get('email'))
             
             company_id = validated_data['company_id']
+            company_id = 27
             c = Company.objects.filter(id=company_id).first()
             if not c:
                 raise CustomException(status_code=400, message="Company Not Found.", location="LOCATION")
