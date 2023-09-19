@@ -117,3 +117,4 @@ def update_or_create_fcm_detail(user, registration_id, device_type):
         "user": user
     })
     return True
+

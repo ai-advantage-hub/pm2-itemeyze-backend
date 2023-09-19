@@ -5,7 +5,8 @@ from .models import (
     UserCompany, 
     OTP, 
     Project, 
-    Files
+    Files,
+
 )
 from custom_admin.models import ContentManagement
 from core.common_utils import generate_otp, send_verification_email, update_or_create_fcm_detail
@@ -520,3 +521,4 @@ class UserDeviceSerializer(serializers.Serializer):
             update_or_create_fcm_detail(instance, validated_data.get('registration_id'),
                                         validated_data.get('device_type'))
             return True
+        
