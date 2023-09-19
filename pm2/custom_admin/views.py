@@ -452,7 +452,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
         if not Project.objects.filter(id=project_id).first():
             return CustomResponse({"message": "Project of this id dont exists"}, status=status.HTTP_400_BAD_REQUEST)
         
-        if status == 2:
+        if status_value == 2:
             Project.objects.filter(id=project_id).delete()
             return CustomResponse({"message": "Project deleted"})
         
