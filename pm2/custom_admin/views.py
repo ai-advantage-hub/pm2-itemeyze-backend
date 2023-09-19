@@ -452,18 +452,18 @@ class ManageProjectViewSet(viewsets.ViewSet):
         if not Project.objects.filter(id=project_id).first():
             return CustomResponse({"message": "Project of this id dont exists"}, status=status.HTTP_400_BAD_REQUEST)
         
-        # if status == 2:
-        #     Project.objects.filter(id=project_id).delete()
-        #     return CustomResponse({"message": "Project deleted"})
+        if status == 2:
+            Project.objects.filter(id=project_id).delete()
+            return CustomResponse({"message": "Project deleted"})
         
         if not project_name:
             return CustomResponse({"message": "Please provide project_name"}, status=status.HTTP_400_BAD_REQUEST)
         if not project_number:
             return CustomResponse({"message": "Please provide project_number"}, status=status.HTTP_400_BAD_REQUEST)
         
-        if status_value == 2:
-            Project.objects.filter(id=project_id).delete()
-            return CustomResponse({"message": "Project deleted"})
+        # if status_value == 2:
+        #     Project.objects.filter(id=project_id).delete()
+        #     return CustomResponse({"message": "Project deleted"})
         
         if status_value == 1:
         
