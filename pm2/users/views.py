@@ -200,7 +200,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
         project_name = request.GET.get('project_name', None)
         page = request.GET.get('page', 1)  # Get the requested page number from the request
         per_page = request.GET.get('per_page', 10)  # Get the requested number of items per page    
-        projects = Project.objects.filter(created_by=request.user)    
+        projects = Project.objects.filter(created_by=request.user, is_admin_approved=True)    
         if project_name:
             projects = projects.filter(project_name__icontains=project_name)    
         # Pagination
