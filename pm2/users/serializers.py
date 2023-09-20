@@ -43,7 +43,7 @@ class SignupSerializer(serializers.ModelSerializer):
     confirm_password = serializers.CharField(write_only=True, required=True)
     company_id = serializers.IntegerField(write_only=True, required=True)
     full_name = serializers.CharField(required=True)
-    profile_pic = serializers.CharField(max_length = 254)
+    profile_pic = serializers.CharField(max_length = 254, allow_blank=True, allow_null=True)
 
     class Meta:
         model = User
@@ -73,7 +73,7 @@ class SignupSerializer(serializers.ModelSerializer):
     def validate_company(self, request):
         data = request.data
         company_id = data.get('company_id')
-        company_id = 27 # hardcoded for now.
+        company_id = 27  # hardcoded for now.
         c = Company.objects.filter(id=company_id).first()
         if not c:
             raise CustomException(status_code=400, message="Company Not Found.", location="LOCATION")
@@ -255,7 +255,7 @@ class FilesSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Files
-        fields = ('id','manufacturer_name', 'file_name', 'manufacturing_number', 'location', 
+        fields = ('id', 'manufacturer_name', 'file_name', 'manufacturing_number', 'location', 
                   'quantity', 'project_details', 'is_marked_deleted', 'additional_details',
                   'recording', 'is_admin_approved', 'is_marked_deleted')
 
@@ -280,20 +280,24 @@ class ContentManagementSerializer(serializers.ModelSerializer):
         model = ContentManagement
         fields = ('content',)
 
+
 class ViewUserCompanySerializer(serializers.ModelSerializer):
     class Meta:
         model = Company
         fields = ('name',)
 
+
 class UserCompanySerializer(serializers.ModelSerializer):
-    company=ViewUserCompanySerializer()
+    company = ViewUserCompanySerializer()
+
     class Meta:
         model = UserCompany
         fields = ('id', 'company')
 
 
 class ViewProfileSerializer(serializers.ModelSerializer):
-    user_company=UserCompanySerializer(many=True)
+    user_company = UserCompanySerializer(many=True)
+
     class Meta:
         model = User
         fields = ('full_name', 'email', 'profile_pic', 'user_company')
@@ -456,6 +460,7 @@ class UserEditProfileSerializer(serializers.Serializer):
 
         instance.save()
         return instance
+
 
 class UserChangePasswordSerializer(serializers.Serializer):
     """

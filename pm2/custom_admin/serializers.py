@@ -7,6 +7,7 @@ from django.contrib.auth.hashers import check_password
 from core.common_utils import generate_otp, send_verification_email, send_verification_link
 from django.contrib.gis.geos import Point
 
+
 class AdminLoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField()
@@ -82,10 +83,12 @@ class ForgotPasswordSerializer(serializers.Serializer):
         
         return True
     
+
 class FileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Files
-        fields = ['id','file_name', 'thumbnail', 'manufacturing_number', 'quantity', 'project_details', 'additional_details', 'recording', 'location', 'location_points','created_at']
+        fields = ['id', 'file_name', 'thumbnail', 'manufacturing_number', 'quantity', 'project_details', 'additional_details', 'recording', 'location', 'location_points','created_at']
+
 
 class ProjectDetailSerializer(serializers.ModelSerializer):
     created_by = serializers.SerializerMethodField()
@@ -127,6 +130,7 @@ class FilesPointSerializer(serializers.ModelSerializer):
     """
 
     location_points = serializers.SerializerMethodField()
+    
     class Meta:
         model = Files
         fields = '__all__'
