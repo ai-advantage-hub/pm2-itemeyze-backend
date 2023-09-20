@@ -27,6 +27,7 @@ import uuid
 from rest_framework import status as status_code
 from django.db.models import Q
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from core.pagination import CustomPagination
 
 
 
@@ -226,6 +227,7 @@ class ManageCompanyView(viewsets.ViewSet):
     """
 
     permission_classes = (IsAuthenticated, CheckAdminRoleStatusPermission,)
+    pagination_class = CustomPagination
     
     def create(self, request):
         """
@@ -294,40 +296,71 @@ class ManageCompanyView(viewsets.ViewSet):
         
     #     return CustomResponse(user)
 
+    # def search(self, request):
+    #     """
+    #     Method to list and search for the company.
+    #     """
+    #     company_name = request.GET.get('company_name', None)
+    #     is_active = request.GET.get('is_active', None)
+    #     page = request.GET.get('page', 1)  # Get the requested page number from the request
+    #     per_page = request.GET.get('per_page', 10)  # Get the requested number of items per page
+    #     # Query the companies
+    #     companies = Company.objects.annotate(num_users=Count('company')).values('id', 'name', 'num_users', 'is_active')
+    #     if company_name:
+    #         companies = companies.filter(name__icontains=company_name)
+    #     if is_active:
+    #         if is_active == "true":
+    #             companies = companies.filter(is_active=True)
+    #         elif is_active == "false":
+    #             companies = companies.filter(is_active=False)
+    #     # Apply pagination
+    #     paginator = Paginator(companies, per_page)
+    #     try:
+    #         paginated_companies = paginator.page(page)
+    #     except PageNotAnInteger:
+    #         paginated_companies = paginator.page(1)
+    #     except EmptyPage:
+    #         return CustomResponse({"message": "There are no more Companies."}, status=status_code.HTTP_404_NOT_FOUND)
+    #     if not paginated_companies:
+    #         return CustomResponse({"message": "No Data Found."}, status=status.HTTP_400_BAD_REQUEST)
+
+    #     # Return paginated results
+    #     results = {
+    #         "data": list(paginated_companies),
+    #     }
+
+    #     return CustomResponse(results)
+
     def search(self, request):
         """
         Method to list and search for the company.
         """
         company_name = request.GET.get('company_name', None)
         is_active = request.GET.get('is_active', None)
-        page = request.GET.get('page', 1)  # Get the requested page number from the request
-        per_page = request.GET.get('per_page', 10)  # Get the requested number of items per page
+        page_size = request.GET.get('page_size', '')
+
         # Query the companies
         companies = Company.objects.annotate(num_users=Count('company')).values('id', 'name', 'num_users', 'is_active')
+
         if company_name:
             companies = companies.filter(name__icontains=company_name)
+
         if is_active:
             if is_active == "true":
                 companies = companies.filter(is_active=True)
             elif is_active == "false":
                 companies = companies.filter(is_active=False)
-        # Apply pagination
-        paginator = Paginator(companies, per_page)
-        try:
-            paginated_companies = paginator.page(page)
-        except PageNotAnInteger:
-            paginated_companies = paginator.page(1)
-        except EmptyPage:
-            return CustomResponse({"message": "There are no more Companies."}, status=status_code.HTTP_404_NOT_FOUND)
-        if not paginated_companies:
-            return CustomResponse({"message": "No Data Found."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Return paginated results
-        results = {
-            "data": list(paginated_companies),
-        }
+        page = None
 
-        return CustomResponse(results)
+        if page_size:
+            pagination_class = self.pagination_class()
+            page = pagination_class.paginate_queryset(companies, request)
+
+        if page is not None:
+            return CustomResponse(pagination_class.get_paginated_response(page).data)
+
+        return CustomResponse(companies)
             
     def status(self, request):
         """
@@ -355,6 +388,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
         This view is of crud operations for manage Project
     """
     permission_classes = (IsAuthenticated, CheckAdminRoleStatusPermission,)
+    pagination_class = CustomPagination
 
     # def search(self, request):
     #     name = request.GET.get('name', None)
@@ -371,10 +405,42 @@ class ManageProjectViewSet(viewsets.ViewSet):
     #     else:
     #         return CustomResponse(projects)
 
+    # def search(self, request):
+    #     name = request.GET.get('name', None)
+    #     page = request.GET.get('page', 1)  # Get the requested page number from the request
+    #     per_page = request.GET.get('per_page', 10)  # Get the requested number of items per page
+
+    #     # Query the projects
+    #     projects = Project.objects.filter(is_admin_approved=True).annotate(
+    #         num_files=Count('project_files', filter=Q(project_files__is_admin_approved=True))
+    #     ).values('id', 'project_name', 'created_by__full_name', 'num_files')
+
+    #     if name:
+    #         projects = projects.filter(project_name__icontains=name)
+
+    #     # Apply pagination
+    #     paginator = Paginator(projects, per_page)
+        
+    #     try:
+    #         paginated_projects = paginator.page(page)
+    #     except PageNotAnInteger:
+    #         paginated_projects = paginator.page(1)
+    #     except EmptyPage:
+    #         return CustomResponse({"message": "There are no more Projects."}, status=status_code.HTTP_404_NOT_FOUND)
+
+    #     if not paginated_projects:
+    #         return CustomResponse({"message": "No Data Found."}, status=status.HTTP_400_BAD_REQUEST)
+
+    #     # Return paginated results
+    #     results = {
+    #         "data": list(paginated_projects),
+    #     }
+
+    #     return CustomResponse(results)     
+
     def search(self, request):
         name = request.GET.get('name', None)
-        page = request.GET.get('page', 1)  # Get the requested page number from the request
-        per_page = request.GET.get('per_page', 10)  # Get the requested number of items per page
+        page_size = request.GET.get('page_size', '')
 
         # Query the projects
         projects = Project.objects.filter(is_admin_approved=True).annotate(
@@ -384,25 +450,16 @@ class ManageProjectViewSet(viewsets.ViewSet):
         if name:
             projects = projects.filter(project_name__icontains=name)
 
-        # Apply pagination
-        paginator = Paginator(projects, per_page)
-        
-        try:
-            paginated_projects = paginator.page(page)
-        except PageNotAnInteger:
-            paginated_projects = paginator.page(1)
-        except EmptyPage:
-            return CustomResponse({"message": "There are no more Projects."}, status=status_code.HTTP_404_NOT_FOUND)
+        page = None
 
-        if not paginated_projects:
-            return CustomResponse({"message": "No Data Found."}, status=status.HTTP_400_BAD_REQUEST)
+        if page_size:
+            pagination_class = self.pagination_class()
+            page = pagination_class.paginate_queryset(projects, request)
 
-        # Return paginated results
-        results = {
-            "data": list(paginated_projects),
-        }
+        if page is not None:
+            return CustomResponse(pagination_class.get_paginated_response(page).data)
 
-        return CustomResponse(results)        
+        return CustomResponse(projects)   
     queryset = Project.objects.all()
 
     def retrieve(self, request, pk=None):  
@@ -609,9 +666,38 @@ class ManageProjectViewSet(viewsets.ViewSet):
     #         project.save()
     #         return CustomResponse({"message": "Project approved successfully"})
 
+    # def un_approved_file(self, request, id):
+    #     file = Files.objects.filter(project_id=id, is_admin_approved=False).all().values('file_name', 'id', 'thumbnail', 'created_at')
+    #     return CustomResponse(file)
+
     def un_approved_file(self, request, id):
-        file = Files.objects.filter(project_id=id, is_admin_approved=False).all().values('file_name', 'id', 'thumbnail', 'created_at')
-        return CustomResponse(file)
+        page_size = request.GET.get('page_size', '')
+        
+        # Query unapproved files
+        files = Files.objects.filter(project_id=id, is_admin_approved=False).all().values('file_name', 'id', 'thumbnail', 'created_at')
+        
+        page = None
+
+        if page_size:
+            pagination_class = self.pagination_class()
+            page = pagination_class.paginate_queryset(files, request)
+
+        if page is not None:
+            return CustomResponse(pagination_class.get_paginated_response(page).data)
+
+        return CustomResponse(files)
+
+    def un_approved_project(self, request):
+        page_size = request.GET.get('page_size', '')
+        projects = Project.objects.filter(is_admin_approved=False).annotate(num_files=Count('project_files')).values('id', 'project_name', 'created_by__full_name', 'num_files','created_at')
+        page = None
+        if page_size:
+            pagination_class = self.pagination_class()
+            page = pagination_class.paginate_queryset(projects, request)
+        if page is not None:
+        # serializer = self.action_serializers.get(self.action)(instance=projects, many=True)
+            return CustomResponse(pagination_class.get_paginated_response(page).data)
+        return CustomResponse(projects)
     
     def un_approved_files_count(self, request, id):
         file = Files.objects.filter(project_id=id, is_admin_approved=False).count()
@@ -698,6 +784,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
             return CustomResponse({"error": "File not found."}, status=status.HTTP_400_BAD_REQUEST)
         serialized_file = FilesPointSerializer(file, many=True).data
         return CustomResponse(serialized_file)
+    
         
     # @action(detail=True, methods=['get'])
     # def save_to_csv(self, request, pk=None):
