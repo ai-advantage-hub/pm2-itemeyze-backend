@@ -255,7 +255,7 @@ class FilesSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Files
-        fields = ('id', 'manufacturer_name', 'file_name', 'manufacturing_number', 'location', 
+        fields = ('id', 'manufacturer_name', 'thumbnail', 'file_name', 'manufacturing_number', 'location', 
                   'quantity', 'project_details', 'is_marked_deleted', 'additional_details',
                   'recording', 'is_admin_approved', 'is_marked_deleted')
 
