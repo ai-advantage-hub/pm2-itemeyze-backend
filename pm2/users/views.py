@@ -211,7 +211,8 @@ class ProjectViewSet(viewsets.ModelViewSet):
         except PageNotAnInteger:
             paginated_projects = paginator.page(1)
         except EmptyPage:
-            paginated_projects = paginator.page(paginator.num_pages)    
+            #paginated_projects = paginator.page(paginator.num_pages)  
+            return CustomResponse({"message": "There are no more Projects."}, status=status_code.HTTP_404_NOT_FOUND)  
         if not paginated_projects:
             return CustomResponse({"message": "No Data Found."}, status=status_code.HTTP_400_BAD_REQUEST)    
         # Return paginated results
@@ -359,6 +360,11 @@ class ProjectDetailsViewSet(viewsets.ModelViewSet):
                                         Q(manufacturer_name__full_name__icontains=location) |
                                         Q(manufacturing_number__icontains=location),
                                         project_id=pk)
+        # file_obj = Files.objects.filter(Q(location__icontains=location) |
+        #                                 Q(manufacturer_name__full_name__icontains=location) |
+        #                                 Q(manufacturing_number__icontains=location),
+        #                                 project_id=pk,
+        #                                 is_admin_approved=True)  We will use this when we want to show only those files which are approved by admin
         # Apply pagination to the file_obj
         page = request.GET.get('page', 1)
         per_page = request.GET.get('per_page', 10)  # Use a default value for per_page, or adjust as needed    
@@ -368,7 +374,8 @@ class ProjectDetailsViewSet(viewsets.ModelViewSet):
         except PageNotAnInteger:
             paginated_files = paginator.page(1)
         except EmptyPage:
-            paginated_files = paginator.page(paginator.num_pages)    
+            #paginated_files = paginator.page(paginator.num_pages)   
+            return CustomResponse({"message": "There are no more Files."}, status=status_code.HTTP_404_NOT_FOUND) 
         # Serialize data
         file_serializer = FilesSerializer(paginated_files, many=True)
         project_serializer = self.get_serializer(queryset, many=True, context={"search": location})    
