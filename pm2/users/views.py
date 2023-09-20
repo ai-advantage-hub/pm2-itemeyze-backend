@@ -166,9 +166,11 @@ class UserNameViewSet(viewsets.ViewSet):
         UserNameViewSet to give the name of User
     """
     permission_classes = (IsAuthenticated, CheckUserRoleStatusPermission)
+
     def get(self, request, *args, **kwargs):
-        name=User.objects.filter(id = request.user.id).all().values('id', 'full_name')
+        name = User.objects.filter(id=request.user.id).all().values('id', 'full_name')
         return CustomResponse(name, status=status_code.HTTP_200_OK) 
+
 
 #Home
 
@@ -484,7 +486,7 @@ class UserListingViewSet(viewsets.ViewSet):
 
     def list(self, request):
         name = request.GET.get('name', None)
-        users = User.objects.filter(is_admin_approved=True, full_name__icontains= name).all()
+        users = User.objects.filter(is_admin_approved=True, full_name__icontains=name).all()
         serializer = UserListingSerializer(users, many=True)
 
         return CustomResponse(serializer.data, status=status_code.HTTP_200_OK)
@@ -614,6 +616,7 @@ class DeleteUserViewSet(viewsets.GenericViewSet):
 
 class AboutAppViewset(viewsets.GenericViewSet):
     permission_classes = (IsAuthenticated,)
+
     def list(self, request):
         type = request.GET.get('type')
         user=ContentManagement.objects.filter(content_type=type).all().values("content")
@@ -686,6 +689,6 @@ class UpdateDeviceDetailViewSet(viewsets.ViewSet):
             FCMDevice.objects.filter(user=request.user).update(active=False)
         elif device_type:
             FCMDevice.objects.filter(
-            user =request.user, type=device_type).update(active=False)
+            user=request.user, type=device_type).update(active=False)
             return CustomResponse({"message": "DEVICE_DELETED_SUCCESSFULLY"}, status=status_code.HTTP_200_OK)
         
