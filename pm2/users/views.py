@@ -350,72 +350,7 @@ class ProjectDetailsViewSet(viewsets.ModelViewSet):
         manufacturer_name = self.request.GET.get('manufacturer_name', None)
         manufacturing_number = self.request.GET.get('manufacturing_number', None)
 
-        # if location:
-        #     queryset = queryset.filter(project_files__location__icontains=location)
-        # if manufacturer_name:
-        #     queryset = queryset.filter(project_files__manufacturer_name__full_name__icontains=manufacturer_name)
-        # if manufacturing_number:
-        #     queryset = queryset.filter(project_files__manufacturing_number__icontains=manufacturing_number)
         return queryset
-    
-    # def list(self, request, *args, **kwargs):     
-    #     queryset = self.get_queryset()     
-    #     serializer = self.get_serializer(queryset, many=True)     
-    #     # return CustomResponse(serializer.data, status=status_code.HTTP_200_OK)
-    #     queryset = self.get_queryset()
-    #     pk = self.kwargs.get('pk')
-    #     location = self.request.GET.get('location', None)
-    #     if not location:
-    #         location = ""
-    #     file_obj = Files.objects.filter(Q(location__icontains=location) |
-    #                                     Q(manufacturer_name__full_name__icontains=location)|
-    #                                     Q(manufacturing_number__icontains=location),
-    #                                     project_id=pk) 
-    #     file_serializer = FilesSerializer(file_obj, many=True)
-    #     serializer = self.get_serializer(queryset, many=True, context = {"search": location})
-    #     data = dict()
-    #     data['project_details'] = serializer.data
-    #     data['project_files'] = file_serializer.data
-    #     return CustomResponse(data, status=status_code.HTTP_200_OK)
-
-    def list(self, request, *args, **kwargs):
-
-        queryset = self.get_queryset()
-        pk = self.kwargs.get('pk')
-        location = self.request.GET.get('location', '')
-        # Filtering for Files based on the search criteria
-        file_obj = Files.objects.filter(Q(location__icontains=location) |
-                                        Q(manufacturer_name__full_name__icontains=location) |
-                                        Q(manufacturing_number__icontains=location),
-                                        project_id=pk)
-        # file_obj = Files.objects.filter(Q(location__icontains=location) |
-        #                                 Q(manufacturer_name__full_name__icontains=location) |
-        #                                 Q(manufacturing_number__icontains=location),
-        #                                 project_id=pk,
-        #                                 is_admin_approved=True)  We will use this when we want to show only those files which are approved by admin
-        # Apply pagination to the file_obj
-        page = request.GET.get('page', 1)
-        per_page = request.GET.get('per_page', 10)  # Use a default value for per_page, or adjust as needed    
-        paginator = Paginator(file_obj, per_page)    
-        try:
-            paginated_files = paginator.page(page)
-        except PageNotAnInteger:
-            paginated_files = paginator.page(1)
-        except EmptyPage:
-            #paginated_files = paginator.page(paginator.num_pages)   
-            return CustomResponse({"message": "There are no more Files."}, status=status_code.HTTP_404_NOT_FOUND) 
-        # Serialize data
-        file_serializer = FilesSerializer(paginated_files, many=True)
-        project_serializer = self.get_serializer(queryset, many=True, context={"search": location})    
-        data = {
-            'project_details': project_serializer.data,
-            'project_files': file_serializer.data,
-            "total": paginator.count,
-            "per_page": paginator.per_page,
-            "current_page": int(page),
-            "total_pages": paginator.num_pages,
-        }    
-        return CustomResponse(data, status=status_code.HTTP_200_OK)
 
     # def list(self, request, *args, **kwargs):
 
@@ -432,20 +367,52 @@ class ProjectDetailsViewSet(viewsets.ModelViewSet):
     #     #                                 Q(manufacturing_number__icontains=location),
     #     #                                 project_id=pk,
     #     #                                 is_admin_approved=True)  We will use this when we want to show only those files which are approved by admin
-    #     page_size = request.GET.get('page_size', '')
-    #     page = None
+    #     # Apply pagination to the file_obj
+    #     page = request.GET.get('page', 1)
+    #     per_page = request.GET.get('per_page', 10)  # Use a default value for per_page, or adjust as needed    
+    #     paginator = Paginator(file_obj, per_page)    
+    #     try:
+    #         paginated_files = paginator.page(page)
+    #     except PageNotAnInteger:
+    #         paginated_files = paginator.page(1)
+    #     except EmptyPage:
+    #         #paginated_files = paginator.page(paginator.num_pages)   
+    #         return CustomResponse({"message": "There are no more Files."}, status=status_code.HTTP_404_NOT_FOUND) 
+    #     # Serialize data
+    #     file_serializer = FilesSerializer(paginated_files, many=True)
+    #     project_serializer = self.get_serializer(queryset, many=True, context={"search": location})    
+    #     data = {
+    #         'project_details': project_serializer.data,
+    #         'project_files': file_serializer.data,
+    #         "total": paginator.count,
+    #         "per_page": paginator.per_page,
+    #         "current_page": int(page),
+    #         "total_pages": paginator.num_pages,
+    #     }    
+    #     return CustomResponse(data, status=status_code.HTTP_200_OK)
+    
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        pk = self.kwargs.get('pk')
+        location = self.request.GET.get('location', '')
 
-    #     if page_size:
-    #         pagination_class = self.pagination_class()
-    #         page = pagination_class.paginate_queryset(file_obj, request)
+        # Filtering for Files based on the search criteria
+        file_obj = Files.objects.filter(Q(location__icontains=location) |
+                                        Q(manufacturer_name__full_name__icontains=location) |
+                                        Q(manufacturing_number__icontains=location),
+                                        project_id=pk)
 
-    #     if page is not None:
-    #         serializer = self.serializer_class(instance=file_obj, many=True)
-    #         return CustomResponse(pagination_class.get_paginated_response(serializer.data).data)
+        # Apply pagination
+        page_size = self.request.GET.get('page_size', None)
+        paginator = self.pagination_class()
 
-    #     serializer = self.serializer_class(instance=file_obj, many=True)
+        if page_size:
+            paginated_files = paginator.paginate_queryset(file_obj, self.request)
+            serializer = FilesSerializer(instance=paginated_files, many=True)
+            return paginator.get_paginated_response(serializer.data)
 
-    #     return CustomResponse(serializer.data, status=status_code.HTTP_200_OK)
+        serializer = FilesSerializer(instance=file_obj, many=True)
+        return Response(serializer.data, status=status_code.HTTP_200_OK)
    
 
 class EditFileViewSet(viewsets.ModelViewSet):
