@@ -181,6 +181,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated, CheckUserRoleStatusPermission)
     queryset = Project.objects.all()
     serializer_class = CreateProjectSerializer
+    pagination_class = CustomPagination
 
     def create(self, request, *args, **kwargs):
         project_name = request.data.get('project_name')
@@ -222,7 +223,25 @@ class ProjectViewSet(viewsets.ModelViewSet):
             "data": list(paginated_projects.object_list.values()),           
         }    
         return CustomResponse(results, status=status_code.HTTP_200_OK)
+
     
+    # def search(self, request):
+
+    #     project_name = request.GET.get('project_name', None)
+    #     page_size = request.GET.get('per_page', '')  # Get the requested number of items per page    
+    #     projects = Project.objects.filter(created_by=request.user, is_admin_approved=True) 
+    #     page = None   
+    #     if project_name:
+    #         projects = projects.filter(project_name__icontains=project_name)    
+    #     if page_size:
+    #         pagination_class = self.pagination_class()
+    #         page = pagination_class.paginate_queryset(projects, request)
+    #     if page is not None:
+    #     # serializer = self.action_serializers.get(self.action)(instance=projects, many=True)
+    #         return CustomResponse(pagination_class.get_paginated_response(page).data)
+    #     return CustomResponse(projects)
+        
+        
 
 class FileDetailsViewSet(viewsets.ModelViewSet):
     """
