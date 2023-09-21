@@ -56,6 +56,7 @@ urlpatterns = [
     #ManageSubAdmin
     path("search_sub_admin", views.ManageSubadminViewSet.as_view({"get": "search"}), name="search_sub_admin"),
     path("retrieve_sub_admin/<int:id>", views.ManageSubadminViewSet.as_view({"get": "retrieve"}), name="retrieve_sub_admin"),
+    path("subadmin_status", views.ManageSubadminViewSet.as_view({"put": "subadmin_status"}), name="subadmin_status"),
 
 
     #Dashboard

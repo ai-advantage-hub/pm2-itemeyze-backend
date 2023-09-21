@@ -199,48 +199,54 @@ class ProjectViewSet(viewsets.ModelViewSet):
 
         return CustomResponse(serializer.data, status=status_code.HTTP_201_CREATED)
 
-    def search(self, request):
-
-        project_name = request.GET.get('project_name', None)
-        page = request.GET.get('page', 1)  # Get the requested page number from the request
-        per_page = request.GET.get('per_page', 10)  # Get the requested number of items per page    
-        projects = Project.objects.filter(created_by=request.user, is_admin_approved=True)    
-        if project_name:
-            projects = projects.filter(project_name__icontains=project_name)    
-        # Pagination
-        paginator = Paginator(projects, per_page)   
-        try:
-            paginated_projects = paginator.page(page)
-        except PageNotAnInteger:
-            paginated_projects = paginator.page(1)
-        except EmptyPage:
-            #paginated_projects = paginator.page(paginator.num_pages)  
-            return CustomResponse({"message": "There are no more Projects."}, status=status_code.HTTP_404_NOT_FOUND)  
-        if not paginated_projects:
-            return CustomResponse({"message": "No Data Found."}, status=status_code.HTTP_400_BAD_REQUEST)    
-        # Return paginated results
-        results = {
-            "data": list(paginated_projects.object_list.values()),           
-        }    
-        return CustomResponse(results, status=status_code.HTTP_200_OK)
-
-    
     # def search(self, request):
 
     #     project_name = request.GET.get('project_name', None)
-    #     page_size = request.GET.get('per_page', '')  # Get the requested number of items per page    
-    #     projects = Project.objects.filter(created_by=request.user, is_admin_approved=True) 
-    #     page = None   
+    #     page = request.GET.get('page', 1)  # Get the requested page number from the request
+    #     per_page = request.GET.get('per_page', 10)  # Get the requested number of items per page    
+    #     projects = Project.objects.filter(created_by=request.user, is_admin_approved=True)    
     #     if project_name:
     #         projects = projects.filter(project_name__icontains=project_name)    
-    #     if page_size:
-    #         pagination_class = self.pagination_class()
-    #         page = pagination_class.paginate_queryset(projects, request)
-    #     if page is not None:
-    #     # serializer = self.action_serializers.get(self.action)(instance=projects, many=True)
-    #         return CustomResponse(pagination_class.get_paginated_response(page).data)
-    #     return CustomResponse(projects)
-        
+    #     # Pagination
+    #     paginator = Paginator(projects, per_page)   
+    #     try:
+    #         paginated_projects = paginator.page(page)
+    #     except PageNotAnInteger:
+    #         paginated_projects = paginator.page(1)
+    #     except EmptyPage:
+    #         #paginated_projects = paginator.page(paginator.num_pages)  
+    #         return CustomResponse({"message": "There are no more Projects."}, status=status_code.HTTP_404_NOT_FOUND)  
+    #     if not paginated_projects:
+    #         return CustomResponse({"message": "No Data Found."}, status=status_code.HTTP_400_BAD_REQUEST)    
+    #     # Return paginated results
+    #     results = {
+    #         "data": list(paginated_projects.object_list.values()),           
+    #     }    
+    #     return CustomResponse(results, status=status_code.HTTP_200_OK)
+    
+    def search(self, request):
+        """
+        Method to list and search for the projects.
+        """
+        project_name = request.GET.get('project_name', None)
+        page_size = request.GET.get('page_size', '')
+
+        # Query the companies
+        projects = Project.objects.filter(created_by=request.user, is_admin_approved=True).values('id', 'created_at', 'updated_at', 'project_name', 'project_description', 'is_admin_approved', 'is_marked_deleted', 'project_number', 'created_by_id')
+
+        if project_name:
+            projects = projects.filter(name__icontains=project_name)
+
+        #page = None
+
+        if page_size:
+            pagination_class = self.pagination_class()
+            page = pagination_class.paginate_queryset(projects, request)
+
+        if page is not None:
+            return CustomResponse(pagination_class.get_paginated_response(page).data)
+
+        return CustomResponse(projects)
         
 
 class FileDetailsViewSet(viewsets.ModelViewSet):
@@ -372,6 +378,45 @@ class ProjectDetailsViewSet(viewsets.ModelViewSet):
     #     data['project_files'] = file_serializer.data
     #     return CustomResponse(data, status=status_code.HTTP_200_OK)
 
+    # def list(self, request, *args, **kwargs):
+
+    #     queryset = self.get_queryset()
+    #     pk = self.kwargs.get('pk')
+    #     location = self.request.GET.get('location', '')
+    #     # Filtering for Files based on the search criteria
+    #     file_obj = Files.objects.filter(Q(location__icontains=location) |
+    #                                     Q(manufacturer_name__full_name__icontains=location) |
+    #                                     Q(manufacturing_number__icontains=location),
+    #                                     project_id=pk)
+    #     # file_obj = Files.objects.filter(Q(location__icontains=location) |
+    #     #                                 Q(manufacturer_name__full_name__icontains=location) |
+    #     #                                 Q(manufacturing_number__icontains=location),
+    #     #                                 project_id=pk,
+    #     #                                 is_admin_approved=True)  We will use this when we want to show only those files which are approved by admin
+    #     # Apply pagination to the file_obj
+    #     page = request.GET.get('page', 1)
+    #     per_page = request.GET.get('per_page', 10)  # Use a default value for per_page, or adjust as needed    
+    #     paginator = Paginator(file_obj, per_page)    
+    #     try:
+    #         paginated_files = paginator.page(page)
+    #     except PageNotAnInteger:
+    #         paginated_files = paginator.page(1)
+    #     except EmptyPage:
+    #         #paginated_files = paginator.page(paginator.num_pages)   
+    #         return CustomResponse({"message": "There are no more Files."}, status=status_code.HTTP_404_NOT_FOUND) 
+    #     # Serialize data
+    #     file_serializer = FilesSerializer(paginated_files, many=True)
+    #     project_serializer = self.get_serializer(queryset, many=True, context={"search": location})    
+    #     data = {
+    #         'project_details': project_serializer.data,
+    #         'project_files': file_serializer.data,
+    #         "total": paginator.count,
+    #         "per_page": paginator.per_page,
+    #         "current_page": int(page),
+    #         "total_pages": paginator.num_pages,
+    #     }    
+    #     return CustomResponse(data, status=status_code.HTTP_200_OK)
+
     def list(self, request, *args, **kwargs):
 
         queryset = self.get_queryset()
@@ -387,30 +432,21 @@ class ProjectDetailsViewSet(viewsets.ModelViewSet):
         #                                 Q(manufacturing_number__icontains=location),
         #                                 project_id=pk,
         #                                 is_admin_approved=True)  We will use this when we want to show only those files which are approved by admin
-        # Apply pagination to the file_obj
-        page = request.GET.get('page', 1)
-        per_page = request.GET.get('per_page', 10)  # Use a default value for per_page, or adjust as needed    
-        paginator = Paginator(file_obj, per_page)    
-        try:
-            paginated_files = paginator.page(page)
-        except PageNotAnInteger:
-            paginated_files = paginator.page(1)
-        except EmptyPage:
-            #paginated_files = paginator.page(paginator.num_pages)   
-            return CustomResponse({"message": "There are no more Files."}, status=status_code.HTTP_404_NOT_FOUND) 
-        # Serialize data
-        file_serializer = FilesSerializer(paginated_files, many=True)
-        project_serializer = self.get_serializer(queryset, many=True, context={"search": location})    
-        data = {
-            'project_details': project_serializer.data,
-            'project_files': file_serializer.data,
-            "total": paginator.count,
-            "per_page": paginator.per_page,
-            "current_page": int(page),
-            "total_pages": paginator.num_pages,
-        }    
-        return CustomResponse(data, status=status_code.HTTP_200_OK)
+        page_size = request.GET.get('page_size', '')
+        page = None
 
+        if page_size:
+            pagination_class = self.pagination_class()
+            page = pagination_class.paginate_queryset(file_obj, request)
+
+        if page is not None:
+            serializer = self.serializer_class(instance=file_obj, many=True)
+            return CustomResponse(pagination_class.get_paginated_response(serializer.data).data)
+
+        serializer = self.serializer_class(instance=file_obj, many=True)
+
+        return CustomResponse(serializer.data, status=status_code.HTTP_200_OK)
+   
 
 class EditFileViewSet(viewsets.ModelViewSet):
     """
