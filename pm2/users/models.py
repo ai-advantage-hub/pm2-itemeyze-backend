@@ -60,9 +60,10 @@ class User(AbstractBaseUser, BaseModel):
     is_email_verified = models.BooleanField(default=False)
     is_admin_approved = models.BooleanField(default=False)
     is_deleted = models.BooleanField(default=False)
-    is_notification_enabled = models.BooleanField(default=True)
-    modules_accessible = ArrayField(models.IntegerField(verbose_name="accessible_modules"), null=True, blank=True)    
-    
+    is_notification_enabled = models.BooleanField(default=True)    
+    modules_accessible = ArrayField(models.CharField(max_length=254, verbose_name="accessible_modules"), null=True, blank=True)    
+
+
     objects = ActiveUserManager()
     all_objects = ActiveObjectsManager()
     all_delete_objects = UserManager()
