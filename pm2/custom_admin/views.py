@@ -929,6 +929,25 @@ class ManageSubadminViewSet(viewsets.ViewSet):
         if not sub_admin:
             return CustomResponse({"Message": "Subadmin not found."}, status=status.HTTP_400_BAD_REQUEST)
         return CustomResponse(sub_admin, status=status.HTTP_200_OK)
+    
+    def subadmin_status(self, request):
+        """
+            method to change status for the Subadmin.
+        """
+        data = request.data
+        id = data.get("id")
+        status_value = data.get("status_value")
+
+        sub_admin = User.all_objects.filter(id=id, user_role=3).first()
+        if not sub_admin:
+            return CustomResponse({"message": "This subadmin does not exist"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if status_value == 1:
+            User.objects.filter(id=id, user_role=3).update(is_active=True)
+            return CustomResponse({"message": "Subadmin Activated successfully"}, status=status.HTTP_200_OK)
+        if status_value == 2:
+            User.objects.filter(id=id, user_role=3).update(is_active=False)
+            return CustomResponse({"message": "Subadmin deactivated successfully"}, status=status.HTTP_200_OK)
 
         
 
