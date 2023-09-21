@@ -2,7 +2,7 @@ from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, UserManager, BaseUserManager
 from django.utils import timezone
 from django.contrib.gis.db import models
-
+from django.contrib.postgres.fields import ArrayField
 
 # Assuming core.models contains BaseModel
 from core.models import BaseModel
@@ -59,7 +59,9 @@ class User(AbstractBaseUser, BaseModel):
     is_active = models.BooleanField(default=True)
     is_email_verified = models.BooleanField(default=False)
     is_admin_approved = models.BooleanField(default=False)
-    is_deleted = models.BooleanField(default=False)  
+    is_deleted = models.BooleanField(default=False)
+    is_notification_enabled = models.BooleanField(default=True)
+    modules_accessible = ArrayField(models.IntegerField(verbose_name="accessible_modules"), null=True, blank=True)    
     
     objects = ActiveUserManager()
     all_objects = ActiveObjectsManager()

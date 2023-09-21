@@ -868,10 +868,31 @@ class ManageSubadminViewSet(viewsets.ViewSet):
         This view is of crud operations for manage Subadmin
     """
     permission_classes = (IsAuthenticated, CheckAdminRoleStatusPermission,)
+    pagination_class = CustomPagination
+
+    # def search(self, request):
+    #     query = request.GET.get('query', None)
+    #     users_query = User.objects.filter(user_role=3).values('id', 'full_name', 'email', 'is_active', 'phone_number')
+    #     if query:
+    #         users_query = users_query.filter(full_name__icontains=query)
+
+    #     users_with_modules = []
+    #     for user in users_query:
+    #         user_data = {
+    #             **user,
+    #             "Modules_accessible": ["ManageUsers", "ManageProject"]
+    #         }
+    #         users_with_modules.append(user_data)
+    #     data = {
+    #         "users": users_with_modules
+    #     }
+    #     return CustomResponse(data)
 
     def search(self, request):
         query = request.GET.get('query', None)
-        users_query = User.objects.filter(user_role=3).values('id', 'full_name', 'email', 'is_active', 'phone_number')
+        page_size = request.GET.get('page_size', '') # Obtain the page_size parameter
+
+        users_query = User.objects.filter(user_role=3).values('id', 'full_name', 'email', 'is_active','phone_number')
         if query:
             users_query = users_query.filter(full_name__icontains=query)
 
@@ -882,10 +903,26 @@ class ManageSubadminViewSet(viewsets.ViewSet):
                 "Modules_accessible": ["ManageUsers", "ManageProject"]
             }
             users_with_modules.append(user_data)
+    
+        page = None
+        if page_size: # Check for page_size
+            pagination_class = self.pagination_class()
+            page = pagination_class.paginate_queryset(users_with_modules, request)
+    
+        if page is not None: # If page is paginated, return paginated response
+            return CustomResponse(pagination_class.get_paginated_response(page).data)
+
         data = {
             "users": users_with_modules
         }
         return CustomResponse(data)
+    
+    def retrieve(self, request, id):
+        sub_admin=User.objects.filter(id=id, user_role=3).all().values('full_name', 'email', 'phone_number', 'created_at', 'modules_accessible')
+        if not sub_admin:
+            return CustomResponse({"Message": "Subadmin not found."}, status=status.HTTP_400_BAD_REQUEST)
+        return CustomResponse(sub_admin, status=status.HTTP_200_OK)
+
         
 
 class DashBoardViewSet(viewsets.ViewSet):
