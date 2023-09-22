@@ -66,7 +66,11 @@ urlpatterns = [
     path("admin_dashboard", views.DashBoardViewSet.as_view({"get": "get"}), name="admin_dashboard"),
     path("user_email_list", views.UseremailViewSet.as_view({"get": "get"}), name="user_email_list"),
 
-    
+    #Manage User
+    path("user_list", views.UserListAdminViewSet.as_view({"get": "list"}), name="user_list"),
+    path("user_details/<int:id>", views.UserListAdminViewSet.as_view({"get": "retrieve"}), name="user_details"),
+    path("unapproved_users", views.UserListAdminViewSet.as_view({"get": "unapproved_users"}), name="unapproved_users"),
+    path("approve_users", views.UserListAdminViewSet.as_view({"put": "approve_users"}), name="approve_users"),
 
 
 ]
