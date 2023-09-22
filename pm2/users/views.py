@@ -234,8 +234,10 @@ class ProjectViewSet(viewsets.ModelViewSet):
         # Query the companies
         projects = Project.objects.filter(created_by=request.user, is_admin_approved=True).values('id', 'created_at', 'updated_at', 'project_name', 'project_description', 'is_admin_approved', 'is_marked_deleted', 'project_number', 'created_by_id')
 
+        # if project_name:
+        #     projects = projects.filter(name__icontains=project_name)
         if project_name:
-            projects = projects.filter(name__icontains=project_name)
+            projects = projects.filter(project_name__icontains=project_name)
 
         #page = None
 
