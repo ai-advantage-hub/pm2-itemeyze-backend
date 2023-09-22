@@ -10,7 +10,7 @@ from django.contrib.auth.hashers import check_password
 from custom_admin.models import *
 from core.response import CustomResponse
 from django.db.models import Count
-from core.common_utils import generate_otp, send_verification_email
+from core.common_utils import generate_otp, send_verification_email, send_subadmin_credentials
 from core.permissions import CheckAdminRoleStatusPermission
 from rest_framework.permissions import IsAuthenticated
 from users.models import OTP
@@ -953,6 +953,8 @@ class ManageSubadminViewSet(viewsets.ViewSet):
 
         if User.objects.filter(email=email).exists():
             return CustomResponse({"message": "Email Already Exists"})
+        if User.objects.filter(phone_number=phone_number).exists():
+            return CustomResponse({"message": "Phone Number Already Exists"})
         with transaction.atomic():
             sub_admin = User.objects.create(full_name=full_name, email=email, phone_number=phone_number, user_role=3)
             sub_admin.set_password(temporary_password)
@@ -964,6 +966,7 @@ class ManageSubadminViewSet(viewsets.ViewSet):
             for x in modules_accessible:            
                 d.modules_accessible.append(x)
             d.save()
+            send_subadmin_credentials(email, temporary_password)
             return CustomResponse({"message": "Subadmin created Successfully", "id":d.id})
         
 
