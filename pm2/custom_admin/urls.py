@@ -58,6 +58,8 @@ urlpatterns = [
     path("retrieve_sub_admin/<int:id>", views.ManageSubadminViewSet.as_view({"get": "retrieve"}), name="retrieve_sub_admin"),
     path("subadmin_status", views.ManageSubadminViewSet.as_view({"put": "subadmin_status"}), name="subadmin_status"),
     path("create_subadmin", views.ManageSubadminViewSet.as_view({"post": "create"}), name="create_subadmin"),
+    path("edit_subadmin/<int:id>", views.ManageSubadminViewSet.as_view({"put": "edit_subadmin"}), name="edit_subadmin"),
+    path("delete_subadmin/<int:id>", views.ManageSubadminViewSet.as_view({"put": "update"}), name="delete_subadmin"),
 
 
     #Dashboard
