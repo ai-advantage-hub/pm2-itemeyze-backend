@@ -872,25 +872,10 @@ class ManageSubadminViewSet(viewsets.ViewSet):
     permission_classes = (IsAuthenticated, CheckAdminRoleStatusPermission,)
     pagination_class = CustomPagination
 
-    # def search(self, request):
-    #     query = request.GET.get('query', None)
-    #     users_query = User.objects.filter(user_role=3).values('id', 'full_name', 'email', 'is_active', 'phone_number')
-    #     if query:
-    #         users_query = users_query.filter(full_name__icontains=query)
-
-    #     users_with_modules = []
-    #     for user in users_query:
-    #         user_data = {
-    #             **user,
-    #             "Modules_accessible": ["ManageUsers", "ManageProject"]
-    #         }
-    #         users_with_modules.append(user_data)
-    #     data = {
-    #         "users": users_with_modules
-    #     }
-    #     return CustomResponse(data)
-
     def search(self, request):
+        """
+            function for listing and searching of subadmin
+        """
         query = request.GET.get('query', None)
         is_active = request.GET.get('is_active', None)
         page_size = request.GET.get('page_size', '') # Obtain the page_size parameter
@@ -919,6 +904,9 @@ class ManageSubadminViewSet(viewsets.ViewSet):
         return CustomResponse(data)
     
     def retrieve(self, request, id):
+        """
+            function to retrieve subadmin
+        """
         sub_admin=User.objects.filter(id=id, user_role=3).all().values('full_name', 'email', 'phone_number', 'created_at', 'modules_accessible')
         if not sub_admin:
             return CustomResponse({"Message": "Subadmin not found."}, status=status.HTTP_400_BAD_REQUEST)
@@ -926,7 +914,7 @@ class ManageSubadminViewSet(viewsets.ViewSet):
     
     def subadmin_status(self, request):
         """
-            method to change status for the Subadmin.
+            function to change status for the Subadmin.
         """
         data = request.data
         id = data.get("id")
@@ -944,6 +932,9 @@ class ManageSubadminViewSet(viewsets.ViewSet):
             return CustomResponse({"message": "Subadmin deactivated successfully"}, status=status.HTTP_200_OK)
 
     def create(self, request):
+        """
+            function to create subadmin
+        """
         data = request.data
         full_name = data.get('full_name')
         email = data.get('email')
@@ -969,7 +960,46 @@ class ManageSubadminViewSet(viewsets.ViewSet):
             send_subadmin_credentials(email, temporary_password)
             return CustomResponse({"message": "Subadmin created Successfully", "id":d.id})
         
+    def edit_subadmin(self, request, id):
+        """
+            function to edit details of subadmin
+        """
+        data = request.data
+        full_name = data.get('full_name')
+        email = data.get('email')
+        phone_number = data.get('phone_number')
+        modules_accessible = data.get("modules_accessible", [])
 
+        sub_admin = User.all_objects.filter(id=id, user_role=3).first()
+        if not sub_admin:
+            return CustomResponse({"message": "Subadmin not found"}, status=status.HTTP_404_NOT_FOUND)
+        if full_name:
+            sub_admin.full_name = full_name
+        if email:
+            sub_admin.email = email
+        if phone_number:
+            sub_admin.phone_number = phone_number
+        if modules_accessible:
+            sub_admin.modules_accessible = modules_accessible
+
+        sub_admin.save()
+
+        return CustomResponse({"message": "Subadmin details updated successfully"}, status=status.HTTP_200_OK)
+    
+    def update(self, request, id):
+        """
+            function to delete the subadmin
+        """
+        sub_admin = User.all_objects.filter(id=id, user_role=3).first()
+        if not sub_admin:
+            return CustomResponse({"message": "Subadmin not found."}, status=status_code.HTTP_404_NOT_FOUND)
+        sub_admin.email = None
+        sub_admin.is_deleted = True
+        sub_admin.save()
+            
+        return CustomResponse({"message": "Subadmin Deleted Successfully."}, status=status_code.HTTP_200_OK)
+
+        
 class DashBoardViewSet(viewsets.ViewSet):
     """
         This view is of Dashboard
