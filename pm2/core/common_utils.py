@@ -75,6 +75,24 @@ def send_verification_link(email, otp):
         print("error", e)
 
 
+def send_subadmin_credentials(email, temporary_password):
+    # user = User.objects.filter(email=email).first()
+    # c = user.full_name
+    try:
+        # subject = 'Your Subadmin Credentials'
+        # message = f'Your subadmin credentials are:\n\nEmail: {email}\nPassword: {temporary_password}'
+        # from_email = Email(FROM_EMAIL)  # Replace with your email address or use settings variable
+        # recipient_list = To(email)
+        ctx_dict = {"email": email, "temporary_password": temporary_password}
+        html_template = "send_subadmin.html"
+        subject = "You are Subadmin now"
+        send_html_mail_to_single_user(subject, email, html_template, ctx_dict)
+
+        #send_html_mail_to_single_user(subject, message, from_email, recipient_list)
+    except Exception as e:
+        print("error", e)    
+
+
 def check_file_size(file_obj):
     """
         check_file_size function to check the size of files

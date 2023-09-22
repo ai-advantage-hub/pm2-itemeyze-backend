@@ -10,7 +10,7 @@ from django.contrib.auth.hashers import check_password
 from custom_admin.models import *
 from core.response import CustomResponse
 from django.db.models import Count
-from core.common_utils import generate_otp, send_verification_email
+from core.common_utils import generate_otp, send_verification_email, send_subadmin_credentials
 from core.permissions import CheckAdminRoleStatusPermission
 from rest_framework.permissions import IsAuthenticated
 from users.models import OTP
@@ -28,6 +28,8 @@ from rest_framework import status as status_code
 from django.db.models import Q
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from core.pagination import CustomPagination
+from django.db import transaction
+
 
 
 
@@ -893,7 +895,7 @@ class ManageSubadminViewSet(viewsets.ViewSet):
         is_active = request.GET.get('is_active', None)
         page_size = request.GET.get('page_size', '') # Obtain the page_size parameter
 
-        users_query = User.objects.filter(user_role=3).values('id', 'full_name', 'email', 'is_active', 'phone_number')
+        users_query = User.objects.filter(user_role=3).values('id', 'full_name', 'email', 'is_active', 'phone_number', 'modules_accessible')
         if query:
             users_query = users_query.filter(full_name__icontains=query)
 
@@ -902,25 +904,17 @@ class ManageSubadminViewSet(viewsets.ViewSet):
                 users_query = users_query.filter(is_active=True)
             elif is_active == "false":
                 users_query = users_query.filter(is_active=False)
-
-        users_with_modules = []
-        for user in users_query:
-            user_data = {
-                **user,
-                "Modules_accessible": ["ManageUsers", "ManageProject"]
-            }
-            users_with_modules.append(user_data)
     
         page = None
         if page_size: # Check for page_size
             pagination_class = self.pagination_class()
-            page = pagination_class.paginate_queryset(users_with_modules, request)
+            page = pagination_class.paginate_queryset(users_query, request)
     
         if page is not None: # If page is paginated, return paginated response
             return CustomResponse(pagination_class.get_paginated_response(page).data)
 
         data = {
-            "users": users_with_modules
+            "users": users_query
         }
         return CustomResponse(data)
     
@@ -943,12 +937,37 @@ class ManageSubadminViewSet(viewsets.ViewSet):
             return CustomResponse({"message": "This subadmin does not exist"}, status=status.HTTP_400_BAD_REQUEST)
 
         if status_value == 1:
-            User.objects.filter(id=id, user_role=3).update(is_active=True)
+            User.all_objects.filter(id=id, user_role=3).update(is_active=True)
             return CustomResponse({"message": "Subadmin Activated successfully"}, status=status.HTTP_200_OK)
         if status_value == 2:
-            User.objects.filter(id=id, user_role=3).update(is_active=False)
+            User.all_objects.filter(id=id, user_role=3).update(user_role=2)
             return CustomResponse({"message": "Subadmin deactivated successfully"}, status=status.HTTP_200_OK)
 
+    def create(self, request):
+        data = request.data
+        full_name = data.get('full_name')
+        email = data.get('email')
+        phone_number = data.get('phone_number')
+        temporary_password = data.get('temporary_password')
+        modules_accessible = data.get("modules_accessible", [])
+
+        if User.objects.filter(email=email).exists():
+            return CustomResponse({"message": "Email Already Exists"})
+        if User.objects.filter(phone_number=phone_number).exists():
+            return CustomResponse({"message": "Phone Number Already Exists"})
+        with transaction.atomic():
+            sub_admin = User.objects.create(full_name=full_name, email=email, phone_number=phone_number, user_role=3)
+            sub_admin.set_password(temporary_password)
+            sub_admin.save()
+            c = sub_admin.id
+            d = User.objects.filter(id=c).first()
+            if d.modules_accessible is None:
+                d.modules_accessible = []
+            for x in modules_accessible:            
+                d.modules_accessible.append(x)
+            d.save()
+            send_subadmin_credentials(email, temporary_password)
+            return CustomResponse({"message": "Subadmin created Successfully", "id":d.id})
         
 
 class DashBoardViewSet(viewsets.ViewSet):
