@@ -895,7 +895,7 @@ class ManageSubadminViewSet(viewsets.ViewSet):
         is_active = request.GET.get('is_active', None)
         page_size = request.GET.get('page_size', '') # Obtain the page_size parameter
 
-        users_query = User.objects.filter(user_role=3).values('id', 'full_name', 'email', 'is_active', 'phone_number', 'modules_accessible')
+        users_query = User.all_objects.filter(user_role=3).values('id', 'full_name', 'email', 'is_active', 'phone_number', 'modules_accessible')
         if query:
             users_query = users_query.filter(full_name__icontains=query)
 
@@ -940,7 +940,7 @@ class ManageSubadminViewSet(viewsets.ViewSet):
             User.all_objects.filter(id=id, user_role=3).update(is_active=True)
             return CustomResponse({"message": "Subadmin Activated successfully"}, status=status.HTTP_200_OK)
         if status_value == 2:
-            User.all_objects.filter(id=id, user_role=3).update(user_role=2)
+            User.all_objects.filter(id=id, user_role=3).update(is_active=False)
             return CustomResponse({"message": "Subadmin deactivated successfully"}, status=status.HTTP_200_OK)
 
     def create(self, request):
