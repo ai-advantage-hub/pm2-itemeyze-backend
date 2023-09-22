@@ -239,7 +239,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
         if project_name:
             projects = projects.filter(project_name__icontains=project_name)
 
-        #page = None
+        page = None
 
         if page_size:
             pagination_class = self.pagination_class()
@@ -393,28 +393,49 @@ class ProjectDetailsViewSet(viewsets.ModelViewSet):
     #     }    
     #     return CustomResponse(data, status=status_code.HTTP_200_OK)
     
+    # def list(self, request, *args, **kwargs):
+    #     queryset = self.get_queryset()
+    #     pk = self.kwargs.get('pk')
+    #     location = self.request.GET.get('location', '')
+
+    #     # Filtering for Files based on the search criteria
+    #     file_obj = Files.objects.filter(Q(location__icontains=location) |
+    #                                     Q(manufacturer_name__full_name__icontains=location) |
+    #                                     Q(manufacturing_number__icontains=location),
+    #                                     project_id=pk)
+
+    #     # Apply pagination
+    #     page_size = self.request.GET.get('page_size', None)
+    #     paginator = self.pagination_class()
+
+    #     if page_size:
+    #         paginated_files = paginator.paginate_queryset(file_obj, self.request)
+    #         serializer = FilesSerializer(instance=paginated_files, many=True)
+    #         return paginator.get_paginated_response(serializer.data)
+
+    #     serializer = FilesSerializer(instance=file_obj, many=True)
+    #     return CustomResponse(serializer.data, status=status_code.HTTP_200_OK)
+
     def list(self, request, *args, **kwargs):
+        page_size = self.request.GET.get('page_size', '')
         queryset = self.get_queryset()
         pk = self.kwargs.get('pk')
         location = self.request.GET.get('location', '')
-
         # Filtering for Files based on the search criteria
         file_obj = Files.objects.filter(Q(location__icontains=location) |
                                         Q(manufacturer_name__full_name__icontains=location) |
                                         Q(manufacturing_number__icontains=location),
                                         project_id=pk)
 
-        # Apply pagination
-        page_size = self.request.GET.get('page_size', None)
-        paginator = self.pagination_class()
-
+        # Apply pagination        
         if page_size:
-            paginated_files = paginator.paginate_queryset(file_obj, self.request)
-            serializer = FilesSerializer(instance=paginated_files, many=True)
-            return paginator.get_paginated_response(serializer.data)
-
+            pagination_class = self.pagination_class()
+            page = pagination_class.paginate_queryset(file_obj, request)
+            if page is not None:
+                serializer = FilesSerializer(instance=page, many=True)
+                return CustomResponse(pagination_class.get_paginated_response(serializer.data).data)
         serializer = FilesSerializer(instance=file_obj, many=True)
-        return Response(serializer.data, status=status_code.HTTP_200_OK)
+        return CustomResponse(serializer.data, status=status_code.HTTP_200_OK)
    
 
 class EditFileViewSet(viewsets.ModelViewSet):
