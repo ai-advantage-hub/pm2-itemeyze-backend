@@ -119,11 +119,11 @@ class UserLoginSerializer(serializers.Serializer):
         if user is None:
             raise CustomException(status_code=400, message="Invalid email or password.", location="Login")
 
-        # if not user.is_active:
-        #     raise serializers.ValidationError({"message": "User account is not active."})
+        if not user.is_active:
+            raise serializers.ValidationError({"message": "User account is not active."})
 
-        # if not user.is_admin_approved:
-        #     raise serializers.ValidationError({"message": "User is not approved by admin."})
+        if not user.is_admin_approved:
+            raise serializers.ValidationError({"message": "User is not approved by admin."})
 
         if not user.is_email_verified:
             otp = generate_otp()
@@ -409,57 +409,57 @@ class CompanyNameSerializer(serializers.ModelSerializer):
 #         instance.save()
 #         return instance
 
-class UserEditProfileSerializer(serializers.Serializer):
-    """
-    UserEditProfileSerializer to Edit Personal Details of Users
-    """
-    full_name = serializers.CharField(required=False, allow_blank=True, allow_null=True)
-    email = serializers.EmailField(required=False, allow_blank=True, allow_null=True)
-    profile_pic = serializers.CharField(required=False, allow_blank=True, allow_null=True)
-    company = serializers.PrimaryKeyRelatedField(
-        queryset=Company.objects.all(), required=False
-    )
+# class UserEditProfileSerializer(serializers.Serializer):
+#     """
+#     UserEditProfileSerializer to Edit Personal Details of Users
+#     """
+#     full_name = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+#     email = serializers.EmailField(required=False, allow_blank=True, allow_null=True)
+#     profile_pic = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+#     company = serializers.PrimaryKeyRelatedField(
+#         queryset=Company.objects.all(), required=False
+#     )
 
-    def validate(self, data):
-        email = data.get("email")
-        if email != self.instance.email:
-            # Email has changed, set a flag
-            self.email_changed = True
-        else:
-            self.email_changed = False
-        return data
+#     def validate(self, data):
+#         email = data.get("email")
+#         if email != self.instance.email:
+#             # Email has changed, set a flag
+#             self.email_changed = True
+#         else:
+#             self.email_changed = False
+#         return data
 
-    def update(self, instance, validated_data):
-        full_name = validated_data.get("full_name")
-        email = validated_data.get("email")
-        profile_pic = validated_data.get("profile_pic")  # Modified this line
+#     def update(self, instance, validated_data):
+#         full_name = validated_data.get("full_name")
+#         email = validated_data.get("email")
+#         profile_pic = validated_data.get("profile_pic")  # Modified this line
 
-        company = validated_data.get("company")
+#         company = validated_data.get("company")
         
-        # if not full_name:
-        #     raise serializers.ValidationError("Please provide a full name.")
+#         # if not full_name:
+#         #     raise serializers.ValidationError("Please provide a full name.")
 
-        if profile_pic:
-            instance.profile_pic = profile_pic
-        if full_name:
-            instance.full_name = full_name
+#         if profile_pic:
+#             instance.profile_pic = profile_pic
+#         if full_name:
+#             instance.full_name = full_name
 
-        if email:
-            otp = generate_otp()
-            instance.otp = otp
-            instance.is_email_verified = False
-            instance.email = email
+#         if email:
+#             otp = generate_otp()
+#             instance.otp = otp
+#             instance.is_email_verified = False
+#             instance.email = email
 
-            try:
-                send_verification_email(email, otp)
-            except Exception as e:
-                raise serializers.ValidationError(f"Failed to send OTP: {str(e)}")
+#             try:
+#                 send_verification_email(email, otp)
+#             except Exception as e:
+#                 raise serializers.ValidationError(f"Failed to send OTP: {str(e)}")
 
-        if company:
-            instance.company = company
+#         if company:
+#             instance.company = company
 
-        instance.save()
-        return instance
+#         instance.save()
+#         return instance
 
 
 class UserChangePasswordSerializer(serializers.Serializer):
