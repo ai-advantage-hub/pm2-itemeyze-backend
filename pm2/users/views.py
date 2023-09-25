@@ -22,7 +22,6 @@ from .serializers import (
     UserListingSerializer, 
     CompanyNameSerializer, 
     ViewProfileSerializer, 
-    UserEditProfileSerializer,
     UserChangePasswordSerializer,
     FilesSerializer,
     UserDeviceDetailSerializer,
@@ -231,7 +230,6 @@ class ProjectViewSet(viewsets.ModelViewSet):
         project_name = request.GET.get('project_name', None)
         page_size = request.GET.get('page_size', '')
 
-        # Query the companies
         projects = Project.objects.filter(created_by=request.user, is_admin_approved=True).values('id', 'created_at', 'updated_at', 'project_name', 'project_description', 'is_admin_approved', 'is_marked_deleted', 'project_number', 'created_by_id')
 
         # if project_name:
@@ -568,32 +566,71 @@ class UserEditProfileViewSet(viewsets.ViewSet):
     """
     permission_classes = (IsAuthenticated, CheckUserRoleStatusPermission)
 
-    def update(self, request):
-        serializer = UserEditProfileSerializer(
-            instance=request.user, data=request.data, partial=True
-        )
+    # def update(self, request):
+    #     serializer = UserEditProfileSerializer(
+    #         instance=request.user, data=request.data, partial=True
+    #     )
 
-        if serializer.is_valid():
-            instance = serializer.save()
-            message = "Profile information updated successfully"
+    #     if serializer.is_valid():
+    #         instance = serializer.save()
+    #         message = "Profile information updated successfully"
 
-            # Check if the email field was modified
-            if serializer.email_changed:
-                otp = generate_otp()
-                OTP.objects.update_or_create(user_id=instance.id, otp=otp, otp_type=1)
-                instance.otp = otp
-                instance.is_email_verified = False
-                instance.save()
+    #         # Check if the email field was modified
+    #         if serializer.email_changed:
+    #             otp = generate_otp()
+    #             OTP.objects.update_or_create(user_id=instance.id, otp=otp, otp_type=1)
+    #             instance.otp = otp
+    #             instance.is_email_verified = False
+    #             instance.save()
 
-                try:
-                    send_verification_email(instance.email, otp)
-                    message = "OTP sent successfully."
-                except Exception as e:
-                    message = f"Profile information updated successfully. Failed to send OTP: {str(e)}"
+    #             try:
+    #                 send_verification_email(instance.email, otp)
+    #                 message = "OTP sent successfully."
+    #             except Exception as e:
+    #                 message = f"Profile information updated successfully. Failed to send OTP: {str(e)}"
 
-            return Response({"message": message}, status=status_code.HTTP_200_OK)
+    #         return Response({"message": message}, status=status_code.HTTP_200_OK)
         
-        return Response(serializer.errors, status=status_code.HTTP_400_BAD_REQUEST)
+    #     return Response(serializer.errors, status=status_code.HTTP_400_BAD_REQUEST)
+
+    def update(self, request):
+        data = request.data
+        full_name = data.get("full_name")
+        email = data.get("email")
+        profile_pic = data.get("profile_pic")
+
+        # Validate full name
+        if not full_name:
+            return CustomResponse({"message": "Please provide full name."}, status=status_code.HTTP_400_BAD_REQUEST)
+
+        # Check if email already exists, but ignore the current user's email
+        if email and User.objects.filter(email=email).exclude(id=request.user.id).exists():
+            return CustomResponse({"message": "Email already exists."}, status=status_code.HTTP_400_BAD_REQUEST)    
+
+        update_data = {"full_name": full_name}
+        d = User.objects.filter(id=request.user.id).first()
+
+        # Update email and its verification status if provided
+        if email and email != d.email:
+            update_data["email"] = email
+            update_data["is_email_verified"] = False
+            otp = generate_otp()
+            OTP.objects.update_or_create(user_id=request.user.id, otp=otp, otp_type=1)
+            try:
+                send_verification_email(email, otp)
+            except Exception as e:
+                pass
+
+        # Update profile picture if provided
+        if profile_pic:
+            update_data["profile_pic"] = profile_pic
+         
+        # Perform the update in a single query
+        User.objects.filter(id=request.user.id).update(**update_data)
+        if email and email != d.email:
+            return CustomResponse({"message": "Email changed, otp sent successfully."}, status=status_code.HTTP_200_OK)
+        
+        return CustomResponse({"message": "Profile updated successfully"}, status=status_code.HTTP_200_OK)
     
 # class UserEditProfileViewSet(viewsets.ViewSet):
 #     """

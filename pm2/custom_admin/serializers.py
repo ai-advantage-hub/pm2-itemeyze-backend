@@ -139,3 +139,40 @@ class FilesPointSerializer(serializers.ModelSerializer):
         if obj.location_points:
             return {'longitude': obj.location_points.x, 'latitude': obj.location_points.y}
         return None
+    
+
+#Manage Users 
+
+# class UserListAdminSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = User
+#         fields = ('id', 'full_name')
+
+class UserListCompanySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Company
+        fields = ('name',)
+
+class UserListProjectSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Project
+        fields = ('project_name',)
+
+class UserListUserCompanySerializer(serializers.ModelSerializer):
+    company_user = UserListCompanySerializer()
+    class Meta:
+        model = UserCompany
+        fields = ('company_name', 'company_user')
+
+class UserListAdminSerializer(serializers.ModelSerializer):
+    # total_projects = serializers.SerializerMethodField()
+    # company = UserListCompanySerializer(source='user_company')
+    company = UserListUserCompanySerializer()  # Assuming ForeignKey relationship named 'company'
+    total_projects = serializers.IntegerField(source='project_set.count', read_only=True)
+
+    class Meta:
+        model = User
+        fields = ('id', 'full_name', 'email', 'total_projects', 'company')
+
+    def get_total_projects(self, obj):
+        return Project.objects.filter(created_by=obj).count()

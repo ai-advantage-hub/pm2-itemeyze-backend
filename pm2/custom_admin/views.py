@@ -2,7 +2,7 @@ from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, viewsets, mixins, generics, filters
-from custom_admin.serializers import AdminLoginSerializer,AdminResetPasswordSerializer, ForgotPasswordSerializer, ProjectDetailSerializer,FilesSerializer,FilesPointSerializer
+from custom_admin.serializers import AdminLoginSerializer,AdminResetPasswordSerializer, ForgotPasswordSerializer, ProjectDetailSerializer,FilesSerializer,FilesPointSerializer, UserListAdminSerializer
 from django.contrib.auth import authenticate
 from rest_framework.authtoken.models import Token
 from users.models import Company, UserCompany, User,Project,Files
@@ -1065,7 +1065,150 @@ class AdminNameViewset(viewsets.ViewSet):
         return CustomResponse(name)              
 
 
-            
+#Manage Users
+
+# class UserListAdminViewSet(viewsets.ViewSet):
+#     """
+#        UserListingViewSet for getting the list of users 
+#     """
+#     permission_classes = (IsAuthenticated, CheckAdminRoleStatusPermission,)
+
+#     def list(self, request):
+#         name = request.GET.get('name', None)
+#         users = User.objects.filter(is_admin_approved=True, full_name__icontains=name).all()
+#         serializer = UserListAdminSerializer(users, many=True)
+
+#         return CustomResponse(serializer.data, status=status_code.HTTP_200_OK)
+
+# class UserListAdminViewSet(viewsets.ReadOnlyModelViewSet):
+#     queryset = User.objects.all()
+#     serializer_class = UserListAdminSerializer       
+
+
+class  UserListAdminViewSet(viewsets.ViewSet):
+    """
+        UserListAdminViewSet to Manage Users
+    """
+    permission_classes = (IsAuthenticated, CheckAdminRoleStatusPermission,)
+    pagination_class = CustomPagination
+    def list(self, request):
+        """
+            function to get the list of users
+        """
+        name = request.GET.get('name', '')
+        page_size = request.GET.get('page_size', '')
+        is_active = request.GET.get('is_active', None)
+        # users = User.objects.filter(is_admin_approved=True, full_name__icontains=name).all().annotate(num_projects=Count('assigned_projects')).values('id', 'full_name', 'email', 'user_company', 'user_company__company__name', 'is_active', 'num_projects')
+        users = User.objects.filter(is_admin_approved=True, full_name__icontains=name) \
+                .annotate(num_projects=Count('assigned_projects')) \
+                .values('id', 'full_name', 'email', 'user_company', 'user_company__company__name', 'is_active', 'num_projects')
+        if is_active:
+            if is_active == "true":
+                users = users.filter(is_active=True)
+            elif is_active == "false":
+                users = users.filter(is_active=False)
+        page = None
+        if page_size:
+            pagination_class = self.pagination_class()
+            page = pagination_class.paginate_queryset(users, request)
+        if page is not None:
+            return CustomResponse(pagination_class.get_paginated_response(page).data)
+        return CustomResponse(users, status=status_code.HTTP_200_OK)  
+    
+    def change_status(self, request):
+        """
+            function to change the status of users
+        """
+        data = request.data
+        user_id = data.get('user_id')
+        status_value = data.get('status_value')
+        user = User.objects.filter(id=user_id).first()
+        if not user:
+            return CustomResponse({"message": "User not found."}, status=status.HTTP_400_BAD_REQUEST)
+        if status_value == 1:
+            User.objects.filter(id=user_id).update(is_active=True)
+            return CustomResponse({"message": "User Activated Successfully"}, status=status_code.HTTP_200_OK)
+        if status_value == 2:
+            User.objects.filter(id=user_id).update(is_active=False)
+            try:
+                token = Token.objects.get(user=user)
+                token.delete()
+            except Token.DoesNotExist:
+                pass
+            return CustomResponse({"message": "User Deactivated Successfully"}, status=status_code.HTTP_200_OK)
+
+    
+    def retrieve(self, request, id):
+        """
+            function to retrieve a particular user using user id
+        """
+        user = User.objects.filter(id=id).all().values('id', 'full_name', 'created_at', 'user_company', 'user_company__company__name', 'modules_accessible', 'profile_pic')
+        return CustomResponse(user, status=status_code.HTTP_200_OK)
+    
+    def unapproved_users(self, request):
+        """
+            function to get the list of unapproved users
+        """
+        page_size = request.GET.get('page_size', '')
+        user = User.objects.filter(is_admin_approved=False).all().values('id', 'full_name', 'profile_pic', 'email', 'user_company', 'user_company__company__name')
+        page = None
+        if page_size:
+            pagination_class = self.pagination_class()
+            page = pagination_class.paginate_queryset(user, request)
+        if page is not None:
+            return CustomResponse(pagination_class.get_paginated_response(page).data)
+        return CustomResponse(user, status=status_code.HTTP_200_OK)
+    
+    def approve_users(self, request):
+        """
+            function to approve the users
+        """
+        data = request.data
+        user_id = data.get("user_id")
+        status_value = data.get("status_value")
+
+        user = User.objects.filter(id=user_id).first()
+        if not user:
+            return CustomResponse({"message": "User not found."}, status=status.HTTP_400_BAD_REQUEST)
+        if status_value == 2:
+            user.delete()
+            return CustomResponse({"message": "User Denied Successfully"}, status=status_code.HTTP_200_OK)
+        else:
+            user.is_admin_approved = True
+            user.save()
+            User.objects.filter(id=user_id).update(is_admin_approved=True)
+            return CustomResponse({"message": "User Approved by Admin"}, status=status_code.HTTP_200_OK)
+        
+    def project_list(self, request, id):
+        """
+            function to list and search the projects of a particular user.
+        """
+        page_size = request.GET.get('page_size', '')
+        user = User.objects.filter(id=id).first()
+        if not user:
+            return CustomResponse({"message": "User not found"}, status=status.HTTP_400_BAD_REQUEST)
+        projects = Project.objects.filter(created_by=user.id, is_admin_approved=True).values('id', 'created_at', 'project_name')
+
+        page = None
+
+        if page_size:
+            pagination_class = self.pagination_class()
+            page = pagination_class.paginate_queryset(projects, request)
+
+        if page is not None:
+            return CustomResponse(pagination_class.get_paginated_response(page).data)
+
+        return CustomResponse(projects)
+    
+    def retrieve_project(self, request, id, *args, **kwargs):
+        """
+            function to retrive particular project of a user
+        """
+        user = User.objects.filter(id=id).first()
+        if not user:
+            return CustomResponse({"message": "User not found"}, status=status.HTTP_400_BAD_REQUEST)
+        project = Project.objects.filter(created_by=user.id).all().values('id', 'project_name', 'project_number', 'created_by', 'created_at', 'project__file_name', 'project__thumbnail', 'project__created_at')
+        return CustomResponse(project)
 
 
 
