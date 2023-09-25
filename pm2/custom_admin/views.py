@@ -1085,7 +1085,7 @@ class AdminNameViewset(viewsets.ViewSet):
 #     serializer_class = UserListAdminSerializer       
 
 
-class  UserListAdminViewSet(viewsets.ViewSet):
+class  ManageUserAdminViewSet(viewsets.ViewSet):
     """
         UserListAdminViewSet to Manage Users
     """
@@ -1099,9 +1099,12 @@ class  UserListAdminViewSet(viewsets.ViewSet):
         page_size = request.GET.get('page_size', '')
         is_active = request.GET.get('is_active', None)
         # users = User.objects.filter(is_admin_approved=True, full_name__icontains=name).all().annotate(num_projects=Count('assigned_projects')).values('id', 'full_name', 'email', 'user_company', 'user_company__company__name', 'is_active', 'num_projects')
+        # users = User.objects.filter(is_admin_approved=True, full_name__icontains=name) \
+        #         .annotate(num_projects=Count('assigned_projects')) \
+        #         .values('id', 'full_name', 'email', 'user_company', 'user_company__company__name', 'is_active', 'num_projects')
         users = User.objects.filter(is_admin_approved=True, full_name__icontains=name) \
-                .annotate(num_projects=Count('assigned_projects')) \
-                .values('id', 'full_name', 'email', 'user_company', 'user_company__company__name', 'is_active', 'num_projects')
+            .annotate(num_projects=Count('assigned_projects')) \
+            .values('id', 'full_name', 'email', 'user_company', 'user_company__company__name', 'is_active', 'num_projects')
         if is_active:
             if is_active == "true":
                 users = users.filter(is_active=True)
@@ -1200,15 +1203,22 @@ class  UserListAdminViewSet(viewsets.ViewSet):
 
         return CustomResponse(projects)
     
-    def retrieve_project(self, request, id, *args, **kwargs):
-        """
-            function to retrive particular project of a user
-        """
-        user = User.objects.filter(id=id).first()
-        if not user:
-            return CustomResponse({"message": "User not found"}, status=status.HTTP_400_BAD_REQUEST)
-        project = Project.objects.filter(created_by=user.id).all().values('id', 'project_name', 'project_number', 'created_by', 'created_at', 'project__file_name', 'project__thumbnail', 'project__created_at')
-        return CustomResponse(project)
+    queryset = Project.objects.all()
+    # def retrieve_user_project(self, request, id, *args, **kwargs):
+    #     """
+    #         function to retrive particular project of a user
+    #     """
+    #     # user = User.objects.filter(id=id).first()
+    #     # if not user:
+    #     #     return CustomResponse({"message": "User not found"}, status=status.HTTP_400_BAD_REQUEST)
+    #     project = Project.objects.filter(created_by=id).all().values('id', 'project_name', 'project_number', 'created_by', 'created_at', 'project__file_name', 'project__thumbnail', 'project__created_at')
+    #     return CustomResponse(project)
+
+    def retrieve_user_project(self, request, pk=None):  
+        project = get_object_or_404(self.queryset, pk=pk)
+        serializer = ProjectDetailSerializer(project)
+
+        return CustomResponse(serializer.data)
 
 
 
