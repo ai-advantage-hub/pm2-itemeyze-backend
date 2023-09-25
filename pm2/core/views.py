@@ -17,6 +17,7 @@ from core.common_utils import check_file_size
 from config.local import AWS_S3_ACCESS_KEY_ID, AWS_S3_SECRET_ACCESS_KEY, AWS_STORAGE_BUCKET_NAME, AWS_S3_REGION_NAME
 from django.http import JsonResponse
 from botocore.exceptions import NoCredentialsError
+from urllib.parse import urlparse
 
 
 # Create your views here.
@@ -158,7 +159,143 @@ class UploadFileView(views.APIView):
             return None
 
 
-# class UploadFileView(views.APIView):
+# class UploadAudioFileView(views.APIView):
+#     """
+#     UploadAudioFileView
+#     This class contains the logic to generate pre-signed URLs for audio files in an S3 bucket.
+
+#     Inherits: APIView
+#     """
+
+#     # def generate_signed_url(self, object_key):
+#     #     try:
+#     #         # Create an S3 client
+#     #         s3 = boto3.client('s3', aws_access_key_id=AWS_S3_ACCESS_KEY_ID, aws_secret_access_key=AWS_S3_SECRET_ACCESS_KEY, region_name=AWS_S3_REGION_NAME)
+            
+#     #         # Generate a pre-signed URL
+#     #         url = s3.generate_presigned_url(
+#     #             ClientMethod='get_object',
+#     #             Params={'Bucket': AWS_STORAGE_BUCKET_NAME, 'Key': object_key},
+#     #             ExpiresIn=36000000 # URL will expire in 1 hour (3600 seconds) - adjust as needed
+#     #         )
+
+#     #         return url
+#     #     except Exception as e:
+#     #         print(f"Error generating signed URL: {e}")
+#     #         return None
+
+#     # def post(self, request):
+#     #     """
+#     #     post method used to generate pre-signed URLs for audio files in S3 bucket.
+#     #     :param request:
+#     #     :return: response
+#     #     """
+#     #     audio_paths = request.data.getlist("path")
+#     #     signed_urls = []
+
+#     #     if not audio_paths:
+#     #         return CustomResponse({"message": "No file paths provided"}, status=status_code.HTTP_400_BAD_REQUEST)
+
+#     #     for audio_path in audio_paths:
+#     #         try:
+#     #             # Generate a pre-signed URL for the provided audio path
+#     #             signed_url = self.generate_signed_url(audio_path)
+#     #             if signed_url:
+#     #                 signed_urls.append({"path": audio_path, "url": signed_url})
+#     #             else:
+#     #                 # Handle error if URL generation fails
+#     #                 return CustomResponse({"message": f"Failed to generate a pre-signed URL for {audio_path}"},
+#     #                                       status=status_code.HTTP_500_INTERNAL_SERVER_ERROR)
+
+#     #         except Exception as e:
+#     #             print(f"Error generating signed URL for {audio_path}: {e}")
+#     #             return CustomResponse({"message": f"Error generating signed URL for {audio_path}"},
+#     #                                   status=status_code.HTTP_500_INTERNAL_SERVER_ERROR)
+
+#     #     return CustomResponse(signed_urls)
+
+#     def generate_signed_url(self, full_url):
+#         try:
+#             # Create an S3 client
+#             s3 = boto3.client('s3', aws_access_key_id=AWS_S3_ACCESS_KEY_ID, aws_secret_access_key=AWS_S3_SECRET_ACCESS_KEY, region_name=AWS_S3_REGION_NAME)
+
+#             # Parse the full URL to extract the bucket and object key
+#             parsed_url = urlparse(full_url)
+#             bucket_name = parsed_url.netloc
+#             object_key = parsed_url.path.lstrip('/')
+
+#             # Generate a pre-signed URL
+#             url = s3.generate_presigned_url(
+#                 ClientMethod='get_object',
+#                 Params={'Bucket': bucket_name, 'Key': object_key},
+#                 ExpiresIn=3600  # URL will expire in 1 hour (3600 seconds) - adjust as needed
+#             )
+
+#             return url
+#         except NoCredentialsError:
+#             return None
+
+#     def post(self, request):
+#         data = request.data
+#         object_path = data.get("object_path")
+
+#         if not object_path:
+#             return Response({"message": "Object path is required"}, status=status_code.HTTP_400_BAD_REQUEST)
+
+#         signed_url = self.generate_signed_url(object_path)
+        
+#         if signed_url:
+#             return Response({"signed_url": signed_url}, status=status_code.HTTP_200_OK)
+#         else:
+#             return Response({"message": "Failed to generate signed URL"}, status=status_code.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+# class GenerateAudioSignedURLView(views.APIView):
+#     """
+#     GenerateAudioSignedURLView
+#     This class generates a signed URL for audio file upload to the S3 bucket.
+
+#     Inherits: APIView
+#     """
+
+#     def post(self, request):
+#         """
+#         POST method used to generate a signed URL for audio file upload to S3.
+
+#         :param request:
+#         :return: Response containing the signed URL.
+#         """
+#         file_path = request.data.get("file_path")
+
+#         if not file_path:
+#             return Response({"message": "File path is required"}, status=status_code.HTTP_400_BAD_REQUEST)
+
+#         # Check if the file extension is .mp3
+#         file_extension = os.path.splitext(file_path)[1].lower()
+#         if file_extension != ".mp3":
+#             return Response({"message": "Invalid file extension"}, status=status_code.HTTP_400_BAD_REQUEST)
+
+#         s3_client = boto3.client('s3', aws_access_key_id=AWS_S3_ACCESS_KEY_ID,
+#                                  aws_secret_access_key=AWS_S3_SECRET_ACCESS_KEY)
+
+#         content_type = "audio/mpeg"  # Set the content type for audio files
+
+#         try:
+#             signed_url = s3_client.generate_presigned_url(
+#                 'put_object',
+#                 Params={
+#                     'Bucket': AWS_STORAGE_BUCKET_NAME,
+#                     'Key': file_path,
+#                     'ContentType': content_type
+#                 },
+#                 ExpiresIn=3600  # You can adjust the expiration time as needed
+#             )
+#         except Exception as e:
+#             return Response({"message": str(e)}, status=status_code.HTTP_500_INTERNAL_SERVER_ERROR)
+
+#         return Response({"signed_url": signed_url}, status=status_code.HTTP_200_OK)
+
+
+# class UploadAudioFileView(views.APIView):
 #     """
 #     UploadFileView: This class contains the logic of file upload into the S3 bucket.
 #     Only authenticated users can perform respective operations.
@@ -176,7 +313,7 @@ class UploadFileView(views.APIView):
 #             url = s3.generate_presigned_url(
 #                 ClientMethod='get_object',
 #                 Params={'Bucket': AWS_STORAGE_BUCKET_NAME, 'Key': object_key},
-#                 ExpiresIn=3600  # URL will expire in 1 hour (3600 seconds) - adjust as needed
+#                 ExpiresIn=3600000  # URL will expire in 1 hour (3600 seconds) - adjust as needed
 #             )
 
 #             return url
@@ -266,3 +403,53 @@ class UploadFileView(views.APIView):
 #             return output_buffer
 #         except Exception:
 #             return None
+
+class UploadAudioFileView(views.APIView):
+    """
+    UploadAudioFileView: This class contains the logic of audio file upload into the S3 bucket.
+    Only authenticated users can perform respective operations.
+    Inherits: APIView
+    """
+    parser_classes = (MultiPartParser,)
+
+    def generate_signed_url(self, object_key):
+        try:
+            # Create an S3 client
+            s3 = boto3.client('s3', aws_access_key_id=AWS_S3_ACCESS_KEY_ID, aws_secret_access_key=AWS_S3_SECRET_ACCESS_KEY, region_name=AWS_S3_REGION_NAME)
+            
+            # Generate a pre-signed URL
+            url = s3.generate_presigned_url(
+                ClientMethod='get_object',
+                Params={'Bucket': AWS_STORAGE_BUCKET_NAME, 'Key': object_key},
+                ExpiresIn=3600000  # URL will expire in 1 hour (3600 seconds) - adjust as needed
+            )
+
+            return url
+        except NoCredentialsError:
+            return None
+
+    def post(self, request):
+        """
+        POST method used to generate pre-signed URLs for audio files.
+        :param request:
+        :return: response
+        """
+        audios = []
+        if not request.data.getlist("file_path"):
+            return CustomResponse({"message": "No file path data found"}, status=status_code.HTTP_400_BAD_REQUEST)
+        file_paths = request.data.getlist("file_path")
+        for file_path in file_paths:
+            # Extract the object key from the provided file path
+            object_key = urlparse(file_path).path.lstrip('/')
+            
+            # Generate a pre-signed URL for the object key
+            pre_signed_url = self.generate_signed_url(object_key)
+
+            # Include the pre-signed URL in the response
+            data = {'file_path': file_path, 'url': pre_signed_url}
+            audios.append(data)
+        return CustomResponse(audios)
+
+
+
+

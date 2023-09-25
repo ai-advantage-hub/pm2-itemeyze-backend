@@ -15,12 +15,14 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-from core.views import UploadFileView
+from core.views import UploadFileView, UploadAudioFileView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('pm2/custom_admin/', include('custom_admin.urls')),
     path('pm2/users/', include('users.urls')),
     path('pm2/upload_files', UploadFileView.as_view()),
+    path('pm2/generate_signed_url', UploadAudioFileView.as_view()),
+
 
 ]
