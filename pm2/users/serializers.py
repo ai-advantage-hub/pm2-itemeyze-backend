@@ -122,8 +122,8 @@ class UserLoginSerializer(serializers.Serializer):
         if not user.is_active:
             raise serializers.ValidationError({"message": "User account is not active."})
 
-        if not user.is_admin_approved:
-            raise serializers.ValidationError({"message": "User is not approved by admin."})
+        # if not user.is_admin_approved:
+        #     raise serializers.ValidationError({"message": "User is not approved by admin."})
 
         if not user.is_email_verified:
             otp = generate_otp()
