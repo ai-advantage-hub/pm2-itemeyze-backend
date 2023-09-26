@@ -907,7 +907,7 @@ class ManageSubadminViewSet(viewsets.ViewSet):
         """
             function to retrieve subadmin
         """
-        sub_admin=User.objects.filter(id=id, user_role=3).all().values('full_name', 'email', 'phone_number', 'created_at', 'modules_accessible')
+        sub_admin=User.all_objects.filter(id=id, user_role=3).all().values('full_name', 'email', 'phone_number', 'created_at', 'modules_accessible')
         if not sub_admin:
             return CustomResponse({"Message": "Subadmin not found."}, status=status.HTTP_400_BAD_REQUEST)
         return CustomResponse(sub_admin, status=status.HTTP_200_OK)
@@ -997,11 +997,13 @@ class ManageSubadminViewSet(viewsets.ViewSet):
 
         return CustomResponse({"message": "Subadmin details updated successfully"}, status=status.HTTP_200_OK)
     
-    def update(self, request, id):
+    def update(self, request):
         """
             function to delete the subadmin
         """
-        sub_admin = User.all_objects.filter(id=id, user_role=3).first()
+        data = request.data
+        user_id = data.get('user_id')
+        sub_admin = User.all_objects.filter(id=user_id, user_role=3).first()
         if not sub_admin:
             return CustomResponse({"message": "Subadmin not found."}, status=status_code.HTTP_404_NOT_FOUND)
         sub_admin.email = None
