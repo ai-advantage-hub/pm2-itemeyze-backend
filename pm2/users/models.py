@@ -179,3 +179,16 @@ class Files(BaseModel):
         db_table = "ProjectDetails"
         verbose_name = "Project Details"
         verbose_name_plural = "Project Details"
+
+
+class UserNotification(BaseModel):
+    """
+        UserNotification model used for sending Notifications to Users
+    """
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_notification')
+    title = models.CharField(max_length=100, verbose_name='Title')
+    message = models.CharField(max_length=1000, verbose_name='Message')
+    is_read = models.BooleanField(default=False, verbose_name='is_read')
+    
+    def __str__(self):
+        return self.title

@@ -592,6 +592,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
                     # project.save()
                     for email in assigned_to:
                         user = User.objects.filter(email=email).first()
+                        print(f"User for email {email}:", user)
                         if user:
                             project.users.add(user)
                             project.is_admin_approved = True
@@ -1104,8 +1105,8 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
         # users = User.objects.filter(is_admin_approved=True, full_name__icontains=name) \
         #         .annotate(num_projects=Count('assigned_projects')) \
         #         .values('id', 'full_name', 'email', 'user_company', 'user_company__company__name', 'is_active', 'num_projects')
-        users = User.objects.filter(is_admin_approved=True, full_name__icontains=name) \
-            .annotate(num_projects=Count('assigned_projects')) \
+        users = User.objects.filter(is_admin_approved=True, full_name__icontains=name, user_role=2) \
+            .annotate(num_projects=Count('assigned_projects__id', distinct=True)) \
             .values('id', 'full_name', 'email', 'user_company', 'user_company__company__name', 'is_active', 'num_projects')
         if is_active:
             if is_active == "true":

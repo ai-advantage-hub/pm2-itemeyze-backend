@@ -7,6 +7,8 @@ from .models import (
     Project, 
     Files, 
     Company,
+    UserCompany,
+    UserNotification
 
 )
 from custom_admin.models import ContentManagement
@@ -25,11 +27,11 @@ from .serializers import (
     UserChangePasswordSerializer,
     FilesSerializer,
     UserDeviceDetailSerializer,
-    UserDeviceSerializer
+    UserDeviceSerializer,
     
 )
 from rest_framework.authtoken.models import Token
-from core.common_utils import generate_otp, send_verification_email
+from core.common_utils import generate_otp, send_verification_email, send_notification
 from core.response import CustomResponse
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 from rest_framework import status as status_code
@@ -423,7 +425,7 @@ class ProjectDetailsViewSet(viewsets.ModelViewSet):
         file_obj = Files.objects.filter(Q(location__icontains=location) |
                                         Q(manufacturer_name__full_name__icontains=location) |
                                         Q(manufacturing_number__icontains=location),
-                                        project_id=pk)
+                                        project_id=pk, is_admin_approved=True)
 
         # Apply pagination        
         if page_size:
@@ -598,6 +600,7 @@ class UserEditProfileViewSet(viewsets.ViewSet):
         full_name = data.get("full_name")
         email = data.get("email")
         profile_pic = data.get("profile_pic")
+        company_id = data.get("company_id")
 
         # Validate full name
         if not full_name:
@@ -624,6 +627,8 @@ class UserEditProfileViewSet(viewsets.ViewSet):
         # Update profile picture if provided
         if profile_pic:
             update_data["profile_pic"] = profile_pic
+        if company_id:
+            UserCompany.objects.filter(user=request.user).update(company_id=company_id)
          
         # Perform the update in a single query
         User.objects.filter(id=request.user.id).update(**update_data)

@@ -6,10 +6,11 @@ from .models import (
     OTP, 
     Project, 
     Files,
+    UserNotification
 
 )
 from custom_admin.models import ContentManagement
-from core.common_utils import generate_otp, send_verification_email, update_or_create_fcm_detail
+from core.common_utils import generate_otp, send_verification_email, update_or_create_fcm_detail, send_notification
 from django.contrib.auth import authenticate
 import re
 from core.exception import CustomException
@@ -17,6 +18,8 @@ from django.utils import timezone
 from django.db import transaction
 from django.contrib.auth.hashers import check_password
 from fcm_django.models import FCMDevice
+from datetime import datetime, timedelta
+
 
 
 class UserSerializer():
@@ -526,4 +529,7 @@ class UserDeviceSerializer(serializers.Serializer):
             update_or_create_fcm_detail(instance, validated_data.get('registration_id'),
                                         validated_data.get('device_type'))
             return True
+        
+
+
         
