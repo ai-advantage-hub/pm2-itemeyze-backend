@@ -29,6 +29,7 @@ from django.db.models import Q
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from core.pagination import CustomPagination
 from django.db import transaction
+from django.db.models import Count, F, IntegerField, ExpressionWrapper
 
 
 
@@ -1104,9 +1105,28 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
         # users = User.objects.filter(is_admin_approved=True, full_name__icontains=name) \
         #         .annotate(num_projects=Count('assigned_projects')) \
         #         .values('id', 'full_name', 'email', 'user_company', 'user_company__company__name', 'is_active', 'num_projects')
-        users = User.objects.filter(is_admin_approved=True, full_name__icontains=name) \
-            .annotate(num_projects=Count('assigned_projects')) \
-            .values('id', 'full_name', 'email', 'user_company', 'user_company__company__name', 'is_active', 'num_projects')
+        # users = User.objects.filter(is_admin_approved=True, full_name__icontains=name) \
+        #     .annotate(num_projects=Count('assigned_projects')) \
+        #     .values('id', 'full_name', 'email', 'user_company', 'user_company__company__name', 'is_active', 'num_projects')
+        users = (
+            User.objects.filter(is_admin_approved=True,user_role=2, full_name__icontains=name).annotate(
+                approved_project_count=Count(
+                    'created_by_project',
+                    filter=Q(created_by_project__is_admin_approved=True),
+                    distinct=True
+                ),
+                assigned_project_count=Count(
+                    'assigned_projects__id',  
+                    distinct=True
+                )
+            ).annotate(
+                total_project_count=ExpressionWrapper(
+                    F('approved_project_count') + F('assigned_project_count'),
+                    output_field=IntegerField()
+                )
+            ).values('id','full_name','email', 'approved_project_count', 'assigned_project_count', 'total_project_count','user_company', 'user_company__company__name', 'is_active')
+        )
+
         if is_active:
             if is_active == "true":
                 users = users.filter(is_active=True)
@@ -1206,16 +1226,6 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
         return CustomResponse(projects)
     
     queryset = Project.objects.all()
-    # def retrieve_user_project(self, request, id, *args, **kwargs):
-    #     """
-    #         function to retrive particular project of a user
-    #     """
-    #     # user = User.objects.filter(id=id).first()
-    #     # if not user:
-    #     #     return CustomResponse({"message": "User not found"}, status=status.HTTP_400_BAD_REQUEST)
-    #     project = Project.objects.filter(created_by=id).all().values('id', 'project_name', 'project_number', 'created_by', 'created_at', 'project__file_name', 'project__thumbnail', 'project__created_at')
-    #     return CustomResponse(project)
-
     def retrieve_user_project(self, request, pk=None):  
         project = get_object_or_404(self.queryset, pk=pk)
         serializer = ProjectDetailSerializer(project)
