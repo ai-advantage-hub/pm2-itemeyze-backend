@@ -67,7 +67,7 @@ urlpatterns = [
     path("user_email_list", views.UseremailViewSet.as_view({"get": "get"}), name="user_email_list"),
 
     #Manage User
-    path("user_list", views.ManageUserAdminViewSet.as_view({"get": "list"}), name="user_list"),
+    path("manage_user_list", views.ManageUserAdminViewSet.as_view({"get": "list"}), name="manage_user_list"),
     path("change_status", views.ManageUserAdminViewSet.as_view({"put": "change_status"}), name="change_status"),
     path("user_details/<int:id>", views.ManageUserAdminViewSet.as_view({"get": "retrieve"}), name="user_details"),
     path("unapproved_users", views.ManageUserAdminViewSet.as_view({"get": "unapproved_users"}), name="unapproved_users"),

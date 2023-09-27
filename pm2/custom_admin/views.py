@@ -1147,14 +1147,14 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
         data = request.data
         user_id = data.get('user_id')
         status_value = data.get('status_value')
-        user = User.objects.filter(id=user_id).first()
+        user = User.all_objects.filter(id=user_id).first()
         if not user:
             return CustomResponse({"message": "User not found."}, status=status.HTTP_400_BAD_REQUEST)
         if status_value == 1:
-            User.objects.filter(id=user_id).update(is_active=True)
+            User.all_objects.filter(id=user_id).update(is_active=True)
             return CustomResponse({"message": "User Activated Successfully"}, status=status_code.HTTP_200_OK)
         if status_value == 2:
-            User.objects.filter(id=user_id).update(is_active=False)
+            User.all_objects.filter(id=user_id).update(is_active=False)
             try:
                 token = Token.objects.get(user=user)
                 token.delete()
@@ -1175,7 +1175,7 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
             function to get the list of unapproved users
         """
         page_size = request.GET.get('page_size', '')
-        user = User.objects.filter(is_admin_approved=False).all().values('id', 'full_name', 'profile_pic', 'email', 'user_company', 'user_company__company__name')
+        user = User.objects.filter(is_admin_approved=False,user_role=2).all().values('id', 'full_name', 'profile_pic', 'email', 'user_company', 'user_company__company__name')
         page = None
         if page_size:
             pagination_class = self.pagination_class()
@@ -1198,12 +1198,14 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
         if status_value == 2:
             user.delete()
             return CustomResponse({"message": "User Denied Successfully"}, status=status_code.HTTP_200_OK)
-        else:
+        elif status_value == 1:
             user.is_admin_approved = True
             user.save()
             User.objects.filter(id=user_id).update(is_admin_approved=True)
             return CustomResponse({"message": "User Approved by Admin"}, status=status_code.HTTP_200_OK)
-        
+        else:
+            return CustomResponse({"message": "Please give right value in status value"},status=status.HTTP_400_BAD_REQUEST)
+
     def project_list(self, request, id):
         """
             function to list and search the projects of a particular user.
