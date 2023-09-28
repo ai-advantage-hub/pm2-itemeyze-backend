@@ -448,7 +448,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
         # Query the projects
         projects = Project.objects.filter(is_admin_approved=True).annotate(
             num_files=Count('project_files', filter=Q(project_files__is_admin_approved=True))
-        ).values('id', 'project_name', 'created_by__full_name', 'num_files')
+        ).values('id', 'project_name', 'created_by__full_name', 'num_files').order_by("-created_at")
 
         if name:
             projects = projects.filter(project_name__icontains=name)
