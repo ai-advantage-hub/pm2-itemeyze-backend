@@ -89,7 +89,7 @@ from urllib.parse import urlparse
 #         """
 #         images = []
 #         result = []
-#         if not request.data.get("file"):
+#         if not request.data.getlist("file"):
 #             return CustomResponse({"message": "No file data found"}, status=status_code.HTTP_400_BAD_REQUEST)
 #         result = request.data.getlist("file")
 #         for upload in result:

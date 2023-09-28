@@ -29,6 +29,7 @@ from django.db.models import Q
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from core.pagination import CustomPagination
 from django.db import transaction
+from django.db.models import Count, F, IntegerField, ExpressionWrapper
 
 
 
@@ -959,7 +960,7 @@ class ManageSubadminViewSet(viewsets.ViewSet):
         if User.objects.filter(phone_number=phone_number).exists():
             return CustomResponse({"message": "Phone Number Already Exists"})
         with transaction.atomic():
-            sub_admin = User.objects.create(full_name=full_name, email=email, phone_number=phone_number, user_role=3)
+            sub_admin = User.objects.create(full_name=full_name, email=email, phone_number=phone_number, user_role=3, is_admin_approved=True)
             sub_admin.set_password(temporary_password)
             sub_admin.save()
             c = sub_admin.id
@@ -1105,9 +1106,28 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
         # users = User.objects.filter(is_admin_approved=True, full_name__icontains=name) \
         #         .annotate(num_projects=Count('assigned_projects')) \
         #         .values('id', 'full_name', 'email', 'user_company', 'user_company__company__name', 'is_active', 'num_projects')
-        users = User.objects.filter(is_admin_approved=True, full_name__icontains=name, user_role=2) \
-            .annotate(num_projects=Count('assigned_projects__id', distinct=True)) \
-            .values('id', 'full_name', 'email', 'user_company', 'user_company__company__name', 'is_active', 'num_projects')
+        # users = User.objects.filter(is_admin_approved=True, full_name__icontains=name) \
+        #     .annotate(num_projects=Count('assigned_projects')) \
+        #     .values('id', 'full_name', 'email', 'user_company', 'user_company__company__name', 'is_active', 'num_projects')
+        users = (
+            User.all_objects.filter(is_admin_approved=True,user_role=2, full_name__icontains=name).annotate(
+                approved_project_count=Count(
+                    'created_by_project',
+                    filter=Q(created_by_project__is_admin_approved=True),
+                    distinct=True
+                ),
+                assigned_project_count=Count(
+                    'assigned_projects__id',  
+                    distinct=True
+                )
+            ).annotate(
+                total_project_count=ExpressionWrapper(
+                    F('approved_project_count') + F('assigned_project_count'),
+                    output_field=IntegerField()
+                )
+            ).values('id','full_name','email', 'approved_project_count', 'assigned_project_count', 'total_project_count','user_company', 'user_company__company__name', 'is_active')
+        )
+
         if is_active:
             if is_active == "true":
                 users = users.filter(is_active=True)
@@ -1128,14 +1148,14 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
         data = request.data
         user_id = data.get('user_id')
         status_value = data.get('status_value')
-        user = User.objects.filter(id=user_id).first()
+        user = User.all_objects.filter(id=user_id).first()
         if not user:
             return CustomResponse({"message": "User not found."}, status=status.HTTP_400_BAD_REQUEST)
         if status_value == 1:
-            User.objects.filter(id=user_id).update(is_active=True)
+            User.all_objects.filter(id=user_id).update(is_active=True)
             return CustomResponse({"message": "User Activated Successfully"}, status=status_code.HTTP_200_OK)
         if status_value == 2:
-            User.objects.filter(id=user_id).update(is_active=False)
+            User.all_objects.filter(id=user_id).update(is_active=False)
             try:
                 token = Token.objects.get(user=user)
                 token.delete()
@@ -1156,7 +1176,7 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
             function to get the list of unapproved users
         """
         page_size = request.GET.get('page_size', '')
-        user = User.objects.filter(is_admin_approved=False).all().values('id', 'full_name', 'profile_pic', 'email', 'user_company', 'user_company__company__name')
+        user = User.objects.filter(is_admin_approved=False, is_email_verified=True).all().values('id', 'full_name', 'profile_pic', 'email', 'user_company', 'user_company__company__name').exclude(email=None)
         page = None
         if page_size:
             pagination_class = self.pagination_class()
@@ -1179,12 +1199,14 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
         if status_value == 2:
             user.delete()
             return CustomResponse({"message": "User Denied Successfully"}, status=status_code.HTTP_200_OK)
-        else:
+        elif status_value == 1:
             user.is_admin_approved = True
             user.save()
             User.objects.filter(id=user_id).update(is_admin_approved=True)
             return CustomResponse({"message": "User Approved by Admin"}, status=status_code.HTTP_200_OK)
-        
+        else:
+            return CustomResponse({"message": "Please give right value in status value"},status=status.HTTP_400_BAD_REQUEST)
+
     def project_list(self, request, id):
         """
             function to list and search the projects of a particular user.
@@ -1207,16 +1229,6 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
         return CustomResponse(projects)
     
     queryset = Project.objects.all()
-    # def retrieve_user_project(self, request, id, *args, **kwargs):
-    #     """
-    #         function to retrive particular project of a user
-    #     """
-    #     # user = User.objects.filter(id=id).first()
-    #     # if not user:
-    #     #     return CustomResponse({"message": "User not found"}, status=status.HTTP_400_BAD_REQUEST)
-    #     project = Project.objects.filter(created_by=id).all().values('id', 'project_name', 'project_number', 'created_by', 'created_at', 'project__file_name', 'project__thumbnail', 'project__created_at')
-    #     return CustomResponse(project)
-
     def retrieve_user_project(self, request, pk=None):  
         project = get_object_or_404(self.queryset, pk=pk)
         serializer = ProjectDetailSerializer(project)

@@ -146,94 +146,27 @@ def update_or_create_fcm_detail(user, registration_id, device_type):
     return True
 
 
-# def new_send_notification(user_ids, title, message, data):
-#     try:
-#         FCM_SERVER_KEY = FCM_DJANGO_SETTINGS['FCM_SERVER_KEY']
-#         push_service = FCMNotification(api_key=FCM_SERVER_KEY)
-        
-#         # Create a list to store registration_ids
-#         fcm_tokens = []
+from fcm_django.models import FCMDevice
 
-#         # Fetch UserNotification objects and their associated FCM tokens
-#         with transaction.atomic():
-#             for user_id in user_ids:
-#                 try:
-#                     # Get the user's FCMDevice
-#                     user_notification = UserNotification.objects.create(
-#                         user_id=user_id,
-#                         title=title,
-#                         message=message,
-#                     )
-#                     serializer = NotificationListSerializer(user_notification)
-#                     # Serialize the notification
-#                     notification_data = serializer.data
-#                     data_message = {**data, **notification_data}
-                    
-#                     fcm_device = FCMDevice.objects.get(user=user_id, active=True)
-#                     fcm_tokens.append(fcm_device.registration_id)
-#                 except ObjectDoesNotExist:
-#                     pass
+from firebase_admin.messaging import Message, Notification
 
-#         # Send the notification to the devices
-#         result = push_service.notify_multiple_devices(
-#             registration_ids=fcm_tokens,
-#             message_title=title,
-#             message_body=message,
-#             data_message=data_message,
-#         )
-
-#         return result
-#     except Exception as e:
-#         print("Exception:", e)
-#         pass
-
-# def send_notification(user_ids, title, message, data):
-#     try:
-#         logging.info("try")
-#         logging.info(message)
-#         user_obj = User.objects.filter(id__in=user_ids).first()
-#         devices = FCMDevice.objects.select_related(
-#             'user').filter(user__in=user_ids, active=True)
-#         logging.info("devices", devices)
-#         logging.info(devices)
-#         message = Message(
-#             notification=Notification(title=title, body=message, image="url"),
-#             data=data
-#         )
-#         if user_obj.is_notification_enabled == True:
-#             result = devices.send_message(message)
-#         else:
-#             result = True
-#         logging.info(result)
-#         return result
-#     except Exception as e:
-#         logging.info(e)
-#         logging.info("HEREError", e)
-#     return True
-
-def send_notification(user_ids, title, message, data, sound):
+def send_notification_bulk(user_ids, title, message, data):
     """
-        method used to send the notifications.
-    :param user_id:
-    :param title:
-    :param message:
-    :param data:
-    :param alert_type:
+    method used to send notifications in bulk.
+    :param user_ids:
+    :param title
+    :param message
+    :param data
+    :return:
     """
     try:
-        print(message)
         devices = FCMDevice.objects.select_related(
-            'user').filter(user__in=user_ids, active=True)
-        logging.info(devices)
-        ios = APNSConfig(payload=APNSPayload(aps=Aps(sound=sound)))
+        'user').filter(user__in=user_ids, active=True)
         message = Message(
-            notification=Notification(title=title, body=message, image="url"),
-            data=data,
-            apns=ios
+        notification=Notification(title=title, body=message, image="url"),
+        data=data,
         )
-        result = devices.send_message(message)
-        logging.info(result)
-        return result
+        devices.send_message(message)
     except Exception as e:
-        logging.info("HEREError", e)
+        print("HEREError", e)
     return True

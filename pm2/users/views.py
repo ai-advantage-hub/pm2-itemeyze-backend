@@ -31,7 +31,7 @@ from .serializers import (
     
 )
 from rest_framework.authtoken.models import Token
-from core.common_utils import generate_otp, send_verification_email, send_notification
+from core.common_utils import generate_otp, send_verification_email, send_notification_bulk
 from core.response import CustomResponse
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 from rest_framework import status as status_code
@@ -116,19 +116,52 @@ class UserLoginViewSet(viewsets.ViewSet):
     """
         UserLoginViewSet for User Login
     """
+    # def create(self, request):
+    #     serializer = UserLoginSerializer(data=request.data)
+    #     # serializer.is_valid(raise_exception=True)
+    #     # serializer.save()
+    #     # user = serializer.validated_data['user']
+    #     # token, created = Token.objects.get_or_create(user=user)
+    #     # return CustomResponse({"token": token.key}, status=status_code.HTTP_200_OK)
+    #     if serializer.is_valid():
+    #         user = serializer.validated_data['user']
+    #         token, created = Token.objects.get_or_create(user=user)
+    #         # return CustomResponse({"token": token.key}, status=status_code.HTTP_200_OK)
+    #         response_data = {
+    #             "token": token.key,
+    #             "is_email_verified": user.is_email_verified  # Include is_email_verified in the response
+    #         }
+    #         return CustomResponse(response_data, status=status_code.HTTP_200_OK)
+    #     else:
+    #         return CustomResponse({"msg": "Please provide valid Credentials"}, status=status_code.HTTP_200_OK)
+
     def create(self, request):
         serializer = UserLoginSerializer(data=request.data)
-        # serializer.is_valid(raise_exception=True)
-        # serializer.save()
-        # user = serializer.validated_data['user']
-        # token, created = Token.objects.get_or_create(user=user)
-        # return CustomResponse({"token": token.key}, status=status_code.HTTP_200_OK)
+
         if serializer.is_valid():
             user = serializer.validated_data['user']
-            token, created = Token.objects.get_or_create(user=user)
-            return CustomResponse({"token": token.key}, status=status_code.HTTP_200_OK)
+            is_email_verified = user.is_email_verified
+
+            response_data = {
+                "is_email_verified": is_email_verified,
+            }
+
+            if is_email_verified:
+                token, created = Token.objects.get_or_create(user=user)
+                response_data["token"] = token.key
+            else:
+                #response_data["token"] = None
+                response_data["msg"] = "User email is not verified. Please check your email inbox."
+
+            return CustomResponse(response_data, status=status_code.HTTP_200_OK)
         else:
             return CustomResponse({"msg": "Please provide valid Credentials"}, status=status_code.HTTP_200_OK)
+
+
+
+
+
+
         
 
 class ForgotPasswordViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
@@ -780,3 +813,14 @@ class UpdateDeviceDetailViewSet(viewsets.ViewSet):
             user=request.user, type=device_type).update(active=False)
             return CustomResponse({"message": "DEVICE_DELETED_SUCCESSFULLY"}, status=status_code.HTTP_200_OK)
         
+
+class SendNotiticationViewSet(viewsets.ViewSet):
+    """
+    """
+    def update(self, request):
+        """
+
+        """
+        data = {"screen":"home"}
+        res = send_notification_bulk([1], "title", "messages", data)
+        return CustomResponse({"message": "NOTIFICATION SEND"}, status=status_code.HTTP_200_OK)

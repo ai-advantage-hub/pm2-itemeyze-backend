@@ -6,11 +6,11 @@ from .models import (
     OTP, 
     Project, 
     Files,
-    UserNotification
+
 
 )
 from custom_admin.models import ContentManagement
-from core.common_utils import generate_otp, send_verification_email, update_or_create_fcm_detail, send_notification
+from core.common_utils import generate_otp, send_verification_email, update_or_create_fcm_detail
 from django.contrib.auth import authenticate
 import re
 from core.exception import CustomException
@@ -105,9 +105,49 @@ class SignupSerializer(serializers.ModelSerializer):
             return user
         
 
+# class UserLoginSerializer(serializers.Serializer):
+#     """
+#         UserLoginSerializer for User Login
+#     """
+#     email = serializers.EmailField()
+#     password = serializers.CharField()
+
+#     def validate(self, data):
+#         email = data['email']
+#         password = data['password']
+#         user = authenticate(email=email.lower(), password=password)
+
+#         if user is None:
+#             raise CustomException(status_code=400, message="Invalid email or password.", location="Login")
+
+#         if not user.is_active:
+#             raise serializers.ValidationError({"message": "User account is not active."},status_code=400)
+
+#         if not user.is_admin_approved:
+#             raise serializers.ValidationError({"message": "User is not approved by admin."}, status_code=400)
+
+#         if not user.is_email_verified:
+#             otp = generate_otp()
+#             OTP.objects.create(user=user, otp=otp, otp_type=1)
+#             send_verification_email(user.email, otp)
+#             raise CustomException(status_code=400, message="User email is not verified. Please check your email inbox.", location="server")
+        
+
+#         # if user.is_admin_approved == False or user.is_email_verified == False:
+#         #     raise serializers.ValidationError({"message": "User is not approved by admin or email is not verified."})
+
+#         data['is_email_verified'] = user.is_email_verified
+
+#         data['user'] = user
+#         return data
+
+#     class Meta:
+#         model = User
+#         fields = ('email', 'password')
+
 class UserLoginSerializer(serializers.Serializer):
     """
-        UserLoginSerializer for User Login
+    UserLoginSerializer for User Login
     """
     email = serializers.EmailField()
     password = serializers.CharField()
@@ -121,28 +161,18 @@ class UserLoginSerializer(serializers.Serializer):
             raise CustomException(status_code=400, message="Invalid email or password.", location="Login")
 
         if not user.is_active:
-            raise serializers.ValidationError({"message": "User account is not active."})
+            raise serializers.ValidationError({"message": "User account is not active."}, status_code=400)
 
         if not user.is_admin_approved:
-            raise serializers.ValidationError({"message": "User is not approved by admin."})
+            raise serializers.ValidationError({"message": "User is not approved by admin."}, status_code=400)
 
-        if not user.is_email_verified:
-            otp = generate_otp()
-            OTP.objects.create(user=user, otp=otp, otp_type=1)
-            send_verification_email(user.email, otp)
-            raise CustomException(status_code=400, message="User email is not verified. Please check your email inbox.", location="server")
-        
-
-        # if user.is_admin_approved == False or user.is_email_verified == False:
-        #     raise serializers.ValidationError({"message": "User is not approved by admin or email is not verified."})
-
+        data['is_email_verified'] = user.is_email_verified
         data['user'] = user
         return data
 
     class Meta:
         model = User
         fields = ('email', 'password')
-
 
 class ForgotPasswordSerializer(serializers.Serializer):
     """
