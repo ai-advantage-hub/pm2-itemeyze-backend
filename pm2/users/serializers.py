@@ -76,7 +76,6 @@ class SignupSerializer(serializers.ModelSerializer):
     def validate_company(self, request):
         data = request.data
         company_id = data.get('company_id')
-        company_id = 27  # hardcoded for now.
         c = Company.objects.filter(id=company_id).first()
         if not c:
             raise CustomException(status_code=400, message="Company Not Found.", location="LOCATION")
@@ -89,7 +88,6 @@ class SignupSerializer(serializers.ModelSerializer):
             self.validate_email(validated_data.get('email'))
             
             company_id = validated_data['company_id']
-            company_id = 27
             c = Company.objects.filter(id=company_id).first()
             if not c:
                 raise CustomException(status_code=400, message="Company Not Found.", location="LOCATION")
@@ -125,8 +123,8 @@ class UserLoginSerializer(serializers.Serializer):
         if not user.is_active:
             raise serializers.ValidationError({"message": "User account is not active."})
 
-        # if not user.is_admin_approved:
-        #     raise serializers.ValidationError({"message": "User is not approved by admin."})
+        if not user.is_admin_approved:
+            raise serializers.ValidationError({"message": "User is not approved by admin."})
 
         if not user.is_email_verified:
             otp = generate_otp()
