@@ -15,10 +15,8 @@ from django.db import transaction
 from fcm_django.models import FCMDevice
 from django.core.exceptions import ObjectDoesNotExist
 from firebase_admin.messaging import Message, Notification
-from pyfcm import FCMNotification
+#from pyfcm import FCMNotification
 from config.local import *
-from firebase_admin.messaging import Message, Notification, APNSPayload, Aps, APNSConfig
-
 
 
 def generate_otp():
