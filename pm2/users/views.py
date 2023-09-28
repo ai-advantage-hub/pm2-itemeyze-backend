@@ -7,6 +7,8 @@ from .models import (
     Project, 
     Files, 
     Company,
+    UserCompany,
+    UserNotification
 
 )
 from custom_admin.models import ContentManagement
@@ -25,11 +27,11 @@ from .serializers import (
     UserChangePasswordSerializer,
     FilesSerializer,
     UserDeviceDetailSerializer,
-    UserDeviceSerializer
+    UserDeviceSerializer,
     
 )
 from rest_framework.authtoken.models import Token
-from core.common_utils import generate_otp, send_verification_email
+from core.common_utils import generate_otp, send_verification_email, send_notification_bulk
 from core.response import CustomResponse
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 from rest_framework import status as status_code
@@ -114,19 +116,52 @@ class UserLoginViewSet(viewsets.ViewSet):
     """
         UserLoginViewSet for User Login
     """
+    # def create(self, request):
+    #     serializer = UserLoginSerializer(data=request.data)
+    #     # serializer.is_valid(raise_exception=True)
+    #     # serializer.save()
+    #     # user = serializer.validated_data['user']
+    #     # token, created = Token.objects.get_or_create(user=user)
+    #     # return CustomResponse({"token": token.key}, status=status_code.HTTP_200_OK)
+    #     if serializer.is_valid():
+    #         user = serializer.validated_data['user']
+    #         token, created = Token.objects.get_or_create(user=user)
+    #         # return CustomResponse({"token": token.key}, status=status_code.HTTP_200_OK)
+    #         response_data = {
+    #             "token": token.key,
+    #             "is_email_verified": user.is_email_verified  # Include is_email_verified in the response
+    #         }
+    #         return CustomResponse(response_data, status=status_code.HTTP_200_OK)
+    #     else:
+    #         return CustomResponse({"msg": "Please provide valid Credentials"}, status=status_code.HTTP_200_OK)
+
     def create(self, request):
         serializer = UserLoginSerializer(data=request.data)
-        # serializer.is_valid(raise_exception=True)
-        # serializer.save()
-        # user = serializer.validated_data['user']
-        # token, created = Token.objects.get_or_create(user=user)
-        # return CustomResponse({"token": token.key}, status=status_code.HTTP_200_OK)
+
         if serializer.is_valid():
             user = serializer.validated_data['user']
-            token, created = Token.objects.get_or_create(user=user)
-            return CustomResponse({"token": token.key}, status=status_code.HTTP_200_OK)
+            is_email_verified = user.is_email_verified
+
+            response_data = {
+                "is_email_verified": is_email_verified,
+            }
+
+            if is_email_verified:
+                token, created = Token.objects.get_or_create(user=user)
+                response_data["token"] = token.key
+            else:
+                #response_data["token"] = None
+                response_data["msg"] = "User email is not verified. Please check your email inbox."
+
+            return CustomResponse(response_data, status=status_code.HTTP_200_OK)
         else:
             return CustomResponse({"msg": "Please provide valid Credentials"}, status=status_code.HTTP_200_OK)
+
+
+
+
+
+
         
 
 class ForgotPasswordViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
@@ -423,7 +458,7 @@ class ProjectDetailsViewSet(viewsets.ModelViewSet):
         file_obj = Files.objects.filter(Q(location__icontains=location) |
                                         Q(manufacturer_name__full_name__icontains=location) |
                                         Q(manufacturing_number__icontains=location),
-                                        project_id=pk)
+                                        project_id=pk, is_admin_approved=True)
 
         # Apply pagination        
         if page_size:
@@ -598,6 +633,7 @@ class UserEditProfileViewSet(viewsets.ViewSet):
         full_name = data.get("full_name")
         email = data.get("email")
         profile_pic = data.get("profile_pic")
+        company_id = data.get("company_id")
 
         # Validate full name
         if not full_name:
@@ -624,6 +660,8 @@ class UserEditProfileViewSet(viewsets.ViewSet):
         # Update profile picture if provided
         if profile_pic:
             update_data["profile_pic"] = profile_pic
+        if company_id:
+            UserCompany.objects.filter(user=request.user).update(company_id=company_id)
          
         # Perform the update in a single query
         User.objects.filter(id=request.user.id).update(**update_data)
@@ -775,3 +813,14 @@ class UpdateDeviceDetailViewSet(viewsets.ViewSet):
             user=request.user, type=device_type).update(active=False)
             return CustomResponse({"message": "DEVICE_DELETED_SUCCESSFULLY"}, status=status_code.HTTP_200_OK)
         
+
+class SendNotiticationViewSet(viewsets.ViewSet):
+    """
+    """
+    def update(self, request):
+        """
+
+        """
+        data = {"screen":"home"}
+        res = send_notification_bulk([1], "title", "messages", data)
+        return CustomResponse({"message": "NOTIFICATION SEND"}, status=status_code.HTTP_200_OK)

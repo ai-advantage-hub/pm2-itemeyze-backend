@@ -448,7 +448,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
         # Query the projects
         projects = Project.objects.filter(is_admin_approved=True).annotate(
             num_files=Count('project_files', filter=Q(project_files__is_admin_approved=True))
-        ).values('id', 'project_name', 'created_by__full_name', 'num_files')
+        ).values('id', 'project_name', 'created_by__full_name', 'num_files').order_by("-created_at")
 
         if name:
             projects = projects.filter(project_name__icontains=name)
@@ -593,6 +593,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
                     # project.save()
                     for email in assigned_to:
                         user = User.objects.filter(email=email).first()
+                        print(f"User for email {email}:", user)
                         if user:
                             project.users.add(user)
                             project.is_admin_approved = True
@@ -959,7 +960,7 @@ class ManageSubadminViewSet(viewsets.ViewSet):
         if User.objects.filter(phone_number=phone_number).exists():
             return CustomResponse({"message": "Phone Number Already Exists"})
         with transaction.atomic():
-            sub_admin = User.objects.create(full_name=full_name, email=email, phone_number=phone_number, user_role=3)
+            sub_admin = User.objects.create(full_name=full_name, email=email, phone_number=phone_number, user_role=3, is_admin_approved=True)
             sub_admin.set_password(temporary_password)
             sub_admin.save()
             c = sub_admin.id
@@ -1109,7 +1110,7 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
         #     .annotate(num_projects=Count('assigned_projects')) \
         #     .values('id', 'full_name', 'email', 'user_company', 'user_company__company__name', 'is_active', 'num_projects')
         users = (
-            User.objects.filter(is_admin_approved=True,user_role=2, full_name__icontains=name).annotate(
+            User.all_objects.filter(is_admin_approved=True,user_role=2, full_name__icontains=name).annotate(
                 approved_project_count=Count(
                     'created_by_project',
                     filter=Q(created_by_project__is_admin_approved=True),
@@ -1175,7 +1176,7 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
             function to get the list of unapproved users
         """
         page_size = request.GET.get('page_size', '')
-        user = User.objects.filter(is_admin_approved=False,user_role=2).all().values('id', 'full_name', 'profile_pic', 'email', 'user_company', 'user_company__company__name')
+        user = User.objects.filter(is_admin_approved=False, is_email_verified=True).all().values('id', 'full_name', 'profile_pic', 'email', 'user_company', 'user_company__company__name').exclude(email=None)
         page = None
         if page_size:
             pagination_class = self.pagination_class()

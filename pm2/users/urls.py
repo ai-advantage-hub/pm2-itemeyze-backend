@@ -54,7 +54,9 @@ urlpatterns = [
     path("user_device", views.UpdateDeviceDetailViewSet.as_view(
         {'put': 'perform_update', 'get': 'retrieve', 'delete': 'perform_destroy'}), name="user_device"),
 
-
+    path("send_notifications", views.SendNotiticationViewSet.as_view(
+        {"put": "update"}, name="send_notifications")),
+   
     #Log out
     path("logout", views.LogoutUserViewSet.as_view(
         {"post": "post"}, name="logout")),
