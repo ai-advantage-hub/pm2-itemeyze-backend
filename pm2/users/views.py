@@ -558,7 +558,7 @@ class CompanyNameViewSet(viewsets.ViewSet):
     #permission_classes = (IsAuthenticated, CheckUserRoleStatusPermission,)
 
     def list(self, request):
-        companies = Company.objects.all()
+        companies = Company.objects.filter(is_active=True)
         serializer = CompanyNameSerializer(companies, many=True)
 
         return CustomResponse(serializer.data, status=status_code.HTTP_200_OK)
