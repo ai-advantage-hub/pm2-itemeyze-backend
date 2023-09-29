@@ -5,12 +5,12 @@ from rest_framework import status, viewsets, mixins, generics, filters
 from custom_admin.serializers import AdminLoginSerializer,AdminResetPasswordSerializer, ForgotPasswordSerializer, ProjectDetailSerializer,FilesSerializer,FilesPointSerializer, UserListAdminSerializer
 from django.contrib.auth import authenticate
 from rest_framework.authtoken.models import Token
-from users.models import Company, UserCompany, User,Project,Files
+from users.models import Company, UserCompany, User,Project,Files, UserNotification
 from django.contrib.auth.hashers import check_password
 from custom_admin.models import *
 from core.response import CustomResponse
 from django.db.models import Count
-from core.common_utils import generate_otp, send_verification_email, send_subadmin_credentials
+from core.common_utils import generate_otp, send_verification_email, send_subadmin_credentials, send_notification_bulk
 from core.permissions import CheckAdminRoleStatusPermission
 from rest_framework.permissions import IsAuthenticated
 from users.models import OTP
@@ -539,7 +539,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
             return CustomResponse({"message": "File created successfully", "file_id": file.id})
         
     def un_approved_project(self, request):
-        projects = Project.objects.filter(is_admin_approved=False).annotate(num_files=Count('project_files')).values('id', 'project_name', 'created_by__full_name', 'num_files','created_at')
+        projects = Project.objects.filter(is_admin_approved=False).annotate(num_files=Count('project_files')).values('id', 'project_name', 'created_by__full_name', 'num_files','created_at').order_by('-created_at')
         return CustomResponse(projects)
     
     def un_approved_project_count(self, request):
@@ -761,6 +761,19 @@ class ManageProjectViewSet(viewsets.ViewSet):
             file.is_admin_approved = True
             file.save()
             User.objects.filter(id=file.manufacturer_name.id).update(is_admin_approved=True)
+            # Push Notification
+            title = f"File Approved by Admin"
+            message = f"Hey !! Your file has been approved by Admin."
+            data = {
+                "title": title,
+                "message": message,
+            }
+            notification = UserNotification.objects.create(user_id=file.manufacturer_name.id,title=title,message=message)
+            notification.save()
+            data.update({"notification_id": str(notification.id)})
+
+            send_notification_bulk(
+                user_ids=[id], title=title, message=message, data=data)
             return CustomResponse({"message": "File approved by the admin"})
         
     def delete_file_list(self, request, id):
@@ -1125,7 +1138,7 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
                     F('approved_project_count') + F('assigned_project_count'),
                     output_field=IntegerField()
                 )
-            ).values('id','full_name','email', 'approved_project_count', 'assigned_project_count', 'total_project_count','user_company', 'user_company__company__name', 'is_active')
+            ).values('id','full_name','email', 'approved_project_count', 'assigned_project_count', 'total_project_count','user_company', 'user_company__company__name', 'is_active').order_by("-created_at")
         )
 
         if is_active:

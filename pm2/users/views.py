@@ -28,6 +28,7 @@ from .serializers import (
     FilesSerializer,
     UserDeviceDetailSerializer,
     UserDeviceSerializer,
+    NotificationListSerializer
     
 )
 from rest_framework.authtoken.models import Token
@@ -265,8 +266,14 @@ class ProjectViewSet(viewsets.ModelViewSet):
         project_name = request.GET.get('project_name', None)
         page_size = request.GET.get('page_size', '')
 
-        projects = Project.objects.filter(created_by=request.user, is_admin_approved=True).values('id', 'created_at', 'updated_at', 'project_name', 'project_description', 'is_admin_approved', 'is_marked_deleted', 'project_number', 'created_by_id')
-
+        # projects = Project.objects.filter(created_by=request.user, is_admin_approved=True).values('id', 'created_at', 'updated_at', 'project_name', 'project_description', 'is_admin_approved', 'is_marked_deleted', 'project_number', 'created_by_id')
+        projects = Project.objects.filter(
+            Q(created_by=request.user) | Q(users=request.user),
+            is_admin_approved=True
+            ).values(
+            'id', 'created_at', 'updated_at', 'project_name', 'project_description',
+            'is_admin_approved', 'is_marked_deleted', 'project_number', 'created_by_id'
+            )
         # if project_name:
         #     projects = projects.filter(name__icontains=project_name)
         if project_name:
@@ -783,7 +790,7 @@ class UpdateDeviceDetailViewSet(viewsets.ViewSet):
             data=request.data, instance=request.user)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return CustomResponse({"message": "DEVICE_SUCCESS_MESSAGE"}, status=status_code.HTTP_200_OK)
+        return CustomResponse({"message": "Device Registered Successfully"}, status=status_code.HTTP_200_OK)
 
     # def perform_destroy(self, request):
     #     """
@@ -811,16 +818,60 @@ class UpdateDeviceDetailViewSet(viewsets.ViewSet):
         elif device_type:
             FCMDevice.objects.filter(
             user=request.user, type=device_type).update(active=False)
-            return CustomResponse({"message": "DEVICE_DELETED_SUCCESSFULLY"}, status=status_code.HTTP_200_OK)
+            return CustomResponse({"message": "Device Deleted Successfully"}, status=status_code.HTTP_200_OK)
         
 
 class SendNotiticationViewSet(viewsets.ViewSet):
     """
+        SendNotiticationViewSet to send notifications to users
     """
     def update(self, request):
         """
-
+            function to send notifications
         """
         data = {"screen":"home"}
-        res = send_notification_bulk([1], "title", "messages", data)
-        return CustomResponse({"message": "NOTIFICATION SEND"}, status=status_code.HTTP_200_OK)
+        res = send_notification_bulk([84], "title", "messages", data)
+        return CustomResponse({"message": "Notification Sent Successfully"}, status=status_code.HTTP_200_OK)
+    
+
+class NotificationViewSet(viewsets.ViewSet, viewsets.GenericViewSet):
+    """
+        View to get list of Notifications
+    """
+    permission_classes = (IsAuthenticated,)
+    queryset = UserNotification.objects.all()
+    serializer_detail_class = NotificationListSerializer
+    pagination_class = CustomPagination
+
+    def list(self, request):
+        """method to get notification list"""
+        queryset = UserNotification.objects.filter(user=request.user).\
+            order_by('-created_at')
+        unread = queryset.filter(is_read=False).count()
+        is_all_read = True if unread == 0 else False
+        serializer = self.serializer_detail_class(queryset, many=True)
+        data = serializer.data
+        if self.request.GET.get('page_size'):
+            pagination_class = self.pagination_class()
+            page = pagination_class.paginate_queryset(queryset, request)
+            serializer = self.serializer_detail_class(page, many=True)
+            data = pagination_class.get_paginated_response(
+                serializer.data).data
+        updated_data = {"unread_notification": unread,
+                        "notification_data": data, "is_all_read": is_all_read}
+        return CustomResponse(updated_data)
+
+    def retrieve(self, request, *args, **kwargs):
+        """method to get the notification details"""
+        notification_id = kwargs.get('notification_id')
+        queryset = UserNotification.objects.filter(id=notification_id, is_active=True).values(
+            'id', 'notification_type', 'receiver', 'notification', 'is_read', 'created_at')
+        if not queryset:
+            return Response({"message": "NOTIFICATION_NOT_FOUND"},
+                                             error_location="LOCATION",
+                            status=status_code.HTTP_400_BAD_REQUEST)
+        serializer = self.serializer_detail_class(queryset, many=False)
+        serializer_data = {
+            'UserNotification': serializer.data
+        }
+        return CustomResponse(serializer_data)
