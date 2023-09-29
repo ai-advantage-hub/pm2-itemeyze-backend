@@ -6,7 +6,7 @@ from .models import (
     OTP, 
     Project, 
     Files,
-
+    UserNotification
 
 )
 from custom_admin.models import ContentManagement
@@ -560,4 +560,17 @@ class UserDeviceSerializer(serializers.Serializer):
         
 
 
-        
+class NotificationListSerializer(serializers.ModelSerializer):
+    """
+        NotificationSerializer used to get list of Notification.
+    """
+    data = serializers.SerializerMethodField()
+
+    def get_data(self, obj):
+        data_dict = eval(str(obj.data))
+        return data_dict
+
+    class Meta:
+        model = UserNotification
+        fields = ('id', 'user', 'title',
+                  'message', 'is_read', 'created_at')

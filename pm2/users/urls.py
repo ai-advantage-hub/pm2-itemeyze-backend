@@ -56,6 +56,8 @@ urlpatterns = [
 
     path("send_notifications", views.SendNotiticationViewSet.as_view(
         {"put": "update"}, name="send_notifications")),
+    path("list_notifications", views.NotificationViewSet.as_view(
+        {"get": "list"}, name="list_notifications")),
    
     #Log out
     path("logout", views.LogoutUserViewSet.as_view(
