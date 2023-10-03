@@ -50,10 +50,15 @@ urlpatterns = [
     path("about_the_app", views.AboutAppViewset.as_view(
         {"get": "list"}, name="about_the_app")),
 
+    #Global Search
+    path("global_search", views.GlobalSearchViewSet.as_view(
+        {"get": "search"}, name="global_search")),
+
     #FCM
     path("user_device", views.UpdateDeviceDetailViewSet.as_view(
         {'put': 'perform_update', 'get': 'retrieve', 'delete': 'perform_destroy'}), name="user_device"),
 
+    #Notifications
     path("send_notifications", views.SendNotiticationViewSet.as_view(
         {"put": "update"}, name="send_notifications")),
     path("list_notifications", views.NotificationViewSet.as_view(

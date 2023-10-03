@@ -763,7 +763,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
             User.objects.filter(id=file.manufacturer_name.id).update(is_admin_approved=True)
             # Push Notification
             title = f"File Approved by Admin"
-            message = f"Hey !! Your file has been approved by Admin."
+            message = f"Hello!! Your file has been approved by Admin."
             data = {
                 "title": title,
                 "message": message,
@@ -773,8 +773,8 @@ class ManageProjectViewSet(viewsets.ViewSet):
             data.update({"notification_id": str(notification.id)})
 
             send_notification_bulk(
-                user_ids=[id], title=title, message=message, data=data)
-            return CustomResponse({"message": "File approved by the admin"})
+                user_ids=[file.manufacturer_name.id], title=title, message=message, data=data)
+            return CustomResponse({"message": "File approved by the admin"}, status=status_code.HTTP_200_OK)
         
     def delete_file_list(self, request, id):
         file = Files.objects.filter(project_id=id, is_marked_deleted=True).all().values("id", "file_name")
