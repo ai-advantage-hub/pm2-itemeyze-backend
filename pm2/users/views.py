@@ -265,8 +265,8 @@ class ProjectViewSet(viewsets.ModelViewSet):
         """
         project_name = request.GET.get('project_name', None)
         page_size = request.GET.get('page_size', '')
-
-        # projects = Project.objects.filter(created_by=request.user, is_admin_approved=True).values('id', 'created_at', 'updated_at', 'project_name', 'project_description', 'is_admin_approved', 'is_marked_deleted', 'project_number', 'created_by_id')
+        print("user====",request.user.id)
+        # projects = Project.objects.filter(created_by=request.user, is_admin_approved=False).values('id', 'created_at', 'updated_at', 'project_name', 'project_description', 'is_admin_approved', 'is_marked_deleted', 'project_number', 'created_by_id')
         projects = Project.objects.filter(
             Q(created_by=request.user) | Q(users=request.user),
             is_admin_approved=True
@@ -710,6 +710,55 @@ class UserChangePasswordViewSet(viewsets.ViewSet):
         return CustomResponse({"message": "Password updated successfully."}, status=status_code.HTTP_200_OK)
 
 
+class GlobalSearchViewSet(viewsets.ViewSet):
+    """
+    """
+    permission_classes = (IsAuthenticated, CheckUserRoleStatusPermission)
+    pagination_class = CustomPagination
+    serializer_class = ProjectDetailsViewSerializer
+
+    def get_queryset(self):
+        pk = self.kwargs.get('pk')
+        search = self.request.GET.get('search', None)
+        queryset = Project.objects.filter(id=pk)
+
+        return queryset
+
+    def search(self, request):
+        """
+        Method to list and search for the projects.
+        """
+        page_size = request.GET.get('page_size', '')
+        queryset = self.get_queryset()
+        search = self.request.GET.get('search', '')
+        print("user====",request.user.id)
+        file_obj = Files.objects.filter(Q(location__icontains=search) |
+                                        Q(manufacturer_name__full_name__icontains=search) |
+                                        Q(manufacturing_number__icontains=search),
+                                           is_admin_approved=True)
+        # file_serializer = FilesSerializer(file_obj, many=True)
+        # serializer = self.get_serializer(queryset, many=True, context = {"search": search})
+        # data = dict()
+        # data['project_details'] = serializer.data
+        # data['project_files'] = file_serializer.data
+        # return CustomResponse(data, status=status_code.HTTP_200_OK)
+        if page_size:
+            pagination_class = self.pagination_class()
+            page = pagination_class.paginate_queryset(file_obj, request)
+            if page is not None:
+                serializer = FilesSerializer(instance=page, many=True)
+                return CustomResponse(pagination_class.get_paginated_response(serializer.data).data)
+        serializer = FilesSerializer(instance=file_obj, many=True)
+        return CustomResponse(serializer.data, status=status_code.HTTP_200_OK)
+        # page = None
+        # if page_size:
+        #     pagination_class = self.pagination_class()
+        #     page = pagination_class.paginate_queryset(file_obj, request)
+        # if page is not None:
+        #     return CustomResponse(pagination_class.get_paginated_response(page).data)
+        # return CustomResponse(file_obj)
+
+
 #Log out
 class LogoutUserViewSet(viewsets.ViewSet):
     """
@@ -830,7 +879,7 @@ class SendNotiticationViewSet(viewsets.ViewSet):
             function to send notifications
         """
         data = {"screen":"home"}
-        res = send_notification_bulk([84], "title", "messages", data)
+        res = send_notification_bulk([164], "title", "messages", data)
         return CustomResponse({"message": "Notification Sent Successfully"}, status=status_code.HTTP_200_OK)
     
 

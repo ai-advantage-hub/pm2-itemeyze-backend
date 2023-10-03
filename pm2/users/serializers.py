@@ -564,7 +564,7 @@ class NotificationListSerializer(serializers.ModelSerializer):
     """
         NotificationSerializer used to get list of Notification.
     """
-    data = serializers.SerializerMethodField()
+    #data = serializers.SerializerMethodField()
 
     def get_data(self, obj):
         data_dict = eval(str(obj.data))
