@@ -488,22 +488,52 @@ class EditFileViewSet(viewsets.ModelViewSet):
         pk = self.kwargs.get('pk')
         return Files.objects.filter(id=pk)
     
-    def update(self, request, pk=None):
-        """
-            update method to update the file details.
-        """
-        queryset = self.get_queryset()
-        obj = queryset.get(pk=pk)
-        serializer = CreateFileDetailsSerializer(obj, data=request.data)
-        # serializer.is_valid(raise_exception=True)
-        # serializer.save()
-        # return CustomResponse({"message": gettext(SUCCESS_MESSAGES.get('FILE_UPDATED'))}, status=status_code.HTTP_200_OK)
-        if serializer.is_valid():
-            serializer.save()
-            #return CustomResponse({'message': 'File details edited successfully.'})
-            return CustomResponse({"message": gettext(SUCCESS_MESSAGES.get('FILE_UPDATED'))}, status=status_code.HTTP_200_OK)
+    # def update(self, request, pk=None):
+    #     """
+    #         update method to update the file details.
+    #     """
+    #     queryset = self.get_queryset()
+    #     obj = queryset.get(pk=pk)
+    #     serializer = CreateFileDetailsSerializer(obj, data=request.data)
+    #     # serializer.is_valid(raise_exception=True)
+    #     # serializer.save()
+    #     # return CustomResponse({"message": gettext(SUCCESS_MESSAGES.get('FILE_UPDATED'))}, status=status_code.HTTP_200_OK)
+    #     if serializer.is_valid():
+    #         serializer.save()
+    #         #return CustomResponse({'message': 'File details edited successfully.'})
+    #         return CustomResponse({"message": gettext(SUCCESS_MESSAGES.get('FILE_UPDATED'))}, status=status_code.HTTP_200_OK)
+    #     else:
+    #         return CustomResponse(serializer.errors, status=status_code.HTTP_200_OK)
+
+    def update(self, request, id):
+        data = request.data
+        thumbnail = data.get("thumbnail")
+        file_name = data.get("file_name")
+        manual_manufacturer_name = data.get('manual_manufacturer_name')
+        manufacturer_name = data.get("manufacturer_name")
+        manufacturing_number = data.get("manufacturing_number")
+        location = data.get("location")
+        quantity = data.get("quantity")
+        project_details = data.get("project_details")
+        additional_details = data.get("additional_details")
+        location_points = data.get('location_points')
+
+        if Files.objects.filter(manufacturing_number=manufacturing_number).exclude(id=id).exists():
+            return CustomResponse({"message": "This manufacturing number already exists"}, status=status_code.HTTP_400_BAD_REQUEST)
+        # if Files.objects.filter(file_name=file_name).exclude(id=id).exists():
+        #     return CustomResponse({"message": "This File Name already exists"}, status=status_code.HTTP_400_BAD_REQUEST)
+        if manual_manufacturer_name:
+            new_user = User.objects.create(full_name=manual_manufacturer_name)
+            print("newwwwww", new_user.id)
+            file = Files.objects.filter(id=id).update(manufacturer_name_id=new_user.id, manual_manufacturer_name=manual_manufacturer_name, manufacturing_number=manufacturing_number, quantity=quantity, project_details=project_details, additional_details=additional_details,location=location,file_name=file_name, location_points=location_points,is_admin_approved=True)
+            # c = str(project_id)+'_'+str(file.id)+'_'+'filename'
+            # print("ccccccccc",c)
+            # b = Files.objects.filter(id=file.id).update(file_name=c)
+            # print("new filleeeee", file)
+            return CustomResponse({"message": "File updated with new User Successfully"}, status=status_code.HTTP_200_OK)
         else:
-            return CustomResponse(serializer.errors, status=status_code.HTTP_200_OK)
+            file = Files.objects.filter(id=id).update(file_name=file_name, thumbnail=thumbnail, manufacturing_number=manufacturing_number, location=location, manufacturer_name_id=manufacturer_name, quantity=quantity, project_details=project_details, additional_details=additional_details, location_points=location_points, is_admin_approved=True)
+            return CustomResponse({"message": "File updated successfully"}, status=status_code.HTTP_200_OK)
         
     def destroy(self, request, pk):
         """
