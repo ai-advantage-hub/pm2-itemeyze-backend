@@ -895,7 +895,7 @@ class ManageSubadminViewSet(viewsets.ViewSet):
         is_active = request.GET.get('is_active', None)
         page_size = request.GET.get('page_size', '') # Obtain the page_size parameter
 
-        users_query = User.all_objects.filter(user_role=3).values('id', 'full_name', 'email', 'is_active', 'phone_number', 'modules_accessible')
+        users_query = User.all_objects.filter(user_role=3).values('id', 'full_name', 'email', 'is_active', 'phone_number', 'modules_accessible').order_by("-created_by")
         if query:
             users_query = users_query.filter(full_name__icontains=query)
 
