@@ -973,7 +973,7 @@ class ManageSubadminViewSet(viewsets.ViewSet):
         if User.objects.filter(phone_number=phone_number).exists():
             return CustomResponse({"message": "Phone Number Already Exists"})
         with transaction.atomic():
-            sub_admin = User.objects.create(full_name=full_name, email=email, phone_number=phone_number, user_role=3, is_admin_approved=True)
+            sub_admin = User.objects.create(full_name=full_name, email=email, phone_number=phone_number, user_role=3, is_admin_approved=True, is_email_verified=True)
             sub_admin.set_password(temporary_password)
             sub_admin.save()
             c = sub_admin.id
