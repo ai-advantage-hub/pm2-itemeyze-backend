@@ -258,6 +258,7 @@ class CreateFileDetailsSerializer(serializers.ModelSerializer):
         c = Files.objects.filter(manufacturing_number=manufacturing_number).first()
         if c is not None:
             return data
+        return data    
     
     def create(self, validated_data):
         # Retrieve the project_id from the context

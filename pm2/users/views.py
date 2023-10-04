@@ -734,7 +734,7 @@ class GlobalSearchViewSet(viewsets.ViewSet):
         print("user====",request.user.id)
         file_obj = Files.objects.filter(Q(location__icontains=search) |
                                         Q(manufacturer_name__full_name__icontains=search) |
-                                        Q(manufacturing_number__icontains=search),manufacturer_name=request.user,
+                                        Q(manufacturing_number__icontains=search)).filter(Q(project__created_by_id=request.user.id) | Q(manufacturer_name=request.user) | Q(project__users__id=request.user.id)).filter(
                                            is_admin_approved=True).order_by("-created_at")
         # file_serializer = FilesSerializer(file_obj, many=True)
         # serializer = self.get_serializer(queryset, many=True, context = {"search": search})
