@@ -530,10 +530,10 @@ class EditFileViewSet(viewsets.ModelViewSet):
             # print("ccccccccc",c)
             # b = Files.objects.filter(id=file.id).update(file_name=c)
             # print("new filleeeee", file)
-            return CustomResponse({"message": "File updated with new User Successfully"}, status=status_code.HTTP_200_OK)
+            return CustomResponse({"message": "File updated Successfully"}, status=status_code.HTTP_200_OK)
         else:
             file = Files.objects.filter(id=id).update(file_name=file_name, thumbnail=thumbnail, manufacturing_number=manufacturing_number, location=location, manufacturer_name_id=manufacturer_name, quantity=quantity, project_details=project_details, additional_details=additional_details, location_points=location_points, is_admin_approved=True)
-            return CustomResponse({"message": "File updated successfully"}, status=status_code.HTTP_200_OK)
+            return CustomResponse({"message": "File updated Successfully"}, status=status_code.HTTP_200_OK)
         
     def destroy(self, request, pk):
         """
