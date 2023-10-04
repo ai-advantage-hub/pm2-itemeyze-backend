@@ -14,11 +14,11 @@ from pathlib import Path
 from .local import *
 import os
 
-import firebase_admin
-from firebase_admin import credentials
-cred = credentials.Certificate(GOOGLE_APPLICATION_CREDENTIALS)
+# import firebase_admin
+# from firebase_admin import credentials
+# cred = credentials.Certificate(GOOGLE_APPLICATION_CREDENTIALS)
 
-firebase_admin.initialize_app(cred)
+# firebase_admin.initialize_app(cred)
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
