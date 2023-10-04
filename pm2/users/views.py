@@ -735,7 +735,7 @@ class GlobalSearchViewSet(viewsets.ViewSet):
         file_obj = Files.objects.filter(Q(location__icontains=search) |
                                         Q(manufacturer_name__full_name__icontains=search) |
                                         Q(manufacturing_number__icontains=search),
-                                           is_admin_approved=True)
+                                           is_admin_approved=True).order_by("-created_at")
         # file_serializer = FilesSerializer(file_obj, many=True)
         # serializer = self.get_serializer(queryset, many=True, context = {"search": search})
         # data = dict()
