@@ -969,11 +969,11 @@ class ManageSubadminViewSet(viewsets.ViewSet):
             return Response({"message": "Please add modules accessible"}, status=status.HTTP_400_BAD_REQUEST)
 
         if User.objects.filter(email=email).exists():
-            return CustomResponse({"message": "Email Already Exists"})
+            return CustomResponse({"message": "Email Already Exists"}, status=status.HTTP_400_BAD_REQUEST)
         if User.objects.filter(phone_number=phone_number).exists():
-            return CustomResponse({"message": "Phone Number Already Exists"})
+            return CustomResponse({"message": "Phone Number Already Exists"}, status=status.HTTP_400_BAD_REQUEST)
         with transaction.atomic():
-            sub_admin = User.objects.create(full_name=full_name, email=email, phone_number=phone_number, user_role=3, is_admin_approved=True)
+            sub_admin = User.objects.create(full_name=full_name, email=email, phone_number=phone_number, user_role=3, is_admin_approved=True, is_email_verified=True)
             sub_admin.set_password(temporary_password)
             sub_admin.save()
             c = sub_admin.id
@@ -984,7 +984,7 @@ class ManageSubadminViewSet(viewsets.ViewSet):
                 d.modules_accessible.append(x)
             d.save()
             send_subadmin_credentials(email, temporary_password)
-            return CustomResponse({"message": "Subadmin created Successfully", "id":d.id})
+            return CustomResponse({"message": "Subadmin created Successfully", "id":d.id}, status=status.HTTP_200_OK)
         
     def edit_subadmin(self, request, id):
         """
