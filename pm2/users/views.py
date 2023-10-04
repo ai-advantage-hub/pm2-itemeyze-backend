@@ -527,7 +527,7 @@ class TermsAndConditionsViewSet(viewsets.ModelViewSet):
         TermsAndConditionsViewSet to get terms and conditions
     """
     def list(self, request):
-        content = ContentManagement.objects.all()
+        content = ContentManagement.objects.filter(content_type=1)
         serializer = ContentManagementSerializer(content, many=True)
         return CustomResponse(serializer.data, status=status_code.HTTP_200_OK)
 

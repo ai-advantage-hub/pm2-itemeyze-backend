@@ -571,7 +571,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
         
         if status_value == 2:
             Project.objects.filter(id=project_id).delete()
-            return CustomResponse({"message": "Project deleted"})
+            return CustomResponse({"message": "Project deleted"}, status=status_code.HTTP_200_OK)
         
         if not project_name:
             return CustomResponse({"message": "Please provide project_name"}, status=status.HTTP_400_BAD_REQUEST)
@@ -756,7 +756,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
             return CustomResponse({"error": "File not found."}, status=status.HTTP_400_BAD_REQUEST)
         if status_value == 2:
             file.delete()
-            return CustomResponse({"message": "File deleted successfully"})
+            return CustomResponse({"message": "File deleted successfully"}, status=status_code.HTTP_200_OK)
         else:
             file.is_admin_approved = True
             file.save()
@@ -1216,6 +1216,19 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
             user.is_admin_approved = True
             user.save()
             User.objects.filter(id=user_id).update(is_admin_approved=True)
+            # Push Notification
+            title = f"Account Approved by Admin"
+            message = f"Hello!! Your Account has been Approved by Admin, Now you can Login."
+            data = {
+                "title": title,
+                "message": message,
+            }
+            notification = UserNotification.objects.create(user_id=user_id,title=title,message=message)
+            notification.save()
+            data.update({"notification_id": str(notification.id)})
+
+            send_notification_bulk(
+                user_ids=[user_id], title=title, message=message, data=data)
             return CustomResponse({"message": "User Approved by Admin"}, status=status_code.HTTP_200_OK)
         else:
             return CustomResponse({"message": "Please give right value in status value"},status=status.HTTP_400_BAD_REQUEST)

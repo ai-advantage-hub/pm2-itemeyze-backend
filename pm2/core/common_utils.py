@@ -165,6 +165,7 @@ def send_notification_bulk(user_ids, title, message, data):
         data=data,
         )
         devices.send_message(message)
+        print("device=====",devices)
     except Exception as e:
         print("HEREError", e)
     return True
