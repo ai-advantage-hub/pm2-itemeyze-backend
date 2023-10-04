@@ -761,19 +761,19 @@ class ManageProjectViewSet(viewsets.ViewSet):
             file.is_admin_approved = True
             file.save()
             User.objects.filter(id=file.manufacturer_name.id).update(is_admin_approved=True)
-            # Push Notification
-            title = f"File Approved by Admin"
-            message = f"Hello!! Your file has been approved by Admin."
-            data = {
-                "title": title,
-                "message": message,
-            }
-            notification = UserNotification.objects.create(user_id=file.manufacturer_name.id,title=title,message=message)
-            notification.save()
-            data.update({"notification_id": str(notification.id)})
+            # # Push Notification
+            # title = f"File Approved by Admin"
+            # message = f"Hello!! Your file has been approved by Admin."
+            # data = {
+            #     "title": title,
+            #     "message": message,
+            # }
+            # notification = UserNotification.objects.create(user_id=file.manufacturer_name.id,title=title,message=message)
+            # notification.save()
+            # data.update({"notification_id": str(notification.id)})
 
-            send_notification_bulk(
-                user_ids=[file.manufacturer_name.id], title=title, message=message, data=data)
+            # send_notification_bulk(
+            #     user_ids=[file.manufacturer_name.id], title=title, message=message, data=data)
             return CustomResponse({"message": "File approved by the admin"}, status=status_code.HTTP_200_OK)
         
     def delete_file_list(self, request, id):
@@ -1216,19 +1216,19 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
             user.is_admin_approved = True
             user.save()
             User.objects.filter(id=user_id).update(is_admin_approved=True)
-            # Push Notification
-            title = f"Account Approved by Admin"
-            message = f"Hello!! Your Account has been Approved by Admin, Now you can Login."
-            data = {
-                "title": title,
-                "message": message,
-            }
-            notification = UserNotification.objects.create(user_id=user_id,title=title,message=message)
-            notification.save()
-            data.update({"notification_id": str(notification.id)})
+            # # Push Notification
+            # title = f"Account Approved by Admin"
+            # message = f"Hello!! Your Account has been Approved by Admin, Now you can Login."
+            # data = {
+            #     "title": title,
+            #     "message": message,
+            # }
+            # notification = UserNotification.objects.create(user_id=user_id,title=title,message=message)
+            # notification.save()
+            # data.update({"notification_id": str(notification.id)})
 
-            send_notification_bulk(
-                user_ids=[user_id], title=title, message=message, data=data)
+            # send_notification_bulk(
+            #     user_ids=[user_id], title=title, message=message, data=data)
             return CustomResponse({"message": "User Approved by Admin"}, status=status_code.HTTP_200_OK)
         else:
             return CustomResponse({"message": "Please give right value in status value"},status=status.HTTP_400_BAD_REQUEST)
