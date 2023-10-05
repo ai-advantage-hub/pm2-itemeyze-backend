@@ -536,7 +536,7 @@ class EditFileViewSet(viewsets.ModelViewSet):
             file = Files.objects.filter(id=id).update(thumbnail=thumbnail, manufacturing_number=manufacturing_number, location=location, manufacturer_name_id=manufacturer_name, quantity=quantity, project_details=project_details, additional_details=additional_details, location_points=location_points, is_admin_approved=True)
             return CustomResponse({"message": "File updated Successfully"}, status=status_code.HTTP_200_OK)
         
-    def destroy(self, request, pk):
+    def destroy(self, request, id):
         """
             delete method to delete the file from the database.
         """
@@ -545,11 +545,11 @@ class EditFileViewSet(viewsets.ModelViewSet):
         # obj.delete()
         # #return CustomResponse({'message': 'File deleted successfully.'})
         # return CustomResponse({"message": gettext(SUCCESS_MESSAGES.get('FILE_DELETED'))}, status=status_code.HTTP_400_BAD_REQUEST)
-        user = Files.objects.filter(id = pk, is_marked_deleted = False).first()
+        user = Files.objects.filter(id = id).first()
         if not user:
             return CustomResponse({"message": "File Not Found"}, status=status_code.HTTP_400_BAD_REQUEST)
         user.is_marked_deleted = True
-        user.save()
+        user.delete()
         return CustomResponse({"message": gettext(SUCCESS_MESSAGES.get('FILE_DELETED'))}, status=status_code.HTTP_200_OK)
 
 
