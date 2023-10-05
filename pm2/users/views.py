@@ -7,6 +7,8 @@ from .models import (
     Project, 
     Files, 
     Company,
+    UserCompany,
+    UserNotification
 
 )
 from custom_admin.models import ContentManagement
@@ -25,11 +27,12 @@ from .serializers import (
     UserChangePasswordSerializer,
     FilesSerializer,
     UserDeviceDetailSerializer,
-    UserDeviceSerializer
+    UserDeviceSerializer,
+    NotificationListSerializer
     
 )
 from rest_framework.authtoken.models import Token
-from core.common_utils import generate_otp, send_verification_email
+from core.common_utils import generate_otp, send_verification_email, send_notification_bulk
 from core.response import CustomResponse
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 from rest_framework import status as status_code
@@ -114,19 +117,52 @@ class UserLoginViewSet(viewsets.ViewSet):
     """
         UserLoginViewSet for User Login
     """
+    # def create(self, request):
+    #     serializer = UserLoginSerializer(data=request.data)
+    #     # serializer.is_valid(raise_exception=True)
+    #     # serializer.save()
+    #     # user = serializer.validated_data['user']
+    #     # token, created = Token.objects.get_or_create(user=user)
+    #     # return CustomResponse({"token": token.key}, status=status_code.HTTP_200_OK)
+    #     if serializer.is_valid():
+    #         user = serializer.validated_data['user']
+    #         token, created = Token.objects.get_or_create(user=user)
+    #         # return CustomResponse({"token": token.key}, status=status_code.HTTP_200_OK)
+    #         response_data = {
+    #             "token": token.key,
+    #             "is_email_verified": user.is_email_verified  # Include is_email_verified in the response
+    #         }
+    #         return CustomResponse(response_data, status=status_code.HTTP_200_OK)
+    #     else:
+    #         return CustomResponse({"msg": "Please provide valid Credentials"}, status=status_code.HTTP_200_OK)
+
     def create(self, request):
         serializer = UserLoginSerializer(data=request.data)
-        # serializer.is_valid(raise_exception=True)
-        # serializer.save()
-        # user = serializer.validated_data['user']
-        # token, created = Token.objects.get_or_create(user=user)
-        # return CustomResponse({"token": token.key}, status=status_code.HTTP_200_OK)
+
         if serializer.is_valid():
             user = serializer.validated_data['user']
-            token, created = Token.objects.get_or_create(user=user)
-            return CustomResponse({"token": token.key}, status=status_code.HTTP_200_OK)
+            is_email_verified = user.is_email_verified
+
+            response_data = {
+                "is_email_verified": is_email_verified,
+            }
+
+            if is_email_verified:
+                token, created = Token.objects.get_or_create(user=user)
+                response_data["token"] = token.key
+            else:
+                #response_data["token"] = None
+                response_data["msg"] = "User email is not verified. Please check your email inbox."
+
+            return CustomResponse(response_data, status=status_code.HTTP_200_OK)
         else:
             return CustomResponse({"msg": "Please provide valid Credentials"}, status=status_code.HTTP_200_OK)
+
+
+
+
+
+
         
 
 class ForgotPasswordViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
@@ -229,9 +265,15 @@ class ProjectViewSet(viewsets.ModelViewSet):
         """
         project_name = request.GET.get('project_name', None)
         page_size = request.GET.get('page_size', '')
-
-        projects = Project.objects.filter(created_by=request.user, is_admin_approved=True).values('id', 'created_at', 'updated_at', 'project_name', 'project_description', 'is_admin_approved', 'is_marked_deleted', 'project_number', 'created_by_id')
-
+        print("user====",request.user.id)
+        # projects = Project.objects.filter(created_by=request.user, is_admin_approved=False).values('id', 'created_at', 'updated_at', 'project_name', 'project_description', 'is_admin_approved', 'is_marked_deleted', 'project_number', 'created_by_id')
+        projects = Project.objects.filter(
+            Q(created_by=request.user) | Q(users=request.user),
+            is_admin_approved=True
+            ).values(
+            'id', 'created_at', 'updated_at', 'project_name', 'project_description',
+            'is_admin_approved', 'is_marked_deleted', 'project_number', 'created_by_id'
+            )
         # if project_name:
         #     projects = projects.filter(name__icontains=project_name)
         if project_name:
@@ -423,7 +465,7 @@ class ProjectDetailsViewSet(viewsets.ModelViewSet):
         file_obj = Files.objects.filter(Q(location__icontains=location) |
                                         Q(manufacturer_name__full_name__icontains=location) |
                                         Q(manufacturing_number__icontains=location),
-                                        project_id=pk)
+                                        project_id=pk, is_admin_approved=True)
 
         # Apply pagination        
         if page_size:
@@ -485,7 +527,7 @@ class TermsAndConditionsViewSet(viewsets.ModelViewSet):
         TermsAndConditionsViewSet to get terms and conditions
     """
     def list(self, request):
-        content = ContentManagement.objects.all()
+        content = ContentManagement.objects.filter(content_type=1)
         serializer = ContentManagementSerializer(content, many=True)
         return CustomResponse(serializer.data, status=status_code.HTTP_200_OK)
 
@@ -516,7 +558,7 @@ class CompanyNameViewSet(viewsets.ViewSet):
     #permission_classes = (IsAuthenticated, CheckUserRoleStatusPermission,)
 
     def list(self, request):
-        companies = Company.objects.all()
+        companies = Company.objects.filter(is_active=True)
         serializer = CompanyNameSerializer(companies, many=True)
 
         return CustomResponse(serializer.data, status=status_code.HTTP_200_OK)
@@ -598,6 +640,7 @@ class UserEditProfileViewSet(viewsets.ViewSet):
         full_name = data.get("full_name")
         email = data.get("email")
         profile_pic = data.get("profile_pic")
+        company_id = data.get("company_id")
 
         # Validate full name
         if not full_name:
@@ -624,6 +667,8 @@ class UserEditProfileViewSet(viewsets.ViewSet):
         # Update profile picture if provided
         if profile_pic:
             update_data["profile_pic"] = profile_pic
+        if company_id:
+            UserCompany.objects.filter(user=request.user).update(company_id=company_id)
          
         # Perform the update in a single query
         User.objects.filter(id=request.user.id).update(**update_data)
@@ -663,6 +708,55 @@ class UserChangePasswordViewSet(viewsets.ViewSet):
 
         serializer.update_password(request.user)
         return CustomResponse({"message": "Password updated successfully."}, status=status_code.HTTP_200_OK)
+
+
+class GlobalSearchViewSet(viewsets.ViewSet):
+    """
+    """
+    permission_classes = (IsAuthenticated, CheckUserRoleStatusPermission)
+    pagination_class = CustomPagination
+    serializer_class = ProjectDetailsViewSerializer
+
+    def get_queryset(self):
+        pk = self.kwargs.get('pk')
+        search = self.request.GET.get('search', None)
+        queryset = Project.objects.filter(id=pk)
+
+        return queryset
+
+    def search(self, request):
+        """
+        Method to list and search for the projects.
+        """
+        page_size = request.GET.get('page_size', '')
+        queryset = self.get_queryset()
+        search = self.request.GET.get('search', '')
+        print("user====",request.user.id)
+        file_obj = Files.objects.filter(Q(location__icontains=search) |
+                                        Q(manufacturer_name__full_name__icontains=search) |
+                                        Q(manufacturing_number__icontains=search)).filter(Q(project__created_by_id=request.user.id) | Q(manufacturer_name=request.user) | Q(project__users__id=request.user.id)).filter(
+                                           is_admin_approved=True).order_by("-created_at")
+        # file_serializer = FilesSerializer(file_obj, many=True)
+        # serializer = self.get_serializer(queryset, many=True, context = {"search": search})
+        # data = dict()
+        # data['project_details'] = serializer.data
+        # data['project_files'] = file_serializer.data
+        # return CustomResponse(data, status=status_code.HTTP_200_OK)
+        if page_size:
+            pagination_class = self.pagination_class()
+            page = pagination_class.paginate_queryset(file_obj, request)
+            if page is not None:
+                serializer = FilesSerializer(instance=page, many=True)
+                return CustomResponse(pagination_class.get_paginated_response(serializer.data).data)
+        serializer = FilesSerializer(instance=file_obj, many=True)
+        return CustomResponse(serializer.data, status=status_code.HTTP_200_OK)
+        # page = None
+        # if page_size:
+        #     pagination_class = self.pagination_class()
+        #     page = pagination_class.paginate_queryset(file_obj, request)
+        # if page is not None:
+        #     return CustomResponse(pagination_class.get_paginated_response(page).data)
+        # return CustomResponse(file_obj)
 
 
 #Log out
@@ -745,7 +839,7 @@ class UpdateDeviceDetailViewSet(viewsets.ViewSet):
             data=request.data, instance=request.user)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return CustomResponse({"message": "DEVICE_SUCCESS_MESSAGE"}, status=status_code.HTTP_200_OK)
+        return CustomResponse({"message": "Device Registered Successfully"}, status=status_code.HTTP_200_OK)
 
     # def perform_destroy(self, request):
     #     """
@@ -773,5 +867,60 @@ class UpdateDeviceDetailViewSet(viewsets.ViewSet):
         elif device_type:
             FCMDevice.objects.filter(
             user=request.user, type=device_type).update(active=False)
-            return CustomResponse({"message": "DEVICE_DELETED_SUCCESSFULLY"}, status=status_code.HTTP_200_OK)
+            return CustomResponse({"message": "Device Deleted Successfully"}, status=status_code.HTTP_200_OK)
         
+
+class SendNotiticationViewSet(viewsets.ViewSet):
+    """
+        SendNotiticationViewSet to send notifications to users
+    """
+    def update(self, request):
+        """
+            function to send notifications
+        """
+        data = {"screen":"home"}
+        res = send_notification_bulk([164], "title", "messages", data)
+        return CustomResponse({"message": "Notification Sent Successfully"}, status=status_code.HTTP_200_OK)
+    
+
+class NotificationViewSet(viewsets.ViewSet, viewsets.GenericViewSet):
+    """
+        View to get list of Notifications
+    """
+    permission_classes = (IsAuthenticated,)
+    queryset = UserNotification.objects.all()
+    serializer_detail_class = NotificationListSerializer
+    pagination_class = CustomPagination
+
+    def list(self, request):
+        """method to get notification list"""
+        queryset = UserNotification.objects.filter(user=request.user).\
+            order_by('-created_at')
+        unread = queryset.filter(is_read=False).count()
+        is_all_read = True if unread == 0 else False
+        serializer = self.serializer_detail_class(queryset, many=True)
+        data = serializer.data
+        if self.request.GET.get('page_size'):
+            pagination_class = self.pagination_class()
+            page = pagination_class.paginate_queryset(queryset, request)
+            serializer = self.serializer_detail_class(page, many=True)
+            data = pagination_class.get_paginated_response(
+                serializer.data).data
+        updated_data = {"unread_notification": unread,
+                        "notification_data": data, "is_all_read": is_all_read}
+        return CustomResponse(updated_data)
+
+    def retrieve(self, request, *args, **kwargs):
+        """method to get the notification details"""
+        notification_id = kwargs.get('notification_id')
+        queryset = UserNotification.objects.filter(id=notification_id, is_active=True).values(
+            'id', 'notification_type', 'receiver', 'notification', 'is_read', 'created_at')
+        if not queryset:
+            return Response({"message": "NOTIFICATION_NOT_FOUND"},
+                                             error_location="LOCATION",
+                            status=status_code.HTTP_400_BAD_REQUEST)
+        serializer = self.serializer_detail_class(queryset, many=False)
+        serializer_data = {
+            'UserNotification': serializer.data
+        }
+        return CustomResponse(serializer_data)

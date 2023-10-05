@@ -9,7 +9,14 @@ from sendgrid.helpers.mail import Content, Email, Mail, To
 from users.templates import *
 from fcm_django.models import FCMDevice
 from core.messages import VARIABLES
-from users.models import User
+from users.models import User, UserNotification
+# from users.serializers import NotificationListSerializer
+from django.db import transaction
+from fcm_django.models import FCMDevice
+from django.core.exceptions import ObjectDoesNotExist
+from firebase_admin.messaging import Message, Notification
+#from pyfcm import FCMNotification
+from config.local import *
 
 
 def generate_otp():
@@ -136,3 +143,29 @@ def update_or_create_fcm_detail(user, registration_id, device_type):
     })
     return True
 
+
+from fcm_django.models import FCMDevice
+
+from firebase_admin.messaging import Message, Notification
+
+def send_notification_bulk(user_ids, title, message, data):
+    """
+    method used to send notifications in bulk.
+    :param user_ids:
+    :param title
+    :param message
+    :param data
+    :return:
+    """
+    try:
+        devices = FCMDevice.objects.select_related(
+        'user').filter(user__in=user_ids, active=True)
+        message = Message(
+        notification=Notification(title=title, body=message, image="url"),
+        data=data,
+        )
+        devices.send_message(message)
+        print("device=====",devices)
+    except Exception as e:
+        print("HEREError", e)
+    return True

@@ -5,12 +5,12 @@ from rest_framework import status, viewsets, mixins, generics, filters
 from custom_admin.serializers import AdminLoginSerializer,AdminResetPasswordSerializer, CreateFileDetailsSerializer, ForgotPasswordSerializer, ProjectDetailSerializer,FilesSerializer,FilesPointSerializer, UserListAdminSerializer
 from django.contrib.auth import authenticate
 from rest_framework.authtoken.models import Token
-from users.models import Company, UserCompany, User,Project,Files
+from users.models import Company, UserCompany, User,Project,Files, UserNotification
 from django.contrib.auth.hashers import check_password
 from custom_admin.models import *
 from core.response import CustomResponse
 from django.db.models import Count
-from core.common_utils import generate_otp, send_verification_email, send_subadmin_credentials
+from core.common_utils import generate_otp, send_verification_email, send_subadmin_credentials, send_notification_bulk
 from core.permissions import CheckAdminRoleStatusPermission
 from rest_framework.permissions import IsAuthenticated
 from users.models import OTP
@@ -456,7 +456,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
         # Query the projects
         projects = Project.objects.filter(is_admin_approved=True).annotate(
             num_files=Count('project_files', filter=Q(project_files__is_admin_approved=True))
-        ).values('id', 'project_name', 'created_by__full_name', 'num_files')
+        ).values('id', 'project_name', 'created_by__full_name', 'num_files').order_by("-created_at")
 
         if name:
             projects = projects.filter(project_name__icontains=name)
@@ -547,7 +547,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
             return CustomResponse({"message": "File created successfully", "file_id": file.id})
         
     def un_approved_project(self, request):
-        projects = Project.objects.filter(is_admin_approved=False).annotate(num_files=Count('project_files')).values('id', 'project_name', 'created_by__full_name', 'num_files','created_at')
+        projects = Project.objects.filter(is_admin_approved=False).annotate(num_files=Count('project_files')).values('id', 'project_name', 'created_by__full_name', 'num_files','created_at').order_by('-created_at')
         return CustomResponse(projects)
     
     def un_approved_project_count(self, request):
@@ -579,7 +579,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
         
         if status_value == 2:
             Project.objects.filter(id=project_id).delete()
-            return CustomResponse({"message": "Project deleted"})
+            return CustomResponse({"message": "Project deleted"}, status=status_code.HTTP_200_OK)
         
         if not project_name:
             return CustomResponse({"message": "Please provide project_name"}, status=status.HTTP_400_BAD_REQUEST)
@@ -601,6 +601,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
                     # project.save()
                     for email in assigned_to:
                         user = User.objects.filter(email=email).first()
+                        print(f"User for email {email}:", user)
                         if user:
                             project.users.add(user)
                             project.is_admin_approved = True
@@ -763,12 +764,25 @@ class ManageProjectViewSet(viewsets.ViewSet):
             return CustomResponse({"error": "File not found."}, status=status.HTTP_400_BAD_REQUEST)
         if status_value == 2:
             file.delete()
-            return CustomResponse({"message": "File deleted successfully"})
+            return CustomResponse({"message": "File deleted successfully"}, status=status_code.HTTP_200_OK)
         else:
             file.is_admin_approved = True
             file.save()
             User.objects.filter(id=file.manufacturer_name.id).update(is_admin_approved=True)
-            return CustomResponse({"message": "File approved by the admin"})
+            # # Push Notification
+            # title = f"File Approved by Admin"
+            # message = f"Hello!! Your file has been approved by Admin."
+            # data = {
+            #     "title": title,
+            #     "message": message,
+            # }
+            # notification = UserNotification.objects.create(user_id=file.manufacturer_name.id,title=title,message=message)
+            # notification.save()
+            # data.update({"notification_id": str(notification.id)})
+
+            # send_notification_bulk(
+            #     user_ids=[file.manufacturer_name.id], title=title, message=message, data=data)
+            return CustomResponse({"message": "File approved by the admin"}, status=status_code.HTTP_200_OK)
         
     def delete_file_list(self, request, id):
         file = Files.objects.filter(project_id=id, is_marked_deleted=True).all().values("id", "file_name")
@@ -889,7 +903,7 @@ class ManageSubadminViewSet(viewsets.ViewSet):
         is_active = request.GET.get('is_active', None)
         page_size = request.GET.get('page_size', '') # Obtain the page_size parameter
 
-        users_query = User.all_objects.filter(user_role=3).values('id', 'full_name', 'email', 'is_active', 'phone_number', 'modules_accessible')
+        users_query = User.all_objects.filter(user_role=3).values('id', 'full_name', 'email', 'is_active', 'phone_number', 'modules_accessible').order_by("-created_at")
         if query:
             users_query = users_query.filter(full_name__icontains=query)
 
@@ -963,11 +977,11 @@ class ManageSubadminViewSet(viewsets.ViewSet):
             return Response({"message": "Please add modules accessible"}, status=status.HTTP_400_BAD_REQUEST)
 
         if User.objects.filter(email=email).exists():
-            return CustomResponse({"message": "Email Already Exists"})
+            return CustomResponse({"message": "Email Already Exists"}, status=status.HTTP_400_BAD_REQUEST)
         if User.objects.filter(phone_number=phone_number).exists():
-            return CustomResponse({"message": "Phone Number Already Exists"})
+            return CustomResponse({"message": "Phone Number Already Exists"}, status=status.HTTP_400_BAD_REQUEST)
         with transaction.atomic():
-            sub_admin = User.objects.create(full_name=full_name, email=email, phone_number=phone_number, user_role=3)
+            sub_admin = User.objects.create(full_name=full_name, email=email, phone_number=phone_number, user_role=3, is_admin_approved=True, is_email_verified=True)
             sub_admin.set_password(temporary_password)
             sub_admin.save()
             c = sub_admin.id
@@ -978,7 +992,7 @@ class ManageSubadminViewSet(viewsets.ViewSet):
                 d.modules_accessible.append(x)
             d.save()
             send_subadmin_credentials(email, temporary_password)
-            return CustomResponse({"message": "Subadmin created Successfully", "id":d.id})
+            return CustomResponse({"message": "Subadmin created Successfully", "id":d.id}, status=status.HTTP_200_OK)
         
     def edit_subadmin(self, request, id):
         """
@@ -1117,7 +1131,7 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
         #     .annotate(num_projects=Count('assigned_projects')) \
         #     .values('id', 'full_name', 'email', 'user_company', 'user_company__company__name', 'is_active', 'num_projects')
         users = (
-            User.objects.filter(is_admin_approved=True,user_role=2, full_name__icontains=name).annotate(
+            User.all_objects.filter(is_admin_approved=True,user_role=2, full_name__icontains=name).annotate(
                 approved_project_count=Count(
                     'created_by_project',
                     filter=Q(created_by_project__is_admin_approved=True),
@@ -1132,7 +1146,7 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
                     F('approved_project_count') + F('assigned_project_count'),
                     output_field=IntegerField()
                 )
-            ).values('id','full_name','email', 'approved_project_count', 'assigned_project_count', 'total_project_count','user_company', 'user_company__company__name', 'is_active')
+            ).values('id','full_name','email', 'approved_project_count', 'assigned_project_count', 'total_project_count','user_company', 'user_company__company__name', 'is_active').order_by("-created_at")
         )
 
         if is_active:
@@ -1274,7 +1288,7 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
                 )
             ).values('project_json')[:5]
 
-            # Subquery for created projects with is_admin_approved filter
+            
         created_subquery = Project.objects.filter(created_by=OuterRef('id'), is_admin_approved=True).annotate(
             project_json=Cast(
                 Concat(
@@ -1291,11 +1305,11 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
         ).values('project_json')[:5]
 
         user_data = User.objects.filter(id=id, user_role=2).annotate(
-            # Get company name
+            
             company_name=F('user_company__company__name'),
-            # Use the Subquery to get the top 5 assigned projects
+            
             assigned_projects=ArrayAgg(Subquery(assigned_subquery)),
-            # Use the Subquery to get the top 5 created projects
+            
             created_projects=ArrayAgg(Subquery(created_subquery))
         ).values(
             'id',
@@ -1316,7 +1330,7 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
             function to get the list of unapproved users
         """
         page_size = request.GET.get('page_size', '')
-        user = User.objects.filter(is_admin_approved=False,user_role=2).all().values('id', 'full_name', 'profile_pic', 'email', 'user_company', 'user_company__company__name')
+        user = User.objects.filter(is_admin_approved=False, is_email_verified=True).all().values('id', 'full_name', 'profile_pic', 'email', 'user_company', 'user_company__company__name').exclude(email=None)
         page = None
         if page_size:
             pagination_class = self.pagination_class()
@@ -1347,6 +1361,19 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
             user.is_admin_approved = True
             user.save()
             #User.objects.filter(id=user_id).update(is_admin_approved=True)
+            # # Push Notification
+            # title = f"Account Approved by Admin"
+            # message = f"Hello!! Your Account has been Approved by Admin, Now you can Login."
+            # data = {
+            #     "title": title,
+            #     "message": message,
+            # }
+            # notification = UserNotification.objects.create(user_id=user_id,title=title,message=message)
+            # notification.save()
+            # data.update({"notification_id": str(notification.id)})
+
+            # send_notification_bulk(
+            #     user_ids=[user_id], title=title, message=message, data=data)
             return CustomResponse({"message": "User Approved by Admin"}, status=status_code.HTTP_200_OK)
         else:
             return CustomResponse({"message": "Please give right value in status value"},status=status.HTTP_400_BAD_REQUEST)

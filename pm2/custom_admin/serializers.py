@@ -19,7 +19,7 @@ class AdminLoginSerializer(serializers.Serializer):
         if user is None:
             raise serializers.ValidationError({"message": "Invalid email or password."})
 
-        if user.user_role != 1 or user.is_email_verified is False:
+        if user.user_role == 2 or user.is_email_verified is False:
             raise serializers.ValidationError({"message": "User is not an admin."})
         data['user'] = user
         return data

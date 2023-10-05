@@ -122,7 +122,7 @@ from urllib.parse import urlparse
 #                                       status=status_code.HTTP_400_BAD_REQUEST)
 
 #             created_url = 'https://' + AWS_STORAGE_BUCKET_NAME + '.s3.amazonaws.com/' + path_key
-#             data = {'name': path_key, 'url': created_url}
+#             data = {'name': path_key, 'path': created_url}
 #             images.append(data)
 #         return CustomResponse(images)
 
