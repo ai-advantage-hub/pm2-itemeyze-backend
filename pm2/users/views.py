@@ -508,7 +508,6 @@ class EditFileViewSet(viewsets.ModelViewSet):
     def update(self, request, id):
         data = request.data
         thumbnail = data.get("thumbnail")
-        file_name = data.get("file_name")
         manual_manufacturer_name = data.get('manual_manufacturer_name')
         manufacturer_name = data.get("manufacturer_name")
         manufacturing_number = data.get("manufacturing_number")
@@ -525,7 +524,7 @@ class EditFileViewSet(viewsets.ModelViewSet):
         if manual_manufacturer_name:
             new_user = User.objects.create(full_name=manual_manufacturer_name)
             print("newwwwww", new_user.id)
-            file = Files.objects.filter(id=id).update(manufacturer_name_id=new_user.id, manual_manufacturer_name=manual_manufacturer_name, manufacturing_number=manufacturing_number, quantity=quantity, project_details=project_details, additional_details=additional_details,location=location, location_points=location_points,is_admin_approved=True)
+            file = Files.objects.filter(id=id).update(manufacturer_name_id=new_user.id,thumbnail=thumbnail, manual_manufacturer_name=manual_manufacturer_name, manufacturing_number=manufacturing_number, quantity=quantity, project_details=project_details, additional_details=additional_details,location=location, location_points=location_points,is_admin_approved=True)
             # c = str(project_id)+'_'+str(file.id)+'_'+'filename'
             # print("ccccccccc",c)
             # b = Files.objects.filter(id=file.id).update(file_name=c)
@@ -954,3 +953,17 @@ class NotificationViewSet(viewsets.ViewSet, viewsets.GenericViewSet):
             'UserNotification': serializer.data
         }
         return CustomResponse(serializer_data)
+    
+
+class ClearAllNotificationViewset(viewsets.ViewSet):
+    """
+        View to clear all the notifications 
+    """
+    permission_classes = (IsAuthenticated,)
+    serializer_class = NotificationListSerializer
+
+    def update(self, request):
+        """method to clear notifications"""
+        UserNotification.objects.filter(user=request.user, is_read=False)\
+            .update(is_read=True)
+        return CustomResponse({"message":"All Notifications Cleared"}, status=status_code.HTTP_200_OK)
