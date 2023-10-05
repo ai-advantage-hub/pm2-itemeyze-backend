@@ -548,9 +548,9 @@ class ManageProjectViewSet(viewsets.ViewSet):
             file = Files.objects.create(file_name=file_name, thumbnail=thumbnail, manufacturing_number=manufacturing_number, project_id=project_id, location=location, manufacturer_name_id=manufacturer_name, quantity=quantity, project_details=project_details, additional_details=additional_details, location_points=location_points, is_admin_approved=True)
             return CustomResponse({"message": "File created successfully", "file_id": file.id})
         
-    def un_approved_project(self, request):
-        projects = Project.objects.filter(is_admin_approved=False).annotate(num_files=Count('project_files')).values('id', 'project_name', 'created_by__full_name', 'num_files','created_at').order_by('-created_at')
-        return CustomResponse(projects)
+    # def un_approved_project(self, request):
+    #     projects = Project.objects.filter(is_admin_approved=False).annotate(num_files=Count('project_files')).values('id', 'project_name', 'created_by__full_name', 'num_files','created_at').order_by('-created_at')
+    #     return CustomResponse(projects)
     
     def un_approved_project_count(self, request):
         projects = Project.objects.filter(is_admin_approved=False).count()
@@ -703,7 +703,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
 
     def un_approved_project(self, request):
         page_size = request.GET.get('page_size', '')
-        projects = Project.objects.filter(is_admin_approved=False).annotate(num_files=Count('project_files')).values('id', 'project_name', 'created_by__full_name', 'num_files','created_at')
+        projects = Project.objects.filter(is_admin_approved=False).annotate(num_files=Count('project_files')).values('id', 'project_name', 'created_by__full_name', 'num_files','created_at').order_by('-created_at')
         page = None
         if page_size:
             pagination_class = self.pagination_class()
