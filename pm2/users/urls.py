@@ -33,7 +33,7 @@ urlpatterns = [
         {"get": "list"}, name="list_files")),
     path("project_details/<int:pk>", views.ProjectDetailsViewSet.as_view(
         {"get": "list"}, name="project_details")),
-    path("edit_file/<int:pk>", views.EditFileViewSet.as_view(
+    path("edit_file/<int:id>", views.EditFileViewSet.as_view(
         {"put": "update", "delete":"destroy"}, name="edit_file")),
     path("terms_and_conditions", views.TermsAndConditionsViewSet.as_view(
         {"get": "list"}, name="terms_and_conditions")),
