@@ -72,12 +72,13 @@ class ReSendOtpViewSet(viewsets.ViewSet):
     def create(self, request):
         data = request.data
         email = data.get("email")
+        otp_type = data.get("otp_type")
         if not email:
             return CustomResponse({"message": "Please enter email"})
         user = User.objects.filter(email=email.lower()).first()
         otp = generate_otp()
         # OTP.objects.update(user=user,otp=otp,otp_type=1)
-        OTP.objects.filter(user=user, otp_type=1).update(otp=otp, is_used=False)
+        OTP.objects.filter(user=user, otp_type=otp_type).update(otp=otp, is_used=False)
         try:
             send_verification_email(user.email, otp)
         except Exception as e:
