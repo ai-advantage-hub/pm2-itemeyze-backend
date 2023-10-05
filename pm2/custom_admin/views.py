@@ -1360,7 +1360,7 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
         elif status_value == 1:
             user.is_admin_approved = True
             user.save()
-            #User.objects.filter(id=user_id).update(is_admin_approved=True)
+            # User.objects.filter(id=user_id).update(is_admin_approved=True)
             # # Push Notification
             # title = f"Account Approved by Admin"
             # message = f"Hello!! Your Account has been Approved by Admin, Now you can Login."
