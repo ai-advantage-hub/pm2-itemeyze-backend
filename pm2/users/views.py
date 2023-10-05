@@ -548,7 +548,7 @@ class EditFileViewSet(viewsets.ModelViewSet):
         if not user:
             return CustomResponse({"message": "File Not Found"}, status=status_code.HTTP_400_BAD_REQUEST)
         user.is_marked_deleted = True
-        user.save()
+        user.delete()
         return CustomResponse({"message": gettext(SUCCESS_MESSAGES.get('FILE_DELETED'))}, status=status_code.HTTP_200_OK)
 
 
