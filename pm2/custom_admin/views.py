@@ -2,7 +2,7 @@ from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, viewsets, mixins, generics, filters
-from custom_admin.serializers import AdminLoginSerializer,AdminResetPasswordSerializer, ForgotPasswordSerializer, ProjectDetailSerializer,FilesSerializer,FilesPointSerializer, UserListAdminSerializer
+from custom_admin.serializers import AdminLoginSerializer,AdminResetPasswordSerializer, CreateFileDetailsSerializer, ForgotPasswordSerializer, ProjectDetailSerializer,FilesSerializer,FilesPointSerializer, UserListAdminSerializer
 from django.contrib.auth import authenticate
 from rest_framework.authtoken.models import Token
 from users.models import Company, UserCompany, User,Project,Files, UserNotification
@@ -20,6 +20,11 @@ import pandas as pd
 from rest_framework.decorators import action
 import os
 import csv
+from django.db.models import F, Func, Value
+from django.db.models import Subquery
+from django.db.models import OuterRef, Subquery
+# from django.db.models.functions import ArrayAgg
+from django.contrib.postgres.aggregates import ArrayAgg
 from django.http import HttpResponse
 from config.local import AWS_S3_ACCESS_KEY_ID, AWS_S3_SECRET_ACCESS_KEY, AWS_STORAGE_BUCKET_NAME
 import boto3
@@ -30,7 +35,10 @@ from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from core.pagination import CustomPagination
 from django.db import transaction
 from django.db.models import Count, F, IntegerField, ExpressionWrapper
-
+from django.db.models import F, Value, CharField
+from django.db.models.functions import Concat
+from django.db.models.functions import Cast
+from django.db.models.functions import TruncMonth, TruncDate
 
 
 
@@ -1181,9 +1189,142 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
         """
             function to retrieve a particular user using user id
         """
-        user = User.objects.filter(id=id).all().values('id', 'full_name', 'created_at', 'user_company', 'user_company__company__name', 'modules_accessible', 'profile_pic')
-        return CustomResponse(user, status=status_code.HTTP_200_OK)
-    
+        # user = User.objects.filter(id=id,user_role=2).annotate(
+        #         # Get company name
+        #         company_name=F('user_company__company__name'),
+                
+        #         # Aggregate assigned project names and created_at
+        #         assigned_projects=ArrayAgg(
+        #             Func(
+        #                 F('assigned_projects__project_name'),
+        #                 F('assigned_projects__created_at'),
+        #                 function='ARRAY',
+        #                 template='%(function)s[%(expressions)s]',
+        #                 output_field=ArrayAgg('assigned_projects__project_name').output_field
+        #             )
+        #         ),
+
+        #         # Aggregate created project names and created_at for is_admin_approved projects
+        #         created_projects=ArrayAgg(
+        #             Func(
+        #                 F('created_by_project__project_name'),
+        #                 F('created_by_project__created_at'),
+        #                 function='ARRAY',
+        #                 template='%(function)s[%(expressions)s]',
+        #                 output_field=ArrayAgg('created_by_project__project_name').output_field
+        #             ),
+        #             filter=F('created_by_project__is_admin_approved')
+        #                 )
+        #             ).values(
+        #                 'id',
+        #                 'full_name',
+        #                 'modules_accessible',
+        #                 'email',
+        #                 'created_at',
+        #                 'user_company',
+        #                 'company_name',
+        #                 'assigned_projects',
+        #                 'created_projects'
+        #             ).first()
+        # return CustomResponse(user)
+       
+        # top_assigned_projects = Project.objects.filter(users=OuterRef('id')).order_by('-created_at')[:5]
+        # top_created_projects = Project.objects.filter(created_by=OuterRef('id'), is_admin_approved=True).order_by('-created_at')[:5]
+
+        # user = User.objects.filter(id=id, user_role=2).annotate(
+        #     # Get company name
+        #     company_name=F('user_company__company__name'),
+            
+        #     # Aggregate top 5 assigned project names and created_at
+        #     assigned_projects=ArrayAgg(
+        #         Func(
+        #             F('assigned_projects__id'),
+        #             F('assigned_projects__project_name'),
+        #             F('assigned_projects__created_at'),
+        #             function='ARRAY',
+        #             template='%(function)s[%(expressions)s]',
+        #             output_field=ArrayAgg('assigned_projects__project_name').output_field
+        #         ),
+        #         filter=Q(id__in=Subquery(top_assigned_projects.values('id')))
+        #     ),
+
+        #     # Aggregate top 5 created project names and created_at for is_admin_approved projects
+        #     created_projects=ArrayAgg(
+        #         Func(
+        #             F('created_by_project__id'),
+        #             F('created_by_project__project_name'),
+        #             F('created_by_project__created_at'),
+        #             function='ARRAY',
+        #             template='%(function)s[%(expressions)s]',
+        #             output_field=ArrayAgg('created_by_project__project_name').output_field
+        #         ),
+        #         filter=Q(id__in=Subquery(top_created_projects.values('id')))
+        #     )
+        # ).values(
+        #     'id',
+        #     'full_name',
+        #     'modules_accessible',
+        #     'email',
+        #     'created_at',
+        #     'user_company',
+        #     'company_name',
+        #     'assigned_projects',
+        #     'created_projects'
+        # ).first()
+
+        # return CustomResponse(user)
+        assigned_subquery = Project.objects.filter(users=OuterRef('id')).annotate(
+                project_json=Cast(
+                    Concat(
+                        Value('{"id": "'),
+                        Cast(F('id'), CharField()),
+                        Value('", "projectname": "'),
+                        F('project_name'),
+                        Value('", "created_at": "'),
+                        F('created_at'),
+                        Value('"}')
+                    ),
+                    output_field=CharField()
+                )
+            ).values('project_json')[:5]
+
+            
+        created_subquery = Project.objects.filter(created_by=OuterRef('id'), is_admin_approved=True).annotate(
+            project_json=Cast(
+                Concat(
+                    Value('{"id": "'),
+                    Cast(F('id'), CharField()),
+                    Value('", "projectname": "'),
+                    F('project_name'),
+                    Value('", "created_at": "'),
+                    F('created_at'),
+                    Value('"}')
+                ),
+                output_field=CharField()
+            )
+        ).values('project_json')[:5]
+
+        user_data = User.objects.filter(id=id, user_role=2).annotate(
+            
+            company_name=F('user_company__company__name'),
+            
+            assigned_projects=ArrayAgg(Subquery(assigned_subquery)),
+            
+            created_projects=ArrayAgg(Subquery(created_subquery))
+        ).values(
+            'id',
+            'full_name',
+            'modules_accessible',
+            'email',
+            'created_at',
+            'user_company',
+            'company_name',
+            'assigned_projects',
+            'created_projects'
+        ).first()
+
+        return CustomResponse(user_data)
+            
     def unapproved_users(self, request):
         """
             function to get the list of unapproved users
@@ -1197,6 +1338,10 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
         if page is not None:
             return CustomResponse(pagination_class.get_paginated_response(page).data)
         return CustomResponse(user, status=status_code.HTTP_200_OK)
+    
+    def unapproved_users_count(self, request):
+        user = User.objects.filter(is_admin_approved=False,user_role=2).count()
+        return CustomResponse(user)
     
     def approve_users(self, request):
         """
@@ -1241,7 +1386,7 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
         user = User.objects.filter(id=id).first()
         if not user:
             return CustomResponse({"message": "User not found"}, status=status.HTTP_400_BAD_REQUEST)
-        projects = Project.objects.filter(created_by=user.id, is_admin_approved=True).values('id', 'created_at', 'project_name')
+        projects = Project.objects.filter((Q(users__id=id) | Q(created_by_id=id)) & Q(is_admin_approved=True)).values("id","project_name", "created_at")
 
         page = None
 
@@ -1261,12 +1406,128 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
 
         return CustomResponse(serializer.data)
 
+    def delete_user_admin(self, request,id):
+        user = User.objects.filter(id=id).first()
+        if not user:
+            return CustomResponse({"message": "User not found"}, status=status.HTTP_400_BAD_REQUEST)
 
+        user.delete()
+        return CustomResponse({"message": "User deleted sucessfully by Admin"}, status=status_code.HTTP_200_OK)
 
+    def view_file_admin(self, request, id):
+        file = Files.objects.filter(id=id)
+        if not file.exists():
+            return CustomResponse({"error": "File not found."}, status=status.HTTP_400_BAD_REQUEST)
+        serialized_file = FilesPointSerializer(file, many=True).data
+        return CustomResponse(serialized_file)
+    
+    def delete_file_user(self, request,id):
+        
+        file = Files.objects.filter(id=id).first()
+        if not file:
+            return CustomResponse({"message": "File dont exist"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        file.delete()
+        return CustomResponse({"message": "File deleted successfully"})
 
+    @action(detail=True, methods=['get'])
+    def admin_user_csv(self, request, pk=None):
+        # Retrieve the serialized data
+        queryset = Project.objects.all()
+        project = get_object_or_404(queryset, pk=pk)
+        serializer = ProjectDetailSerializer(project)
+        project_data = serializer.data
+        files_data = project_data.pop('files')
+        all_data = []
+        for file_data in files_data:
+            combined_data = {**project_data, **file_data}
+            all_data.append(combined_data) 
+        df = pd.DataFrame(all_data)
+        # Create a directory to store the CSV temporarily
+        export_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'exports')
+        if not os.path.exists(export_dir):
+            os.makedirs(export_dir)
+        csv_path = os.path.join(export_dir, f'project_detail_{pk}.csv')
+        df.to_csv(csv_path, index=False)
+        # Upload the CSV to AWS S3
+        s3 = boto3.resource('s3', aws_access_key_id=AWS_S3_ACCESS_KEY_ID, aws_secret_access_key=AWS_S3_SECRET_ACCESS_KEY)
+        file_name = f'project_detail_{pk}.csv'
+        path_key = f"csv/{uuid.uuid4()}_{file_name}"
+        try:
+            with open(csv_path, 'rb') as csv_file:
+                s3.Bucket(AWS_STORAGE_BUCKET_NAME).upload_fileobj(csv_file, path_key)
+            # After successful upload, delete local CSV (optional)
+            os.remove(csv_path)
+        except Exception:
+            return CustomResponse({"message": "Something went wrong during file uploading."},
+                                  status=status_code.HTTP_400_BAD_REQUEST)
+        created_url = f'https://{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com/{path_key}'
+        return CustomResponse({"file_path": created_url})
+    
+    def get_queryset(self):
+        pk = self.kwargs.get('pk')
+        return Files.objects.filter(id=pk)
+    
+    def update_file_admin(self, request, pk=None):
+        """
+            update method to update the file details.
+        """
+        queryset = self.get_queryset()
+        obj = queryset.get(pk=pk)
+        serializer = CreateFileDetailsSerializer(obj, data=request.data)
+        # serializer.is_valid(raise_exception=True)
+        # serializer.save()
+        # return CustomResponse({"message": gettext(SUCCESS_MESSAGES.get('FILE_UPDATED'))}, status=status_code.HTTP_200_OK)
+        if serializer.is_valid():
+            serializer.save()
+            #return CustomResponse({'message': 'File details edited successfully.'})
+            return CustomResponse({"message": "File updated sucessfully"}, status=status_code.HTTP_200_OK)
+        else:
+            return CustomResponse(serializer.errors, status=status_code.HTTP_200_OK)
+    
 
-
+    def remove_user_from_project(self, request, project_id, user_id):
+        try:
             
+            project = Project.objects.get(id=project_id)
+            user = User.objects.get(id=user_id)
+            project.users.remove(user)
+            print(f"User {user} removed from project {project}")
+        except Project.DoesNotExist:
+            print("Project not found!")
+        except User.DoesNotExist:
+            print("User not found!")
+
+
+    def project_graph(self, request, id):
+        """
+            function to list and search the projects of a particular user.
+        """
+        page_size = request.GET.get('page_size', '')
+        selected_project_id = request.GET.get('project_id', None)
+        user = User.objects.filter(id=id).first()
+
+        if not user:
+            return CustomResponse({"message": "User not found"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if selected_project_id:
+
+            daily_files_count = Files.objects.filter(project_id=selected_project_id, project__users__id=id).annotate(day=TruncDate('created_at')).values('day').annotate(files_count=Count('id'))
+            return CustomResponse(daily_files_count)
+
+        else:
+
+            monthly_files_count = Files.objects.filter(project__users__id=id).annotate(month=TruncMonth('created_at')).values('month').annotate(files_count=Count('id'))
+
+            page = None
+            if page_size:
+                pagination_class = self.pagination_class()
+                page = pagination_class.paginate_queryset(monthly_files_count, request)
+
+                if page is not None:
+                    return CustomResponse(pagination_class.get_paginated_response(page).data)
+
+            return CustomResponse(monthly_files_count)
         
 
 
