@@ -39,8 +39,10 @@ from django.db.models import F, Value, CharField
 from django.db.models.functions import Concat
 from django.db.models.functions import Cast
 from django.db.models.functions import TruncMonth, TruncDate
-
-
+from django.db.models import OuterRef, Subquery, F, CharField
+from django.db.models.functions import Concat
+from django.contrib.postgres.aggregates import ArrayAgg
+# from django.db.models.functions import JSONBuildObject
 
 class AdminLoginView(viewsets.ViewSet):
     """
@@ -1308,7 +1310,7 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
             
             company_name=F('user_company__company__name'),
             
-            assigned_projects=ArrayAgg(Subquery(assigned_subquery)),
+            user_assigned_projects=ArrayAgg(Subquery(assigned_subquery)),
             
             created_projects=ArrayAgg(Subquery(created_subquery))
         ).values(
@@ -1319,11 +1321,51 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
             'created_at',
             'user_company',
             'company_name',
-            'assigned_projects',
+            'user_assigned_projects',
             'created_projects'
         ).first()
 
         return CustomResponse(user_data)
+        # assigned_subquery = Project.objects.filter(users=OuterRef('id')).annotate(
+        #     project_json=JSONBuildObject(
+        #         'id', Cast(F('id'), CharField()),
+        #         'projectname', F('project_name'),
+        #         'created_at', F('created_at')
+        #     )
+        # ).values('project_json')[:5]
+
+        
+
+        # # For created projects
+        # created_subquery = Project.objects.filter(created_by=OuterRef('id'), is_admin_approved=True).annotate(
+        #     project_json=JSONBuildObject(
+        #         'id', Cast(F('id'), CharField()),
+        #         'projectname', F('project_name'),
+        #         'created_at', F('created_at')
+        #     )
+        # ).values('project_json')[:5]
+
+        
+
+        # user_data = User.objects.filter(id=id, user_role=2).annotate(
+        #     company_name=F('user_company__company__name'),
+        #     user_assigned_projects=ArrayAgg(Subquery(assigned_subquery)),
+        #     created_projects=ArrayAgg(Subquery(created_subquery))
+        # ).values(
+        #     'id',
+        #     'full_name',
+        #     'modules_accessible',
+        #     'email',
+        #     'created_at',
+        #     'user_company',
+        #     'company_name',
+        #     'user_assigned_projects',
+        #     'created_projects'
+        # ).first()
+
+        
+
+        # return CustomResponse(user_data)
             
     def unapproved_users(self, request):
         """
@@ -1492,11 +1534,11 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
             project = Project.objects.get(id=project_id)
             user = User.objects.get(id=user_id)
             project.users.remove(user)
-            print(f"User {user} removed from project {project}")
+            return CustomResponse(f"User {user} removed from project {project}")
         except Project.DoesNotExist:
-            print("Project not found!")
+            return CustomResponse("Project not found!")
         except User.DoesNotExist:
-            print("User not found!")
+            return CustomResponse("User not found!")
 
 
     def project_graph(self, request, id):
