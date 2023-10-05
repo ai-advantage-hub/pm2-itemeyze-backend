@@ -71,9 +71,17 @@ urlpatterns = [
     path("change_status", views.ManageUserAdminViewSet.as_view({"put": "change_status"}), name="change_status"),
     path("user_details/<int:id>", views.ManageUserAdminViewSet.as_view({"get": "retrieve"}), name="user_details"),
     path("unapproved_users", views.ManageUserAdminViewSet.as_view({"get": "unapproved_users"}), name="unapproved_users"),
+    path("unapproved_users_count", views.ManageUserAdminViewSet.as_view({"get": "unapproved_users_count"}), name="unapproved_users_count"),
     path("approve_users", views.ManageUserAdminViewSet.as_view({"put": "approve_users"}), name="approve_users"),
     path("project_list/<int:id>", views.ManageUserAdminViewSet.as_view({"get": "project_list"}), name="project_list"),
     path("retrieve_user_project/<int:pk>", views.ManageUserAdminViewSet.as_view({"get": "retrieve_user_project"}), name="retrieve_user_project"),
+    path("delete_user_admin/<int:id>", views.ManageUserAdminViewSet.as_view({"delete": "delete_user_admin"}), name="delete_user_admin"),
+    path("view_file_admin/<int:id>", views.ManageUserAdminViewSet.as_view({"get": "view_file_admin"}), name="view_file_admin"),
+    path("delete_file_user/<int:id>", views.ManageUserAdminViewSet.as_view({"delete": "delete_file_user"}), name="delete_file_user"),
+    path("admin_user_csv/<int:pk>/download_csv/", views.ManageUserAdminViewSet.as_view({"get": "admin_user_csv"}), name="admin_user_csv"),
+    path("project/<int:project_id>/remove-user/<int:user_id>/", views.ManageUserAdminViewSet.as_view({"post": "remove_user_from_project"}), name="remove_user_from_project"),
+    path("update_file_admin/<int:pk>", views.ManageUserAdminViewSet.as_view({"put": "update_file_admin"}), name="update_file_admin"),
+    path("project_graph/<int:id>", views.ManageUserAdminViewSet.as_view({"get": "project_graph"}), name="project_graph"),
 
 
 ]

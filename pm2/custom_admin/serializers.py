@@ -176,3 +176,36 @@ class UserListAdminSerializer(serializers.ModelSerializer):
 
     def get_total_projects(self, obj):
         return Project.objects.filter(created_by=obj).count()
+    
+
+class CreateFileDetailsSerializer(serializers.ModelSerializer):
+    """
+         CreateFileDetailsSerializer to add the details of files
+    """
+    manual_manufacturer_name = serializers.CharField(allow_blank=True, required=False)
+
+    class Meta:
+        model = Files
+        fields = (
+            "id", "manufacturer_name", "manual_manufacturer_name", "project_id", "file_name", "thumbnail",
+            "manufacturing_number", "quantity", "project_details", "recording", 
+            "location", "location_points", "additional_details",
+        )
+        
+    def validate(self, data):
+        manufacturing_number = data.get("manufacturing_number")
+        project_id = data.get("project_id")
+
+        c = Files.objects.filter(manufacturing_number=manufacturing_number).first()
+        if c is not None:
+            return data
+        return data
+    
+    def create(self, validated_data):
+        # Retrieve the project_id from the context
+        project_id = self.context.get("project_id")
+        
+        # Set the project_id while creating the Files object
+        validated_data["project_id"] = project_id
+        
+        return super().create(validated_data)
