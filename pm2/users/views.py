@@ -545,11 +545,11 @@ class EditFileViewSet(viewsets.ModelViewSet):
         # obj.delete()
         # #return CustomResponse({'message': 'File deleted successfully.'})
         # return CustomResponse({"message": gettext(SUCCESS_MESSAGES.get('FILE_DELETED'))}, status=status_code.HTTP_400_BAD_REQUEST)
-        user = Files.objects.filter(id = id).first()
+        user = Files.objects.filter(id = id, is_marked_deleted=False).first()
         if not user:
             return CustomResponse({"message": "File Not Found"}, status=status_code.HTTP_400_BAD_REQUEST)
         user.is_marked_deleted = True
-        user.delete()
+        user.save()
         return CustomResponse({"message": gettext(SUCCESS_MESSAGES.get('FILE_DELETED'))}, status=status_code.HTTP_200_OK)
 
 
@@ -893,12 +893,13 @@ class UpdateDeviceDetailViewSet(viewsets.ViewSet):
         :return:
         """
         device_type = request.GET.get('device_type')
+        registration_id = request.GET.get('registration_id')
         if device_type == 'both':
             FCMDevice.objects.filter(user=request.user).update(active=False)
         elif device_type:
             FCMDevice.objects.filter(
-            user=request.user, type=device_type).update(active=False)
-            return CustomResponse({"message": "Device Deleted Successfully"}, status=status_code.HTTP_200_OK)
+            user=request.user,registration_id=registration_id, type=device_type).update(active=False)
+        return CustomResponse({"message": "Device Deleted Successfully"}, status=status_code.HTTP_200_OK)
         
 
 class SendNotiticationViewSet(viewsets.ViewSet):
