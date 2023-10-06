@@ -11,7 +11,7 @@ from custom_admin.models import *
 from core.response import CustomResponse
 from django.db.models import Count
 from core.common_utils import generate_otp, send_verification_email, send_subadmin_credentials, send_notification_bulk
-from core.permissions import CheckAdminRoleStatusPermission
+from core.permissions import CheckAdminRoleStatusPermission, CheckAdminOrSubAdminRoleStatusPermission
 from rest_framework.permissions import IsAuthenticated
 from users.models import OTP
 from django.utils import timezone
@@ -117,7 +117,7 @@ class AdminProfileViewSet(viewsets.ViewSet):
     this view is for admin profile listing, admin profile update and admin change password
 
     """
-    permission_classes = (IsAuthenticated, CheckAdminRoleStatusPermission,)
+    permission_classes = (IsAuthenticated, CheckAdminOrSubAdminRoleStatusPermission,)
 
     def list(self, request):
         user = User.objects.filter(id=request.user.id).all().values("full_name", "email", "profile_pic")
@@ -894,7 +894,7 @@ class ManageSubadminViewSet(viewsets.ViewSet):
     """
         This view is of crud operations for manage Subadmin
     """
-    permission_classes = (IsAuthenticated, CheckAdminRoleStatusPermission,)
+    permission_classes = (IsAuthenticated, CheckAdminOrSubAdminRoleStatusPermission,)
     pagination_class = CustomPagination
 
     def search(self, request):

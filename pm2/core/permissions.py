@@ -17,6 +17,19 @@ class CheckAdminRoleStatusPermission(BasePermission):
         return False
     
 
+class CheckAdminOrSubAdminRoleStatusPermission(BasePermission):
+    """
+        CheckAdminRoleStatusPermission class used to check Admin Role Status Is active or not.
+    """
+    message = "Permission is allowed only to admin user."
+
+    def has_permission(self, request, view):
+        if User.objects.filter(id=request.user.id, user_role__in=[1,3],
+                               is_active=True).exists():
+            return True
+        return False
+
+
 class CheckUserRoleStatusPermission(BasePermission):
     """
         CheckAdminRoleStatusPermission class used to check Admin Role Status Is active or not.
