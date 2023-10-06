@@ -239,7 +239,7 @@ class ManageCompanyView(viewsets.ViewSet):
         This view is of crud operations for manage company
     """
 
-    permission_classes = (IsAuthenticated, CheckAdminRoleStatusPermission,)
+    permission_classes = (IsAuthenticated, CheckAdminOrSubAdminRoleStatusPermission,)
     pagination_class = CustomPagination
     
     def create(self, request):
@@ -400,7 +400,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
     """
         This view is of crud operations for manage Project
     """
-    permission_classes = (IsAuthenticated, CheckAdminRoleStatusPermission,)
+    permission_classes = (IsAuthenticated, CheckAdminOrSubAdminRoleStatusPermission,)
     pagination_class = CustomPagination
 
     # def search(self, request):
@@ -1116,7 +1116,7 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
     """
         UserListAdminViewSet to Manage Users
     """
-    permission_classes = (IsAuthenticated, CheckAdminRoleStatusPermission,)
+    permission_classes = (IsAuthenticated, CheckAdminOrSubAdminRoleStatusPermission,)
     pagination_class = CustomPagination
     def list(self, request):
         """
