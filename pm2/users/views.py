@@ -909,8 +909,16 @@ class SendNotiticationViewSet(viewsets.ViewSet):
         """
             function to send notifications
         """
-        data = {"screen":"home"}
-        res = send_notification_bulk([164], "title", "messages", data)
+        title = request.data.get("title")
+        message = request.data.get("message")
+        data = {
+            "title": title,
+            "message": message,
+        }
+        notification = UserNotification.objects.create(user_id=356,title=title,message=message)
+        notification.save()
+        data.update({"notification_id": str(notification.id)})
+        res = send_notification_bulk([356], title, message, data)
         return CustomResponse({"message": "Notification Sent Successfully"}, status=status_code.HTTP_200_OK)
     
 
@@ -944,6 +952,7 @@ class NotificationViewSet(viewsets.ViewSet, viewsets.GenericViewSet):
     def retrieve(self, request, *args, **kwargs):
         """method to get the notification details"""
         notification_id = kwargs.get('notification_id')
+        # check again here
         queryset = UserNotification.objects.filter(id=notification_id, is_active=True).values(
             'id', 'notification_type', 'receiver', 'notification', 'is_read', 'created_at')
         if not queryset:
@@ -966,6 +975,7 @@ class ClearAllNotificationViewset(viewsets.ViewSet):
 
     def update(self, request):
         """method to clear notifications"""
-        UserNotification.objects.filter(user=request.user, is_read=False)\
-            .update(is_read=True)
+        UserNotification.objects.filter(user=request.user).delete()
+        # UserNotification.objects.filter(user=request.user, is_read=False)\
+        #     .update(is_read=True)
         return CustomResponse({"message":"All Notifications Cleared"}, status=status_code.HTTP_200_OK)
