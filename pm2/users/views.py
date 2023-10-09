@@ -738,6 +738,25 @@ class UserChangePasswordViewSet(viewsets.ViewSet):
 
         serializer.update_password(request.user)
         return CustomResponse({"message": "Password updated successfully."}, status=status_code.HTTP_200_OK)
+    
+
+class NotificationStatusViewSet(viewsets.ViewSet):
+    """
+        NotificationStatusViewSet to change the Password of User
+    """
+    permission_classes = (IsAuthenticated, CheckUserRoleStatusPermission)
+
+    def update(self, request):
+        data = request.data
+        type = data.get("type")
+        if type == 1:
+            user = User.objects.filter(id=request.user.id).update(is_notification_enabled=True)
+            return CustomResponse({"message": "Notifications Enabled successfully."}, status=status_code.HTTP_200_OK)
+        if type == 2:
+            user = User.objects.filter(id=request.user.id).update(is_notification_enabled=False)
+            return CustomResponse({"message": "Notifications Disabled successfully."}, status=status_code.HTTP_200_OK)
+        else :
+            return CustomResponse({"message": "Please Enter Valid Type Value."}, status=status_code.HTTP_400_BAD_REQUEST)
 
 
 class GlobalSearchViewSet(viewsets.ViewSet):
