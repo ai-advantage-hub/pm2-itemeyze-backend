@@ -1148,7 +1148,7 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
                     F('approved_project_count') + F('assigned_project_count'),
                     output_field=IntegerField()
                 )
-            ).values('id','full_name','email', 'approved_project_count', 'assigned_project_count', 'total_project_count','user_company', 'user_company__company__name', 'is_active').order_by("-created_at")
+            ).values('id','full_name','email', 'assigned_project_count', 'user_company', 'user_company__company__name', 'is_active').order_by("-created_at")
         )
 
         if is_active:
@@ -1428,7 +1428,8 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
         user = User.objects.filter(id=id).first()
         if not user:
             return CustomResponse({"message": "User not found"}, status=status.HTTP_400_BAD_REQUEST)
-        projects = Project.objects.filter((Q(users__id=id) | Q(created_by_id=id)) & Q(is_admin_approved=True)).values("id","project_name", "created_at")
+        # projects = Project.objects.filter((Q(users__id=id) | Q(created_by_id=id)) & Q(is_admin_approved=True)).values("id","project_name", "created_at")
+        projects = Project.objects.filter(users__id=id, is_admin_approved=True).values("id","project_name", "created_at")
 
         page = None
 
