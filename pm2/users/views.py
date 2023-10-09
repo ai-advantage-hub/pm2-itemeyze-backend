@@ -937,7 +937,7 @@ class SendNotiticationViewSet(viewsets.ViewSet):
         notification = UserNotification.objects.create(user_id=356,title=title,message=message)
         notification.save()
         data.update({"notification_id": str(notification.id)})
-        res = send_notification_bulk([356], title, message, data)
+        res = send_notification_bulk([356], title, message, data) #to be sent to 356
         return CustomResponse({"message": "Notification Sent Successfully"}, status=status_code.HTTP_200_OK)
     
 
@@ -955,7 +955,7 @@ class NotificationViewSet(viewsets.ViewSet, viewsets.GenericViewSet):
         queryset = UserNotification.objects.filter(user=request.user).\
             order_by('-created_at')
         unread = queryset.filter(is_read=False).count()
-        is_all_read = True if unread == 0 else False
+        is_all_read = True #if unread == 0 else False
         serializer = self.serializer_detail_class(queryset, many=True)
         data = serializer.data
         if self.request.GET.get('page_size'):
