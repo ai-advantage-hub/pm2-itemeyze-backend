@@ -232,6 +232,8 @@ class ProjectViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save(created_by=user)
+        project = Project.objects.filter(id=serializer.instance.id).first()
+        project.users.add(user)
 
         return CustomResponse(serializer.data, status=status_code.HTTP_201_CREATED)
 
