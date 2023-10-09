@@ -49,6 +49,8 @@ urlpatterns = [
         {"get": "list"}, name="user_listing")),
     path("about_the_app", views.AboutAppViewset.as_view(
         {"get": "list"}, name="about_the_app")),
+    path("enable_disable_notifications", views.NotificationStatusViewSet.as_view(
+        {"put": "update"}, name="enable_disable_notifications")),
 
     #Global Search
     path("global_search", views.GlobalSearchViewSet.as_view(
