@@ -742,7 +742,7 @@ class UserChangePasswordViewSet(viewsets.ViewSet):
 
 class NotificationStatusViewSet(viewsets.ViewSet):
     """
-        NotificationStatusViewSet to change the Password of User
+        NotificationStatusViewSet to enable disabe Notifications
     """
     permission_classes = (IsAuthenticated, CheckUserRoleStatusPermission)
 
