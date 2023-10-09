@@ -934,10 +934,10 @@ class SendNotiticationViewSet(viewsets.ViewSet):
             "title": title,
             "message": message,
         }
-        notification = UserNotification.objects.create(user_id=356,title=title,message=message)
+        notification = UserNotification.objects.create(user_id=184,title=title,message=message)
         notification.save()
         data.update({"notification_id": str(notification.id)})
-        res = send_notification_bulk([356], title, message, data)
+        res = send_notification_bulk([184], title, message, data) #to be sent to 356
         return CustomResponse({"message": "Notification Sent Successfully"}, status=status_code.HTTP_200_OK)
     
 
@@ -954,8 +954,10 @@ class NotificationViewSet(viewsets.ViewSet, viewsets.GenericViewSet):
         """method to get notification list"""
         queryset = UserNotification.objects.filter(user=request.user).\
             order_by('-created_at')
+        # queryset.is_all_read=True
+        # queryset.save()
         unread = queryset.filter(is_read=False).count()
-        is_all_read = True if unread == 0 else False
+        is_all_read = True #if unread == 0 else False
         serializer = self.serializer_detail_class(queryset, many=True)
         data = serializer.data
         if self.request.GET.get('page_size'):
@@ -967,6 +969,8 @@ class NotificationViewSet(viewsets.ViewSet, viewsets.GenericViewSet):
         updated_data = {"unread_notification": unread,
                         "notification_data": data, "is_all_read": is_all_read}
         return CustomResponse(updated_data)
+        # #just for testing purpose, will remove it later
+        # is_all_read = True
 
     def retrieve(self, request, *args, **kwargs):
         """method to get the notification details"""
