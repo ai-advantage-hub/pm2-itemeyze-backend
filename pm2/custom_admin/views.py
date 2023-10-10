@@ -772,19 +772,19 @@ class ManageProjectViewSet(viewsets.ViewSet):
             file.is_admin_approved = True
             file.save()
             User.objects.filter(id=file.manufacturer_name.id).update(is_admin_approved=True)
-            # # Push Notification
-            # title = f"File Approved by Admin"
-            # message = f"Hello!! Your file has been approved by Admin."
-            # data = {
-            #     "title": title,
-            #     "message": message,
-            # }
-            # notification = UserNotification.objects.create(user_id=file.manufacturer_name.id,title=title,message=message)
-            # notification.save()
-            # data.update({"notification_id": str(notification.id)})
+            # Push Notification
+            title = f"File Approved by Admin"
+            message = f"Hello!! Your file has been approved by Admin."
+            data = {
+                "title": title,
+                "message": message,
+            }
+            notification = UserNotification.objects.create(user_id=file.manufacturer_name.id,title=title,message=message)
+            notification.save()
+            data.update({"notification_id": str(notification.id)})
 
-            # send_notification_bulk(
-            #     user_ids=[file.manufacturer_name.id], title=title, message=message, data=data)
+            send_notification_bulk(
+                user_ids=[file.manufacturer_name.id], title=title, message=message, data=data)
             return CustomResponse({"message": "File approved by the admin"}, status=status_code.HTTP_200_OK)
         
     def delete_file_list(self, request, id):
@@ -1383,7 +1383,7 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
             function to get the list of unapproved users
         """
         page_size = request.GET.get('page_size', '')
-        user = User.objects.filter(is_admin_approved=False, is_email_verified=True).all().values('id', 'full_name', 'profile_pic', 'email', 'user_company', 'user_company__company__name').exclude(email=None)
+        user = User.objects.filter(is_admin_approved=False, is_email_verified=True, user_role=2).all().values('id', 'full_name', 'profile_pic', 'email', 'user_company', 'user_company__company__name').exclude(email=None)
         page = None
         if page_size:
             pagination_class = self.pagination_class()
@@ -1393,7 +1393,7 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
         return CustomResponse(user, status=status_code.HTTP_200_OK)
     
     def unapproved_users_count(self, request):
-        user = User.objects.filter(is_admin_approved=False,user_role=2).count()
+        user = User.objects.filter(is_admin_approved=False,user_role=2, is_email_verified=True).count()
         return CustomResponse(user)
     
     def approve_users(self, request):
