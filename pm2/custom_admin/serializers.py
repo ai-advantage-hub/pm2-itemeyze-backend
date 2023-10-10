@@ -209,3 +209,21 @@ class CreateFileDetailsSerializer(serializers.ModelSerializer):
         validated_data["project_id"] = project_id
         
         return super().create(validated_data)
+
+
+class ProjectSerializer(serializers.ModelSerializer):
+    
+    class Meta:
+        model = Project
+        fields = ['id', 'project_name', 'created_at']
+
+class UserDetailSerializer(serializers.ModelSerializer):
+    company_names = serializers.SerializerMethodField()
+    associated_projects = ProjectSerializer(many=True)
+
+    class Meta:
+        model = User
+        fields = ['id','full_name', 'email','profile_pic','modules_accessible','created_at','company_names', 'associated_projects']
+
+    def get_company_names(self, obj):
+        return [uc.company.name for uc in obj.user_company.all()]

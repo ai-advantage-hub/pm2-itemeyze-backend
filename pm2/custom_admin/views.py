@@ -2,7 +2,7 @@ from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, viewsets, mixins, generics, filters
-from custom_admin.serializers import AdminLoginSerializer,AdminResetPasswordSerializer, CreateFileDetailsSerializer, ForgotPasswordSerializer, ProjectDetailSerializer,FilesSerializer,FilesPointSerializer, UserListAdminSerializer
+from custom_admin.serializers import AdminLoginSerializer,AdminResetPasswordSerializer, CreateFileDetailsSerializer, ForgotPasswordSerializer, ProjectDetailSerializer,FilesSerializer,FilesPointSerializer, UserListAdminSerializer,UserDetailSerializer
 from django.contrib.auth import authenticate
 from rest_framework.authtoken.models import Token
 from users.models import Company, UserCompany, User,Project,Files, UserNotification
@@ -15,6 +15,7 @@ from core.permissions import CheckAdminRoleStatusPermission, CheckAdminOrSubAdmi
 from rest_framework.permissions import IsAuthenticated
 from users.models import OTP
 from django.utils import timezone
+from django.db.models import Prefetch
 from django.shortcuts import get_object_or_404
 import pandas as pd
 from rest_framework.decorators import action
@@ -1140,7 +1141,8 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
                     distinct=True
                 ),
                 assigned_project_count=Count(
-                    'assigned_projects__id',  
+                    'assigned_projects__id',
+                     filter=Q(assigned_projects__is_admin_approved=True),  
                     distinct=True
                 )
             ).annotate(
@@ -1191,6 +1193,12 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
         """
             function to retrieve a particular user using user id
         """
+        approved_projects = Project.objects.filter(users__id=id, is_admin_approved=True)[:5]
+        prefetch = Prefetch('assigned_projects', queryset=approved_projects)
+        user = get_object_or_404(User.objects.prefetch_related(prefetch).filter(id=id))
+        serializer = UserDetailSerializer(user)
+        return Response(serializer.data)
+    
         # user = User.objects.filter(id=id,user_role=2).annotate(
         #         # Get company name
         #         company_name=F('user_company__company__name'),
@@ -1275,57 +1283,57 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
         # ).first()
 
         # return CustomResponse(user)
-        assigned_subquery = Project.objects.filter(users=OuterRef('id')).annotate(
-                project_json=Cast(
-                    Concat(
-                        Value('{"id": "'),
-                        Cast(F('id'), CharField()),
-                        Value('", "projectname": "'),
-                        F('project_name'),
-                        Value('", "created_at": "'),
-                        F('created_at'),
-                        Value('"}')
-                    ),
-                    output_field=CharField()
-                )
-            ).values('project_json')[:5]
+        # assigned_subquery = Project.objects.filter(users=OuterRef('id')).annotate(
+        #         project_json=Cast(
+        #             Concat(
+        #                 Value('{"id": "'),
+        #                 Cast(F('id'), CharField()),
+        #                 Value('", "projectname": "'),
+        #                 F('project_name'),
+        #                 Value('", "created_at": "'),
+        #                 F('created_at'),
+        #                 Value('"}')
+        #             ),
+        #             output_field=CharField()
+        #         )
+        #     ).values('project_json')[:5]
 
             
-        created_subquery = Project.objects.filter(created_by=OuterRef('id'), is_admin_approved=True).annotate(
-            project_json=Cast(
-                Concat(
-                    Value('{"id": "'),
-                    Cast(F('id'), CharField()),
-                    Value('", "projectname": "'),
-                    F('project_name'),
-                    Value('", "created_at": "'),
-                    F('created_at'),
-                    Value('"}')
-                ),
-                output_field=CharField()
-            )
-        ).values('project_json')[:5]
+        # created_subquery = Project.objects.filter(created_by=OuterRef('id'), is_admin_approved=True).annotate(
+        #     project_json=Cast(
+        #         Concat(
+        #             Value('{"id": "'),
+        #             Cast(F('id'), CharField()),
+        #             Value('", "projectname": "'),
+        #             F('project_name'),
+        #             Value('", "created_at": "'),
+        #             F('created_at'),
+        #             Value('"}')
+        #         ),
+        #         output_field=CharField()
+        #     )
+        # ).values('project_json')[:5]
 
-        user_data = User.objects.filter(id=id, user_role=2).annotate(
+        # user_data = User.objects.filter(id=id, user_role=2).annotate(
             
-            company_name=F('user_company__company__name'),
+        #     company_name=F('user_company__company__name'),
             
-            user_assigned_projects=ArrayAgg(Subquery(assigned_subquery)),
+        #     user_assigned_projects=ArrayAgg(Subquery(assigned_subquery)),
             
-            created_projects=ArrayAgg(Subquery(created_subquery))
-        ).values(
-            'id',
-            'full_name',
-            'modules_accessible',
-            'email',
-            'created_at',
-            'user_company',
-            'company_name',
-            'user_assigned_projects',
-            'created_projects'
-        ).first()
+        #     created_projects=ArrayAgg(Subquery(created_subquery))
+        # ).values(
+        #     'id',
+        #     'full_name',
+        #     'modules_accessible',
+        #     'email',
+        #     'created_at',
+        #     'user_company',
+        #     'company_name',
+        #     'user_assigned_projects',
+        #     'created_projects'
+        # ).first()
 
-        return CustomResponse(user_data)
+        # return CustomResponse(user_data)
         # assigned_subquery = Project.objects.filter(users=OuterRef('id')).annotate(
         #     project_json=JSONBuildObject(
         #         'id', Cast(F('id'), CharField()),
