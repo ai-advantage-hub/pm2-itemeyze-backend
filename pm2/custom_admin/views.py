@@ -1193,10 +1193,13 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
         """
             function to retrieve a particular user using user id
         """
-        approved_projects = Project.objects.filter(users__id=id, is_admin_approved=True)[:5]
-        prefetch = Prefetch('assigned_projects', queryset=approved_projects)
-        user = get_object_or_404(User.objects.prefetch_related(prefetch).filter(id=id))
-        serializer = UserDetailSerializer(user)
+        # approved_projects = Project.objects.filter(users__id=id, is_admin_approved=True)
+        # prefetch = Prefetch('assigned_projects', queryset=approved_projects, to_attr='top_approved_projects')
+        # user = get_object_or_404(User.objects.prefetch_related(prefetch).filter(id=id))
+        # serializer = UserDetailSerializer(user)
+        # return Response(serializer.data)
+        user = get_object_or_404(User.objects.filter(id=id))  
+        serializer = UserDetailSerializer(user) 
         return Response(serializer.data)
     
         # user = User.objects.filter(id=id,user_role=2).annotate(

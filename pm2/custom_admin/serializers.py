@@ -219,11 +219,15 @@ class ProjectSerializer(serializers.ModelSerializer):
 
 class UserDetailSerializer(serializers.ModelSerializer):
     company_names = serializers.SerializerMethodField()
-    associated_projects = ProjectSerializer(many=True)
+    assigned_projects = ProjectSerializer(many=True)
 
     class Meta:
         model = User
-        fields = ['id','full_name', 'email','profile_pic','modules_accessible','created_at','company_names', 'associated_projects']
+        fields = ['id','full_name', 'email','profile_pic','modules_accessible','created_at','company_names', 'assigned_projects']
 
     def get_company_names(self, obj):
         return [uc.company.name for uc in obj.user_company.all()]
+    
+    def get_assigned_projects(self, obj):          
+        approved_projects = obj.assigned_projects.filter(is_admin_approved=True)[:5]        
+        return ProjectSerializer(approved_projects, many=True).data
