@@ -157,6 +157,9 @@ class UserLoginSerializer(serializers.Serializer):
         password = data['password']
         user = authenticate(email=email.lower(), password=password)
 
+        # if user.is_active == False:
+        #     raise CustomException(status_code=400, message="Your Account has been Deactivated by Admin ", location="Login")
+
         if user is None:
             raise CustomException(status_code=400, message="Invalid email or password.", location="Login")
 
