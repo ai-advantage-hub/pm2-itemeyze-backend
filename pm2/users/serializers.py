@@ -145,6 +145,72 @@ class SignupSerializer(serializers.ModelSerializer):
 #         model = User
 #         fields = ('email', 'password')
 
+# class UserLoginSerializer(serializers.Serializer):
+#     """
+#     UserLoginSerializer for User Login
+#     """
+#     email = serializers.EmailField()
+#     password = serializers.CharField()
+
+#     def validate(self, data):
+#         email = data['email']
+#         password = data['password']
+#         user = authenticate(email=email.lower(), password=password)
+
+#         # if user.is_active == False:
+#         #     raise CustomException(status_code=400, message="Your Account has been Deactivated by Admin ", location="Login")
+
+#         if user is None:
+#             raise CustomException(status_code=400, message="Invalid email or password.", location="Login")
+
+#         if not user.is_active:
+#             raise serializers.ValidationError({"message": "User account is not active."})
+
+#         if not user.is_admin_approved:
+#             raise serializers.ValidationError({"message": "User is not approved by admin."})
+        
+#         # if user.user_role !=2:
+#         #     raise CustomException({"message": "User Does not Exist"}, status_code=400)
+
+#         data['is_email_verified'] = user.is_email_verified
+#         data['user'] = user
+#         return data
+
+# class UserLoginSerializer(serializers.Serializer):
+#     """
+#     UserLoginSerializer for User Login
+#     """
+#     email = serializers.EmailField()
+#     password = serializers.CharField()
+
+#     def validate(self, data):
+#         email = data['email']
+#         password = data['password']
+#         user = authenticate(email=email.lower(), password=password)
+
+#         print("user====", user)
+
+#         # if user.is_active == False:
+#         #     raise CustomException(status_code=400, message="Your Account has been Deactivated by Admin ", location="Login")
+
+#         # if user is None:
+#         #     raise CustomException(status_code=400, message="Invalid email or password.", location="Login")
+
+#         if not user.is_active:
+#             raise serializers.ValidationError({"message": "User account is not active."}, status_code=400)
+
+#         if not user.is_admin_approved:
+#             raise CustomException(status_code=400, message="not approved.", location="Login")
+#         #     raise serializers.ValidationError({"message": "User is not approved by admin."}, status_code=400)
+
+#         data['is_email_verified'] = user.is_email_verified
+#         data['user'] = user
+#         return data
+
+#     class Meta:
+#         model = User
+#         fields = ('email', 'password')
+
 class UserLoginSerializer(serializers.Serializer):
     """
     UserLoginSerializer for User Login
@@ -164,10 +230,13 @@ class UserLoginSerializer(serializers.Serializer):
             raise CustomException(status_code=400, message="Invalid email or password.", location="Login")
 
         if not user.is_active:
-            raise serializers.ValidationError({"message": "User account is not active."}, status_code=400)
+            raise CustomException(status_code=400, message = "User account is not active.", location="Login")
 
         if not user.is_admin_approved:
-            raise serializers.ValidationError({"message": "User is not approved by admin."}, status_code=400)
+            raise CustomException(status_code=400, message =  "User is not approved by admin.", location="Login")
+        
+        if user.user_role !=2:
+            raise CustomException(status_code=400, message = "User Does not Exist", location="Login")
 
         data['is_email_verified'] = user.is_email_verified
         data['user'] = user
@@ -176,6 +245,7 @@ class UserLoginSerializer(serializers.Serializer):
     class Meta:
         model = User
         fields = ('email', 'password')
+
 
 class ForgotPasswordSerializer(serializers.Serializer):
     """

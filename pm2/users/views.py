@@ -40,7 +40,7 @@ from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 from core.messages import SUCCESS_MESSAGES 
 from django.utils.translation import gettext
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from core.permissions import CheckUserRoleStatusPermission
 from django.db.models import Q
 from fcm_django.models import FCMDevice
@@ -137,7 +137,30 @@ class UserLoginViewSet(viewsets.ViewSet):
     #     else:
     #         return CustomResponse({"msg": "Please provide valid Credentials"}, status=status_code.HTTP_200_OK)
 
+    # def create(self, request):
+    #     serializer = UserLoginSerializer(data=request.data)
+
+    #     if serializer.is_valid():
+    #         user = serializer.validated_data['user']
+    #         is_email_verified = user.is_email_verified
+
+    #         response_data = {
+    #             "is_email_verified": is_email_verified,
+    #         }
+
+    #         if is_email_verified:
+    #             token, created = Token.objects.get_or_create(user=user)
+    #             response_data["token"] = token.key
+    #         else:
+    #             #response_data["token"] = None
+    #             response_data["msg"] = "User email is not verified. Please check your email inbox."
+
+    #         return CustomResponse(response_data, status=status_code.HTTP_200_OK)
+    #     else:
+    #         return CustomResponse({"msg": "Please provide valid Credentials"}, status=status_code.HTTP_200_OK)
+    permission_classes = (AllowAny,)
     def create(self, request):
+        
         serializer = UserLoginSerializer(data=request.data)
 
         if serializer.is_valid():
