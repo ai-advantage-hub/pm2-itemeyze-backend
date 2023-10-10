@@ -228,6 +228,6 @@ class UserDetailSerializer(serializers.ModelSerializer):
     def get_company_names(self, obj):
         return [uc.company.name for uc in obj.user_company.all()]
     
-    def get_assigned_projects(self, obj):          
-        approved_projects = obj.assigned_projects.filter(is_admin_approved=True)[:5]        
-        return ProjectSerializer(approved_projects, many=True).data
+    # def get_assigned_projects(self, obj):          
+    #     approved_projects = obj.assigned_projects.filter(is_admin_approved=True)[:5]        
+    #     return ProjectSerializer(approved_projects, many=True).data
