@@ -114,10 +114,10 @@ class VerifyOTPViewSet(viewsets.ViewSet):
             return CustomResponse({"message": "OTP Verified, User created Successfully", "user_id": user_id}, status=status_code.HTTP_200_OK)
 
 
-class UserLoginViewSet(viewsets.ViewSet):
-    """
-        UserLoginViewSet for User Login
-    """
+# class UserLoginViewSet(viewsets.ViewSet):
+#     """
+#         UserLoginViewSet for User Login
+#     """
     # def create(self, request):
     #     serializer = UserLoginSerializer(data=request.data)
     #     # serializer.is_valid(raise_exception=True)
@@ -158,31 +158,67 @@ class UserLoginViewSet(viewsets.ViewSet):
     #         return CustomResponse(response_data, status=status_code.HTTP_200_OK)
     #     else:
     #         return CustomResponse({"msg": "Please provide valid Credentials"}, status=status_code.HTTP_200_OK)
-    permission_classes = (AllowAny,)
-    def create(self, request):
+
+# class UserLoginViewSet(viewsets.ViewSet):
+#     """
+#         UserLoginViewSet for User Login
+#     """    
+#     permission_classes = (AllowAny,)
+#     def create(self, request):
         
+#         serializer = UserLoginSerializer(data=request.data)
+
+#         if serializer.is_valid():
+#             user = serializer.validated_data['user']
+#             is_email_verified = user.is_email_verified
+
+#             response_data = {
+#                 "is_email_verified": is_email_verified,
+#             }
+
+#             if is_email_verified:
+#                 token, created = Token.objects.get_or_create(user=user)
+#                 response_data["token"] = token.key
+#             else:
+#                 #response_data["token"] = None
+#                 response_data["msg"] = "User email is not verified. Please check your email inbox."
+
+#             return CustomResponse(response_data, status=status_code.HTTP_200_OK)
+#         else:
+#             return CustomResponse({"msg": "Please provide valid Credentials"}, status=status_code.HTTP_400_BAD_REQUEST)
+
+class UserLoginViewSet(viewsets.ViewSet):
+    """
+        UserLoginViewSet for User Login
+    """ 
+    
+    def create(self, request):
         serializer = UserLoginSerializer(data=request.data)
 
         if serializer.is_valid():
             user = serializer.validated_data['user']
             is_email_verified = user.is_email_verified
+            is_admin_approved = user.is_admin_approved
 
             response_data = {
                 "is_email_verified": is_email_verified,
             }
 
-            if is_email_verified:
-                token, created = Token.objects.get_or_create(user=user)
-                response_data["token"] = token.key
-            else:
-                #response_data["token"] = None
+            if not is_email_verified:
                 response_data["msg"] = "User email is not verified. Please check your email inbox."
+            else:
+                response_data["is_admin_approved"] = is_admin_approved
+
+                if is_email_verified and is_admin_approved:
+                    token, created = Token.objects.get_or_create(user=user)
+                    response_data["token"] = token.key
+                else:
+                    response_data["msg"] = "Your account has been sent to admin for approval."
+                    response_data["is_admin_approved"] = False
 
             return CustomResponse(response_data, status=status_code.HTTP_200_OK)
         else:
             return CustomResponse({"msg": "Please provide valid Credentials"}, status=status_code.HTTP_400_BAD_REQUEST)
-
-
 
 
 

@@ -211,6 +211,45 @@ class SignupSerializer(serializers.ModelSerializer):
 #         model = User
 #         fields = ('email', 'password')
 
+
+# class UserLoginSerializer(serializers.Serializer):
+#     """
+#     UserLoginSerializer for User Login
+#     """
+#     email = serializers.EmailField()
+#     password = serializers.CharField()
+
+#     def validate(self, data):
+#         email = data['email']
+#         password = data['password']
+#         user = authenticate(email=email.lower(), password=password)
+#         log_user = User.all_objects.filter(email=email).first()
+#         if not log_user.is_active:
+#             raise CustomException(status_code=400, message="Your Account has been Deactivated by Admin ", location="Login")
+
+#         # if user.is_active == False:
+#         #     raise CustomException(status_code=400, message="Your Account has been Deactivated by Admin ", location="Login")
+
+#         if user is None:
+#             raise CustomException(status_code=400, message="Invalid email or password.", location="Login")
+
+#         if not user.is_active:
+#             raise CustomException(status_code=400, message = "User account is not active.", location="Login")
+
+#         if not user.is_admin_approved:
+#             raise CustomException(status_code=400, message =  "User is not approved by admin.", location="Login")
+        
+#         if user.user_role !=2:
+#             raise CustomException(status_code=400, message = "User Does not Exist", location="Login")
+
+#         data['is_email_verified'] = user.is_email_verified
+#         data['user'] = user
+#         return data
+    
+#     class Meta:
+#         model = User
+#         fields = ('email', 'password')
+
 class UserLoginSerializer(serializers.Serializer):
     """
     UserLoginSerializer for User Login
@@ -223,25 +262,24 @@ class UserLoginSerializer(serializers.Serializer):
         password = data['password']
         user = authenticate(email=email.lower(), password=password)
         log_user = User.all_objects.filter(email=email).first()
-        if not log_user.is_active:
-            raise CustomException(status_code=400, message="Your Account has been Deactivated by Admin ", location="Login")
 
-        # if user.is_active == False:
-        #     raise CustomException(status_code=400, message="Your Account has been Deactivated by Admin ", location="Login")
+        if not log_user.is_active:
+            raise CustomException(status_code=400, message="Your Account has been Deactivated by Admin", location="Login")
 
         if user is None:
             raise CustomException(status_code=400, message="Invalid email or password.", location="Login")
 
         if not user.is_active:
-            raise CustomException(status_code=400, message = "User account is not active.", location="Login")
+            raise CustomException(status_code=400, message="User account is not active.", location="Login")
 
-        if not user.is_admin_approved:
-            raise CustomException(status_code=400, message =  "User is not approved by admin.", location="Login")
-        
-        if user.user_role !=2:
-            raise CustomException(status_code=400, message = "User Does not Exist", location="Login")
+        # if not user.is_admin_approved:
+        #     raise CustomException(status_code=400, message="User is not approved by admin.", location="Login")
+
+        if user.user_role != 2:
+            raise CustomException(status_code=400, message="User Does not Exist", location="Login")
 
         data['is_email_verified'] = user.is_email_verified
+        data['is_admin_approved'] = user.is_admin_approved
         data['user'] = user
         return data
 

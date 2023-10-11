@@ -162,7 +162,7 @@ class Files(BaseModel):
     thumbnail = models.TextField(blank=True, null=True)
     manufacturing_number = models.CharField(max_length=254)
     quantity = models.IntegerField(default=0,blank=True, null=True, verbose_name='Quantity')
-    project_details = models.CharField(max_length=600, null=True, blank=True, verbose_name='Project Details')
+    project_details = models.TextField(null=True, blank=True, verbose_name='Project Details')
     additional_details = models.TextField(null=True, blank=True, verbose_name='Additional Details')
     recording = models.CharField(max_length=254, null=True, blank=True, verbose_name='Recording')
     location = models.CharField(max_length=255, null = True)
