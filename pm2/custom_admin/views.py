@@ -568,6 +568,83 @@ class ManageProjectViewSet(viewsets.ViewSet):
     #     }
     #     return CustomResponse(response_data)
 
+    # def approve_project(self, request):
+    #     data = request.data
+    #     project_id = data.get("project_id")
+    #     project_name = data.get("project_name")
+    #     project_number = data.get("project_number")
+    #     assigned_to = data.get("assigned_to", [])
+    #     status_value = data.get("status_value")
+
+    #     # if status == 2:
+    #     #     Project.objects.filter(id=project_id).delete()
+    #     #     return CustomResponse({"message": "Project deleted"})
+    #     if not Project.objects.filter(id=project_id).first():
+    #         return CustomResponse({"message": "Project of this id dont exists"}, status=status.HTTP_400_BAD_REQUEST)
+        
+    #     if status_value == 2:
+    #         Project.objects.filter(id=project_id).delete()
+    #         return CustomResponse({"message": "Project deleted"}, status=status_code.HTTP_200_OK)
+        
+    #     if not project_name:
+    #         return CustomResponse({"message": "Please provide project_name"}, status=status.HTTP_400_BAD_REQUEST)
+    #     if not project_number:
+    #         return CustomResponse({"message": "Please provide project_number"}, status=status.HTTP_400_BAD_REQUEST)
+        
+    #     # if status_value == 2:
+    #     #     Project.objects.filter(id=project_id).delete()
+    #     #     return CustomResponse({"message": "Project deleted"})
+        
+    #     if status_value == 1:
+        
+    #         if Project.objects.filter(id=project_id, project_name=project_name, project_number=project_number).exists():
+    #             if assigned_to:
+    #                 project = Project.objects.filter(id=project_id, project_name=project_name, project_number=project_number).first()
+    #                 # user = User.objects.filter(email=assigned_to).first()
+    #                 # project.users.add(user)
+    #                 # project.is_admin_approved=True
+    #                 # project.save()
+    #                 for email in assigned_to:
+    #                     user = User.objects.filter(email=email).first()
+    #                     print(f"User for email {email}:", user)
+    #                     if user:
+    #                         project.users.add(user)
+    #                         project.is_admin_approved = True
+    #                         project.save() 
+    #                 return CustomResponse({"message": "Project approved successfully"})
+    #             else:
+    #                 project=Project.objects.filter(id=project_id).first()
+    #                 project.is_admin_approved = True
+    #                 project.save()
+    #                 return CustomResponse({"message": "Project approved successfully"})
+
+    #         else:
+    #             if Project.objects.filter(project_name=project_name).exclude(id=project_id).exists():
+    #                 return CustomResponse({"message": "Project of this name already exists"}, status=status.HTTP_400_BAD_REQUEST)
+    #             elif Project.objects.filter(project_number=project_number).exclude(id=project_id).exists():
+    #                 return CustomResponse({"message": "Project Number of this name already exists"}, status=status.HTTP_400_BAD_REQUEST)
+    #             else:
+    #                 if assigned_to:
+    #                     project = Project.objects.filter(id=project_id).update(project_name=project_name, project_number=project_number)
+    #                     project = Project.objects.filter(id=project_id).first()
+    #                     # user = User.objects.filter(email=assigned_to).first()
+    #                     # project.users.add(user)
+    #                     # project.is_admin_approved=True
+    #                     # project.save()
+    #                     for email in assigned_to:
+    #                         user = User.objects.filter(email=email).first()
+    #                         if user:
+    #                             project.users.add(user)
+    #                             project.is_admin_approved = True
+    #                             project.save()
+    #                     return CustomResponse({"message": "Project approved successfully"})
+    #                 else:
+    #                     project=Project.objects.filter(id=project_id).update(project_name=project_name, project_number=project_number)
+    #                     project=Project.objects.filter(id=project_id).first()
+    #                     project.is_admin_approved = True
+    #                     project.save()
+    #                     return CustomResponse({"message": "Project approved successfully"})
+
     def approve_project(self, request):
         data = request.data
         project_id = data.get("project_id")
@@ -576,48 +653,70 @@ class ManageProjectViewSet(viewsets.ViewSet):
         assigned_to = data.get("assigned_to", [])
         status_value = data.get("status_value")
 
-        # if status == 2:
-        #     Project.objects.filter(id=project_id).delete()
-        #     return CustomResponse({"message": "Project deleted"})
         if not Project.objects.filter(id=project_id).first():
-            return CustomResponse({"message": "Project of this id dont exists"}, status=status.HTTP_400_BAD_REQUEST)
-        
+            return CustomResponse({"message": "Project of this id don't exists"}, status=status.HTTP_400_BAD_REQUEST)
+
         if status_value == 2:
             Project.objects.filter(id=project_id).delete()
             return CustomResponse({"message": "Project deleted"}, status=status_code.HTTP_200_OK)
-        
+
         if not project_name:
             return CustomResponse({"message": "Please provide project_name"}, status=status.HTTP_400_BAD_REQUEST)
         if not project_number:
             return CustomResponse({"message": "Please provide project_number"}, status=status.HTTP_400_BAD_REQUEST)
-        
-        # if status_value == 2:
-        #     Project.objects.filter(id=project_id).delete()
-        #     return CustomResponse({"message": "Project deleted"})
-        
+
         if status_value == 1:
-        
             if Project.objects.filter(id=project_id, project_name=project_name, project_number=project_number).exists():
                 if assigned_to:
                     project = Project.objects.filter(id=project_id, project_name=project_name, project_number=project_number).first()
-                    # user = User.objects.filter(email=assigned_to).first()
-                    # project.users.add(user)
-                    # project.is_admin_approved=True
-                    # project.save()
                     for email in assigned_to:
                         user = User.objects.filter(email=email).first()
-                        print(f"User for email {email}:", user)
                         if user:
                             project.users.add(user)
                             project.is_admin_approved = True
-                            project.save() 
+                            project.save()
+
+                            # Push Notification to users who created the project
+                            title = f"Project Approved by Admin"
+                            message = f"Hello!! Your project '{project_name}' has been approved by Admin."
+                            data = {
+                                "title": title,
+                                "message": message,
+                            }
+
+                            notifyer = user
+                            if notifyer.is_notification_enabled == True:
+                                notification = UserNotification.objects.create(user=user, title=title, message=message)
+                                notification.save()
+                                data.update({"notification_id": str(notification.id)})
+
+                                send_notification_bulk(
+                                    user_ids=[user.id], title=title, message=message, data=data)
+
                     return CustomResponse({"message": "Project approved successfully"})
                 else:
-                    project=Project.objects.filter(id=project_id).first()
+                    project = Project.objects.filter(id=project_id).first()
                     project.is_admin_approved = True
                     project.save()
-                    return CustomResponse({"message": "Project approved successfully"})
 
+                    # Push Notification to users who created the project
+                    title = f"Project Approved by Admin"
+                    message = f"Hello!! Your project '{project_name}' has been approved by Admin."
+                    data = {
+                        "title": title,
+                        "message": message,
+                    }
+
+                    notifyer = project.created_by
+                    if notifyer.is_notification_enabled == True:
+                        notification = UserNotification.objects.create(user=notifyer, title=title, message=message)
+                        notification.save()
+                        data.update({"notification_id": str(notification.id)})
+
+                        send_notification_bulk(
+                            user_ids=[notifyer.id], title=title, message=message, data=data)
+
+                    return CustomResponse({"message": "Project approved successfully"})
             else:
                 if Project.objects.filter(project_name=project_name).exclude(id=project_id).exists():
                     return CustomResponse({"message": "Project of this name already exists"}, status=status.HTTP_400_BAD_REQUEST)
@@ -643,7 +742,9 @@ class ManageProjectViewSet(viewsets.ViewSet):
                         project=Project.objects.filter(id=project_id).first()
                         project.is_admin_approved = True
                         project.save()
-                        return CustomResponse({"message": "Project approved successfully"})
+                        return CustomResponse({"message": "Project approved successfully"})    
+                    
+
     # def approve_project(self, request):
     #     data = request.data
     #     project_id = data.get("project_id")
