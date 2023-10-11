@@ -854,9 +854,16 @@ class ManageProjectViewSet(viewsets.ViewSet):
             return CustomResponse({"error": "File not found."}, status=status.HTTP_400_BAD_REQUEST)
         serializer = FilesSerializer(instance, data=request.data, partial=True)
         
+        # if serializer.is_valid(raise_exception=True):
+        #     serializer.save()
+        #     return CustomResponse(serializer.data, status=status.HTTP_200_OK)
         if serializer.is_valid(raise_exception=True):
             serializer.save()
-            return CustomResponse(serializer.data, status=status.HTTP_200_OK)
+            response_data = {
+                "message": "File updated successfully",
+                "data": serializer.data
+            }
+            return CustomResponse(response_data, status=status.HTTP_200_OK)
         else:
             return CustomResponse(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
