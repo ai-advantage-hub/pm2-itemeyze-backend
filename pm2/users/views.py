@@ -180,7 +180,7 @@ class UserLoginViewSet(viewsets.ViewSet):
 
             return CustomResponse(response_data, status=status_code.HTTP_200_OK)
         else:
-            return CustomResponse({"msg": "Please provide valid Credentials"}, status=status_code.HTTP_200_OK)
+            return CustomResponse({"msg": "Please provide valid Credentials"}, status=status_code.HTTP_400_BAD_REQUEST)
 
 
 
