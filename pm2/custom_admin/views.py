@@ -44,6 +44,8 @@ from django.db.models import OuterRef, Subquery, F, CharField
 from django.db.models.functions import Concat
 from django.contrib.postgres.aggregates import ArrayAgg
 # from django.db.models.functions import JSONBuildObject
+from calendar import monthrange
+from datetime import date, timedelta
 
 class AdminLoginView(viewsets.ViewSet):
     """
@@ -1543,60 +1545,124 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
             return CustomResponse(serializer.errors, status=status_code.HTTP_200_OK)
     
 
-    def remove_user_from_project(self, request, project_id, user_id):
-        try:
+    # def remove_user_from_project(self, request, project_id, user_id):
+    #     try:
             
-            project = Project.objects.get(id=project_id)
-            user = User.objects.get(id=user_id)
-            project.users.remove(user)
-            return CustomResponse(f"User {user} removed from project {project}")
-        except Project.DoesNotExist:
-            return CustomResponse("Project not found!")
-        except User.DoesNotExist:
-            return CustomResponse("User not found!")
+    #         project = Project.objects.get(id=project_id)
+    #         user = User.objects.get(id=user_id)
+    #         project.users.remove(user)
+    #         return CustomResponse(f"User {user} removed from project {project}")
+    #     except Project.DoesNotExist:
+    #         return CustomResponse("Project not found!")
+    #     except User.DoesNotExist:
+    #         return CustomResponse("User not found!")
 
+
+    # def project_graph(self, request, id):
+    #     """
+    #         function to list and search the projects of a particular user.
+    #     """
+    #     page_size = request.GET.get('page_size', '')
+    #     selected_project_id = request.GET.get('project_id', None)
+    #     user = User.objects.filter(id=id).first()
+
+    #     if not user:
+    #         return CustomResponse({"message": "User not found"}, status=status.HTTP_400_BAD_REQUEST)
+
+    #     if selected_project_id:
+
+    #         daily_files_count = Files.objects.filter(project_id=selected_project_id, project__users__id=id).annotate(day=TruncDate('created_at')).values('day').annotate(files_count=Count('id'))
+    #         return CustomResponse(daily_files_count)
+
+    #     else:
+
+    #         monthly_files_count = Files.objects.filter(project__users__id=id).annotate(month=TruncMonth('created_at')).values('month').annotate(files_count=Count('id'))
+
+    #         page = None
+    #         if page_size:
+    #             pagination_class = self.pagination_class()
+    #             page = pagination_class.paginate_queryset(monthly_files_count, request)
+
+    #             if page is not None:
+    #                 return CustomResponse(pagination_class.get_paginated_response(page).data)
+
+    #         return CustomResponse(monthly_files_count)
+        
+    
 
     def project_graph(self, request, id):
-        """
-            function to list and search the projects of a particular user.
-        """
-        page_size = request.GET.get('page_size', '')
+        year = request.GET.get('year')
+        month = request.GET.get('month')
         selected_project_id = request.GET.get('project_id', None)
+        
         user = User.objects.filter(id=id).first()
-
         if not user:
             return CustomResponse({"message": "User not found"}, status=status.HTTP_400_BAD_REQUEST)
 
+        file_query = Files.objects.filter(project__users__id=id)
         if selected_project_id:
+            file_query = file_query.filter(project_id=selected_project_id)
 
-            daily_files_count = Files.objects.filter(project_id=selected_project_id, project__users__id=id).annotate(day=TruncDate('created_at')).values('day').annotate(files_count=Count('id'))
-            return CustomResponse(daily_files_count)
-
+        if year and not month:
+            # If a year is given but no month, show counts for each month of the year
+            start_date = date(int(year), 1, 1)
+            end_date = date(int(year), 12, 31)
+            
+            monthly_files_count = (file_query.filter(created_at__range=[start_date, end_date])
+                                .annotate(month=TruncMonth('created_at'))
+                                .values('month')
+                                .annotate(files_count=Count('id'))
+                                .order_by('month'))
+            
+            # Fill in months with zero count
+            result = []
+            for m in range(1, 13):
+                dt = date(int(year), m, 1)
+                count = next((item for item in monthly_files_count if item['month'].month == m), None)
+                result.append({'month': dt, 'files_count': count['files_count'] if count else 0})
+            
+            return CustomResponse(result)
+        
+        elif month and year:
+            # If both year and month are given, show counts for each day of the month
+            last_day = monthrange(int(year), int(month))[1]
+            start_date = date(int(year), int(month), 1)
+            end_date = date(int(year), int(month), last_day)
+            
+            daily_files_count = (file_query.filter(created_at__range=[start_date, end_date])
+                                .annotate(day=TruncDate('created_at'))
+                                .values('day')
+                                .annotate(files_count=Count('id'))
+                                .order_by('day'))
+            
+            # Fill in days with zero count
+            result = []
+            current_day = start_date
+            while current_day <= end_date:
+                count = next((item for item in daily_files_count if item['day'] == current_day), None)
+                result.append({'day': current_day, 'files_count': count['files_count'] if count else 0})
+                current_day += timedelta(days=1)
+            
+            return CustomResponse(result)
+        
         else:
-
-            monthly_files_count = Files.objects.filter(project__users__id=id).annotate(month=TruncMonth('created_at')).values('month').annotate(files_count=Count('id'))
-
-            page = None
-            if page_size:
-                pagination_class = self.pagination_class()
-                page = pagination_class.paginate_queryset(monthly_files_count, request)
-
-                if page is not None:
-                    return CustomResponse(pagination_class.get_paginated_response(page).data)
-
+            # Original code for when neither year nor month is specified
+            monthly_files_count = (file_query
+                                .annotate(month=TruncMonth('created_at'))
+                                .values('month')
+                                .annotate(files_count=Count('id')))
+            
             return CustomResponse(monthly_files_count)
-        
+
+                
 
 
+
+
+
+
+
+                
             
 
-
-
-
-
-
-
             
-        
-
-        
