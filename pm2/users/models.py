@@ -159,7 +159,7 @@ class Files(BaseModel):
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='project_files')
     manual_manufacturer_name = models.CharField(blank=True, null=True, max_length=254, verbose_name='manual_name')
     file_name = models.CharField(blank=True, null=True, max_length=254)
-    thumbnail = models.CharField(blank=True, null=True, max_length=254)
+    thumbnail = models.TextField(blank=True, null=True)
     manufacturing_number = models.CharField(max_length=254)
     quantity = models.IntegerField(default=0,blank=True, null=True, verbose_name='Quantity')
     project_details = models.CharField(max_length=600, null=True, blank=True, verbose_name='Project Details')
