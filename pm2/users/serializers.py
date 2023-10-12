@@ -261,7 +261,7 @@ class UserLoginSerializer(serializers.Serializer):
         email = data['email']
         password = data['password']
         user = authenticate(email=email.lower(), password=password)
-        log_user = User.all_objects.filter(email=email).first()
+        log_user = User.all_objects.filter(email=email.lower()).first()
 
         if not log_user.is_active:
             raise CustomException(status_code=400, message="Your Account has been Deactivated by Admin", location="Login")

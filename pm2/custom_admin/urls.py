@@ -83,5 +83,11 @@ urlpatterns = [
     path("update_file_admin/<int:pk>", views.ManageUserAdminViewSet.as_view({"put": "update_file_admin"}), name="update_file_admin"),
     path("project_graph/<int:id>", views.ManageUserAdminViewSet.as_view({"get": "project_graph"}), name="project_graph"),
 
+    #CR Points
+    path("list_deleted_projects", views.DeletedProjectsViewSet.as_view({"get": "list"}), name="list_deleted_projects"),
+    path("restore_project/<int:id>", views.DeletedProjectsViewSet.as_view({"put": "restore"}), name="restore_project"),
+    path("list_deleted_files", views.DeletedFilesViewSet.as_view({"get": "list"}), name="list_deleted_files"),
+    path("restore_files/<int:id>", views.DeletedFilesViewSet.as_view({"put": "restore"}), name="restore_files"),
+
 
 ]

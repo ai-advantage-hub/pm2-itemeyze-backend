@@ -487,7 +487,8 @@ class ManageProjectViewSet(viewsets.ViewSet):
     def destroy(self, request, id):
         try:
             instance = Project.objects.get(id=id)
-            instance.delete()
+            instance.is_marked_deleted=True
+            instance.save()
             return Response({'message': 'Project deleted successfully'})
         except Project.DoesNotExist:
             return Response({'message': 'Project not found'}, status=status.HTTP_400_BAD_REQUEST)
@@ -842,7 +843,8 @@ class ManageProjectViewSet(viewsets.ViewSet):
         if not file:
             return CustomResponse({"message": "File not found"}, status=status.HTTP_400_BAD_REQUEST)
         else:
-            file.delete()
+            file.is_marked_deleted=True
+            file.save()
             return CustomResponse({"message": "File deleted successfully"})
         
     def update_file(self, request, *args, **kwargs):
@@ -1764,7 +1766,62 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
 
                 
 
+# CR Points
 
+class DeletedProjectsViewSet(viewsets.ViewSet):
+    """
+        DeletedProjectsViewSet to get the list and restore deleted projects
+    """
+    pagination_class = CustomPagination
+
+    def list(self, request):
+        page_size = request.GET.get('page_size', '')
+        projects = Project.objects.filter(is_marked_deleted=True).annotate(
+            num_files=Count('project_files', filter=Q(project_files__is_admin_approved=True))
+        ).values('id', 'project_name', 'created_by__full_name', 'num_files').order_by("-created_at")
+        page = None
+        if page_size:
+            pagination_class = self.pagination_class()
+            page = pagination_class.paginate_queryset(projects, request)
+
+        if page is not None:
+            return CustomResponse(pagination_class.get_paginated_response(page).data)
+
+        return CustomResponse(projects)   
+
+    def restore(self, request, id):
+        project = Project.objects.filter(id=id).first()
+        if not project:
+            return CustomResponse({"Message": "Project Not Found"}, status=status_code.HTTP_400_BAD_REQUEST)
+        Project.objects.filter(id=id).update(is_marked_deleted=False)
+        return CustomResponse({"Message": "Project Restored Successfully"}, status=status_code.HTTP_200_OK)
+    
+
+class DeletedFilesViewSet(viewsets.ViewSet):
+    """
+        DeletedFilesViewSet to get the list and restore deleted files
+    """
+    pagination_class = CustomPagination
+    
+    def list(self, request):
+        page_size = request.GET.get('page_size', '')
+        files = Files.objects.filter(is_marked_deleted=True).values('id', 'file_name').order_by("-created_at")
+        page = None
+        if page_size:
+            pagination_class = self.pagination_class()
+            page = pagination_class.paginate_queryset(files, request)
+
+        if page is not None:
+            return CustomResponse(pagination_class.get_paginated_response(page).data)
+
+        return CustomResponse(files)   
+
+    def restore(self, request, id):
+        files = Files.objects.filter(id=id).first()
+        if not files:
+            return CustomResponse({"Message": "File Not Found"}, status=status_code.HTTP_400_BAD_REQUEST)
+        Files.objects.filter(id=id).update(is_marked_deleted=False)
+        return CustomResponse({"Message": "File Restored Successfully"}, status=status_code.HTTP_200_OK)
 
 
 
