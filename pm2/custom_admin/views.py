@@ -1312,7 +1312,7 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
         prefetch = Prefetch('assigned_projects', queryset=approved_projects)
         user = get_object_or_404(User.all_objects.prefetch_related(prefetch).filter(id=id))
         serializer = UserDetailSerializer(user)
-        return Response(serializer.data)
+        return CustomResponse(serializer.data)
         # user = get_object_or_404(User.all_objects.filter(id=id))  
         # serializer = UserDetailSerializer(user) 
         # return Response(serializer.data)
@@ -1802,7 +1802,7 @@ class DeletedFilesViewSet(viewsets.ViewSet):
         DeletedFilesViewSet to get the list and restore deleted files
     """
     pagination_class = CustomPagination
-    
+
     def list(self, request):
         page_size = request.GET.get('page_size', '')
         files = Files.objects.filter(is_marked_deleted=True).values('id', 'file_name').order_by("-created_at")
