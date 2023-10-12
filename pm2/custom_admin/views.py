@@ -719,6 +719,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
 
                     return CustomResponse({"message": "Project approved successfully"})
             else:
+                user = User.objects.filter(email=email).first()
                 if Project.objects.filter(project_name=project_name).exclude(id=project_id).exists():
                     return CustomResponse({"message": "Project of this name already exists"}, status=status.HTTP_400_BAD_REQUEST)
                 elif Project.objects.filter(project_number=project_number).exclude(id=project_id).exists():
@@ -732,7 +733,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
                         # project.is_admin_approved=True
                         # project.save()
                         for email in assigned_to:
-                            user = User.objects.filter(email=email).first()
+                            
                             if user:
                                 project.users.add(user)
                                 project.is_admin_approved = True
