@@ -143,7 +143,8 @@ def update_or_create_fcm_detail(user, registration_id, device_type):
     })
     return True
 
-
+import logging
+log = logging.getLogger(__name__)
 from fcm_django.models import FCMDevice
 
 from firebase_admin.messaging import Message, Notification
@@ -160,12 +161,18 @@ def send_notification_bulk(user_ids, title, message, data):
     try:
         devices = FCMDevice.objects.select_related(
         'user').filter(user__in=user_ids, active=True)
+        log.info("devices")
+        log.info(devices)
         message = Message(
         notification=Notification(title=title, body=message, image="url"),
         data=data,
         )
+        log.info("message")
+        log.info(message)
         devices.send_message(message)
         print("device=====",devices)
+        log.info("Devices")
+        log.info(devices)
     except Exception as e:
         print("HEREError", e)
     return True
