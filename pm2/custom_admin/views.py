@@ -1692,7 +1692,7 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
         try:
             
             project = Project.objects.get(id=project_id)
-            user = User.objects.get(id=user_id)
+            user = User.all_objects.get(id=user_id)
             project.users.remove(user)
             return CustomResponse(f"User {user} removed from project {project}")
         except Project.DoesNotExist:
