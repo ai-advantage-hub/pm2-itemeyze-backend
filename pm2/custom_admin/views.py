@@ -462,7 +462,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
         page_size = request.GET.get('page_size', '')
 
         # Query the projects
-        projects = Project.objects.filter(is_admin_approved=True).annotate(
+        projects = Project.objects.filter(is_admin_approved=True, is_marked_deleted=True).annotate(
             num_files=Count('project_files', filter=Q(project_files__is_admin_approved=True))
         ).values('id', 'project_name', 'created_by__full_name', 'num_files').order_by("-created_at")
 
@@ -1595,7 +1595,7 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
         if not user:
             return CustomResponse({"message": "User not found"}, status=status.HTTP_400_BAD_REQUEST)
         # projects = Project.objects.filter((Q(users__id=id) | Q(created_by_id=id)) & Q(is_admin_approved=True)).values("id","project_name", "created_at")
-        projects = Project.objects.filter(users__id=id, is_admin_approved=True).values("id","project_name", "created_at")
+        projects = Project.objects.filter(users__id=id, is_admin_approved=True, is_marked_deleted=False).values("id","project_name", "created_at")
 
         page = None
 
@@ -1695,7 +1695,9 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
             return CustomResponse(serializer.errors, status=status_code.HTTP_200_OK)
     
 
-    def remove_user_from_project(self, request, project_id, user_id):
+    def remove_user_from_project(self, request):
+        user_id = request.query_params.get('user_id')
+        project_id = request.query_params.get('project_id')
         try:
             
             project = Project.objects.get(id=project_id)
