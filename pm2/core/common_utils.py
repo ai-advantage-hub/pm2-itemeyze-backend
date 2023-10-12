@@ -159,6 +159,8 @@ def send_notification_bulk(user_ids, title, message, data):
     :return:
     """
     try:
+        log.info("UserIds")
+        log.info(user_ids)
         devices = FCMDevice.objects.select_related(
         'user').filter(user__in=user_ids, active=True)
         log.info("devices")
