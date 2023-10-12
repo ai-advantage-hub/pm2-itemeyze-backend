@@ -762,6 +762,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
                         project=Project.objects.filter(id=project_id).update(project_name=project_name, project_number=project_number)
                         project=Project.objects.filter(id=project_id).first()
                         project.is_admin_approved = True
+                        created_by_id = project.created_by.id
                         project.save()
                         # Push Notification to users who created the project
                         title = f"Project Approved by Admin"
@@ -773,7 +774,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
 
                         # notifyer = user
                         # if notifyer.is_notification_enabled == True:
-                        notification = UserNotification.objects.create(user=request.user, title=title, message=message)
+                        notification = UserNotification.objects.create(user=created_by_id, title=title, message=message)
                         log.info("notification")
                         log.info(notification)
                         notification.save()
@@ -781,7 +782,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
                         log.info("Data")
                         log.info(data)
                         send_notification_bulk(
-                            user_ids=[request.user.id], title=title, message=message, data=data)
+                            user_ids=[created_by_id], title=title, message=message, data=data)
                         return CustomResponse({"message": "Project approved successfully"})    
                     
 
