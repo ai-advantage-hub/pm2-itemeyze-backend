@@ -737,12 +737,44 @@ class ManageProjectViewSet(viewsets.ViewSet):
                                 project.users.add(user)
                                 project.is_admin_approved = True
                                 project.save()
+                                # Push Notification to users who created the project
+                                title = f"Admin Assigned you a Project"
+                                message = f"Hello!! Admin Assigned you a project named '{project_name}'."
+                                data = {
+                                    "title": title,
+                                    "message": message,
+                                }
+
+                                # notifyer = user
+                                # if notifyer.is_notification_enabled == True:
+                                notification = UserNotification.objects.create(user=user, title=title, message=message)
+                                notification.save()
+                                data.update({"notification_id": str(notification.id)})
+
+                                send_notification_bulk(
+                                    user_ids=[user.id], title=title, message=message, data=data)
                         return CustomResponse({"message": "Project approved successfully"})
                     else:
                         project=Project.objects.filter(id=project_id).update(project_name=project_name, project_number=project_number)
                         project=Project.objects.filter(id=project_id).first()
                         project.is_admin_approved = True
                         project.save()
+                        # Push Notification to users who created the project
+                        title = f"Project Approved by Admin"
+                        message = f"Hello!! Your project '{project_name}' has been approved by Admin."
+                        data = {
+                            "title": title,
+                            "message": message,
+                        }
+
+                        # notifyer = user
+                        # if notifyer.is_notification_enabled == True:
+                        notification = UserNotification.objects.create(user=user, title=title, message=message)
+                        notification.save()
+                        data.update({"notification_id": str(notification.id)})
+
+                        send_notification_bulk(
+                            user_ids=[user.id], title=title, message=message, data=data)
                         return CustomResponse({"message": "Project approved successfully"})    
                     
 
@@ -1655,17 +1687,17 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
             return CustomResponse(serializer.errors, status=status_code.HTTP_200_OK)
     
 
-    # def remove_user_from_project(self, request, project_id, user_id):
-    #     try:
+    def remove_user_from_project(self, request, project_id, user_id):
+        try:
             
-    #         project = Project.objects.get(id=project_id)
-    #         user = User.objects.get(id=user_id)
-    #         project.users.remove(user)
-    #         return CustomResponse(f"User {user} removed from project {project}")
-    #     except Project.DoesNotExist:
-    #         return CustomResponse("Project not found!")
-    #     except User.DoesNotExist:
-    #         return CustomResponse("User not found!")
+            project = Project.objects.get(id=project_id)
+            user = User.objects.get(id=user_id)
+            project.users.remove(user)
+            return CustomResponse(f"User {user} removed from project {project}")
+        except Project.DoesNotExist:
+            return CustomResponse("Project not found!")
+        except User.DoesNotExist:
+            return CustomResponse("User not found!")
 
 
     # def project_graph(self, request, id):
