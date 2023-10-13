@@ -77,7 +77,8 @@ class ReSendOtpViewSet(viewsets.ViewSet):
         user = User.objects.filter(email=email.lower()).first()
         otp = generate_otp()
         # OTP.objects.update(user=user,otp=otp,otp_type=1)
-        OTP.objects.filter(user=user, otp_type=1).update(otp=otp, is_used=False)
+        # OTP.objects.filter(user=user, otp_type=1).update(otp=otp, is_used=False)
+        OTP.objects.create(user=user, otp_type=1, otp=otp, is_used=False)
         try:
             send_verification_email(user.email, otp)
         except Exception as e:
@@ -191,7 +192,7 @@ class UserLoginViewSet(viewsets.ViewSet):
     """
         UserLoginViewSet for User Login
     """ 
-    
+
     def create(self, request):
         serializer = UserLoginSerializer(data=request.data)
 
