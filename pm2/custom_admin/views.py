@@ -462,7 +462,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
         page_size = request.GET.get('page_size', '')
 
         # Query the projects
-        projects = Project.objects.filter(is_admin_approved=True, is_marked_deleted=True).annotate(
+        projects = Project.objects.filter(is_admin_approved=True, is_marked_deleted=False).annotate(
             num_files=Count('project_files', filter=Q(project_files__is_admin_approved=True))
         ).values('id', 'project_name', 'created_by__full_name', 'num_files').order_by("-created_at")
 
