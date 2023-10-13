@@ -491,6 +491,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
         try:
             instance = Project.objects.get(id=id)
             instance.is_marked_deleted=True
+            instance.deleted_at = timezone.now()
             instance.save()
             return Response({'message': 'Project deleted successfully'})
         except Project.DoesNotExist:
@@ -884,6 +885,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
             return CustomResponse({"message": "File not found"}, status=status.HTTP_400_BAD_REQUEST)
         else:
             file.is_marked_deleted=True
+            file.deleted_at = timezone.now()
             file.save()
             return CustomResponse({"message": "File deleted successfully"})
         
@@ -1348,7 +1350,7 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
         """
             function to retrieve a particular user using user id
         """
-        approved_projects = Project.objects.filter(users__id=id, is_admin_approved=True)
+        approved_projects = Project.objects.filter(users__id=id, is_admin_approved=True, is_marked_deleted=False)
         prefetch = Prefetch('assigned_projects', queryset=approved_projects)
         user = get_object_or_404(User.all_objects.prefetch_related(prefetch).filter(id=id))
         serializer = UserDetailSerializer(user)
@@ -1820,7 +1822,7 @@ class DeletedProjectsViewSet(viewsets.ViewSet):
         page_size = request.GET.get('page_size', '')
         projects = Project.objects.filter(is_marked_deleted=True).annotate(
             num_files=Count('project_files', filter=Q(project_files__is_admin_approved=True))
-        ).values('id', 'project_name', 'created_by__full_name', 'num_files').order_by("-created_at")
+        ).values('id', 'project_name', 'created_by__full_name', 'num_files', 'deleted_at').order_by("-created_at")
         page = None
         if page_size:
             pagination_class = self.pagination_class()
@@ -1831,12 +1833,22 @@ class DeletedProjectsViewSet(viewsets.ViewSet):
 
         return CustomResponse(projects)   
 
+    # def restore(self, request, id):
+    #     project = Project.objects.filter(id=id).first()
+    #     if not project:
+    #         return CustomResponse({"Message": "Project Not Found"}, status=status_code.HTTP_400_BAD_REQUEST)
+    #     Project.objects.filter(id=id).update(is_marked_deleted=False)
+    #     return CustomResponse({"Message": "Project Restored Successfully"}, status=status_code.HTTP_200_OK)
+
     def restore(self, request, id):
         project = Project.objects.filter(id=id).first()
         if not project:
             return CustomResponse({"Message": "Project Not Found"}, status=status_code.HTTP_400_BAD_REQUEST)
+        # Restore project
         Project.objects.filter(id=id).update(is_marked_deleted=False)
-        return CustomResponse({"Message": "Project Restored Successfully"}, status=status_code.HTTP_200_OK)
+        # Restore associated files
+        Files.objects.filter(project=project, is_marked_deleted=True).update(is_marked_deleted=False)
+        return CustomResponse({"Message": "Project and associated files restored successfully"}, status=status_code.HTTP_200_OK)
     
 
 class DeletedFilesViewSet(viewsets.ViewSet):
@@ -1847,7 +1859,7 @@ class DeletedFilesViewSet(viewsets.ViewSet):
 
     def list(self, request):
         page_size = request.GET.get('page_size', '')
-        files = Files.objects.filter(is_marked_deleted=True).values('id', 'file_name').order_by("-created_at")
+        files = Files.objects.filter(is_marked_deleted=True).values('id', 'file_name', 'deleted_at').order_by("-created_at")
         page = None
         if page_size:
             pagination_class = self.pagination_class()
@@ -1866,8 +1878,54 @@ class DeletedFilesViewSet(viewsets.ViewSet):
         return CustomResponse({"Message": "File Restored Successfully"}, status=status_code.HTTP_200_OK)
 
 
+class EditUserCompanyViewSet(viewsets.ViewSet):
+    """
+        EditUserCompanyViewSet to edit the company of user while approving
+    """
+    def approve_user(self, request):
+        """
+        Function to approve the users
+        """
+        data = request.data
+        user_id = data.get("user_id")
+        status_value = data.get("status_value")
+        new_company = data.get("new_company")
 
+        user = User.objects.filter(id=user_id).first()
+        if not user:
+            return CustomResponse({"message": "User not found."}, status=status.HTTP_400_BAD_REQUEST)
 
+        if status_value == 2:
+            user.delete()
+            return CustomResponse({"message": "User Denied Successfully"}, status=status_code.HTTP_200_OK)
+        elif status_value == 1:
+            user.is_admin_approved = True
+            user.save()
+
+            if new_company:
+                if not Company.objects.filter(name=new_company).exists():
+                    created_company = Company.objects.create(name = new_company)
+                    UserCompany.objects.filter(user_id=user_id).update(company_id=created_company.id)
+                else:
+                    c = Company.objects.filter(name=new_company).first()
+                    UserCompany.objects.filter(user_id=user_id).update(company_id=c.id)
+            
+            # Push Notification
+            title = f"Account Approved by Admin"
+            message = f"Hello!! Your Account has been Approved by Admin, Now you can Login."
+            data = {
+                "title": title,
+                "message": message,
+            }
+            notification = UserNotification.objects.create(user_id=user_id, title=title, message=message)
+            notification.save()
+            data.update({"notification_id": str(notification.id)})
+
+            send_notification_bulk(
+                user_ids=[user_id], title=title, message=message, data=data)
+            return CustomResponse({"message": "User Approved by Admin"}, status=status_code.HTTP_200_OK)
+        else:
+            return CustomResponse({"message": "Please give the right value in status value"}, status=status.HTTP_400_BAD_REQUEST)
 
                 
             

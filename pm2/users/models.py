@@ -141,9 +141,14 @@ class Project(BaseModel):
     is_marked_deleted = models.BooleanField(default = False, null=True)
     project_number = models.TextField(verbose_name="project number", null=True)
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_by_project', null=True)
+    deleted_at = models.DateTimeField(null=True, blank=True, verbose_name="Project_Deleted_At")
 
     def __str__(self):
         return self.project_name
+    
+    def soft_delete(self):
+        self.deleted_at = timezone.now()
+        self.save()
 
     class Meta:
         db_table = "Project"
@@ -169,11 +174,16 @@ class Files(BaseModel):
     location_points = models.PointField(blank=True, null=True, verbose_name='User Coordinate')
     is_admin_approved = models.BooleanField(default=False, null=True)
     is_marked_deleted = models.BooleanField(default = False, null=True)
+    deleted_at = models.DateTimeField(null=True, blank=True, verbose_name="File_Deleted_At")
     
     # Add other fields as needed
 
     def __str__(self):
         return f"Details for {self.project.project_name}"
+    
+    def soft_delete(self):
+        self.deleted_at = timezone.now()
+        self.save()
 
     class Meta:
         db_table = "ProjectDetails"

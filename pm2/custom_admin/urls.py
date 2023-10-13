@@ -89,5 +89,7 @@ urlpatterns = [
     path("list_deleted_files", views.DeletedFilesViewSet.as_view({"get": "list"}), name="list_deleted_files"),
     path("restore_files/<int:id>", views.DeletedFilesViewSet.as_view({"put": "restore"}), name="restore_files"),
 
+    path("approve_user", views.EditUserCompanyViewSet.as_view({"put": "approve_user"}), name="approve_user"),
+
 
 ]
