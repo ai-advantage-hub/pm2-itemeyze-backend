@@ -1126,15 +1126,15 @@ class ManageSubadminViewSet(viewsets.ViewSet):
         modules_accessible = data.get("modules_accessible", [])
 
         if not full_name:
-            return Response({"message": "Full Name is required"}, status=status.HTTP_400_BAD_REQUEST)
+            return CustomResponse({"message": "Full Name is required"}, status=status.HTTP_400_BAD_REQUEST)
         if not email:
-            return Response({"message": "Email is required"}, status=status.HTTP_400_BAD_REQUEST)
+            return CustomResponse({"message": "Email is required"}, status=status.HTTP_400_BAD_REQUEST)
         if not phone_number:
-            return Response({"message": "Phone Number is required"}, status=status.HTTP_400_BAD_REQUEST)
+            return CustomResponse({"message": "Phone Number is required"}, status=status.HTTP_400_BAD_REQUEST)
         if not temporary_password:
-            return Response({"message": "Temporary Password is required"}, status=status.HTTP_400_BAD_REQUEST)
+            return CustomResponse({"message": "Temporary Password is required"}, status=status.HTTP_400_BAD_REQUEST)
         if not modules_accessible or len(modules_accessible)==0:
-            return Response({"message": "Please add modules accessible"}, status=status.HTTP_400_BAD_REQUEST)
+            return CustomResponse({"message": "Please add modules accessible"}, status=status.HTTP_400_BAD_REQUEST)
 
         if User.objects.filter(email=email).exists():
             return CustomResponse({"message": "Email Already Exists"}, status=status.HTTP_400_BAD_REQUEST)
