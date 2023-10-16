@@ -1816,6 +1816,7 @@ class DeletedProjectsViewSet(viewsets.ViewSet):
     """
         DeletedProjectsViewSet to get the list and restore deleted projects
     """
+    permission_classes = (IsAuthenticated, CheckAdminOrSubAdminRoleStatusPermission,)
     pagination_class = CustomPagination
 
     def list(self, request):
@@ -1855,6 +1856,7 @@ class DeletedFilesViewSet(viewsets.ViewSet):
     """
         DeletedFilesViewSet to get the list and restore deleted files
     """
+    permission_classes = (IsAuthenticated, CheckAdminOrSubAdminRoleStatusPermission,)
     pagination_class = CustomPagination
 
     def list(self, request):
@@ -1882,6 +1884,7 @@ class EditUserCompanyViewSet(viewsets.ViewSet):
     """
         EditUserCompanyViewSet to edit the company of user while approving
     """
+    permission_classes = (IsAuthenticated, CheckAdminOrSubAdminRoleStatusPermission,)
     def approve_user(self, request):
         """
         Function to approve the users
@@ -1931,7 +1934,8 @@ class EditUserCompanyViewSet(viewsets.ViewSet):
 class DeactivateCompanyViewSet(viewsets.ViewSet):
     """
         DeactivateCompanyViewSet to logout users if a company is deactivated
-    """            
+    """    
+    permission_classes = (IsAuthenticated, CheckAdminOrSubAdminRoleStatusPermission,)        
     def update(self, request):
         data = request.data
         id = data.get("id")
