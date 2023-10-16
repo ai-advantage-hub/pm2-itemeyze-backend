@@ -92,7 +92,7 @@ class SignupSerializer(serializers.ModelSerializer):
             if not c:
                 raise CustomException(status_code=400, message="Company Not Found.", location="LOCATION")
             
-            user = User(email=validated_data['email'], full_name=validated_data['full_name'], profile_pic=validated_data['profile_pic'], is_admin_approved=True)
+            user = User(email=validated_data['email'], full_name=validated_data['full_name'], profile_pic=validated_data['profile_pic'])
             user.set_password(validated_data['password'])
             user.save()
             
@@ -261,11 +261,11 @@ class UserLoginSerializer(serializers.Serializer):
         email = data['email']
         password = data['password']
         user = authenticate(email=email.lower(), password=password)
-        log_user = User.all_objects.filter(email=email.lower()).first()
+        log_user = User.all_objects.filter(email=email.lower(), is_active=False).exists()
 
-        if not log_user or not log_user.is_active:
+        if log_user:
             raise CustomException(status_code=400, message="Your Account has been Deactivated by Admin", location="Login")
-
+        
         if user is None:
             raise CustomException(status_code=400, message="Invalid email or password.", location="Login")
 
