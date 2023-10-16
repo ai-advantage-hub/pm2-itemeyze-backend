@@ -331,7 +331,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
         print("user====",request.user.id)
         # projects = Project.objects.filter(created_by=request.user, is_admin_approved=False).values('id', 'created_at', 'updated_at', 'project_name', 'project_description', 'is_admin_approved', 'is_marked_deleted', 'project_number', 'created_by_id')
         projects = Project.objects.filter(
-            Q(created_by=request.user) | Q(users=request.user),
+            users=request.user,
             is_admin_approved=True, is_marked_deleted=False
             ).values(
             'id', 'created_at', 'updated_at', 'project_name', 'project_description',
