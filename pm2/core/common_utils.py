@@ -68,6 +68,17 @@ def send_verification_email(email, otp):
         print("error", e)
 
 
+# def send_logout_email(email):
+#     """to send verification email"""
+#     try:
+#         ctx_dict = {"email": email}
+#         html_template = "log_out_user.html"
+#         subject = "Company Deactivated"
+#         send_html_mail_to_single_user(subject, email, html_template, ctx_dict)
+#     except Exception as e:
+#         print("error", e)
+
+
 def send_verification_link(email, otp):
     """to send verification email"""
     user = User.objects.filter(email=email).first()
@@ -98,6 +109,17 @@ def send_subadmin_credentials(email, temporary_password):
         #send_html_mail_to_single_user(subject, message, from_email, recipient_list)
     except Exception as e:
         print("error", e)    
+
+
+def logged_out_users(email):
+    try:
+        ctx_dict = {"email": email}
+        html_template = "log_out_users.html"
+        subject = "Company has been Deactivated by Admin"
+        send_html_mail_to_single_user(subject, email, html_template, ctx_dict)
+
+    except Exception as e:
+        print("error", e)
 
 
 def check_file_size(file_obj):

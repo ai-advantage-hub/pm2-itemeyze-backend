@@ -10,7 +10,7 @@ from django.contrib.auth.hashers import check_password
 from custom_admin.models import *
 from core.response import CustomResponse
 from django.db.models import Count
-from core.common_utils import generate_otp, send_verification_email, send_subadmin_credentials, send_notification_bulk
+from core.common_utils import generate_otp, send_verification_email, send_subadmin_credentials, send_notification_bulk, logged_out_users
 from core.permissions import CheckAdminRoleStatusPermission, CheckAdminOrSubAdminRoleStatusPermission
 from rest_framework.permissions import IsAuthenticated
 from users.models import OTP
@@ -1200,7 +1200,7 @@ class DashBoardViewSet(viewsets.ViewSet):
     """
         This view is of Dashboard
     """
-    permission_classes = (IsAuthenticated, CheckAdminRoleStatusPermission,)
+    permission_classes = (IsAuthenticated, CheckAdminOrSubAdminRoleStatusPermission,)
 
     def get(self, request, *args, **kwargs):
         month = self.request.query_params.get('month', None)
@@ -1928,6 +1928,35 @@ class EditUserCompanyViewSet(viewsets.ViewSet):
             return CustomResponse({"message": "Please give the right value in status value"}, status=status.HTTP_400_BAD_REQUEST)
 
                 
-            
+class DeactivateCompanyViewSet(viewsets.ViewSet):
+    """
+        DeactivateCompanyViewSet to logout users if a company is deactivated
+    """            
+    def update(self, request):
+        data = request.data
+        id = data.get("id")
+        status_value = data.get("status_value")
+        company = Company.objects.filter(id=id).first()
+        if not company:
+            return CustomResponse({"message": "Company dont exist for this ID"}, status=status.HTTP_400_BAD_REQUEST)
+        # Get all users associated with the company
+        users_to_logout = UserCompany.objects.filter(company=company).all()
+        print("userrrrrr",users_to_logout)
+        # print("id====", users_to_logout.user.id)
+        if status_value == 1:
+            Company.objects.filter(id=id).update(is_active=True)
+            return CustomResponse({"message": "Status Activated successfully"})
+        if status_value == 2:
+            # Deactivate the company
+            Company.objects.filter(id=id).update(is_active=False)
+            # Force logout all associated users
+            for user in users_to_logout:
+                # Delete user's token
+                print("useeeee", user)
+                print("emaiiilll", user.user.email)
+                print("iiiiiiddddd", user.user.id)
+                Token.objects.filter(user=user.user_id).delete()
+                logged_out_users(user.user.email)
+            return CustomResponse({"message": "Status deactivated successfully. Users associated with this company have been logged out."})
 
             
