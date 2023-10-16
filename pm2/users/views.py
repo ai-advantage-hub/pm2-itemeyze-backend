@@ -332,7 +332,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
         # projects = Project.objects.filter(created_by=request.user, is_admin_approved=False).values('id', 'created_at', 'updated_at', 'project_name', 'project_description', 'is_admin_approved', 'is_marked_deleted', 'project_number', 'created_by_id')
         projects = Project.objects.filter(
             Q(created_by=request.user) | Q(users=request.user),
-            is_admin_approved=True
+            is_admin_approved=True, is_marked_deleted=False
             ).values(
             'id', 'created_at', 'updated_at', 'project_name', 'project_description',
             'is_admin_approved', 'is_marked_deleted', 'project_number', 'created_by_id'
@@ -528,7 +528,7 @@ class ProjectDetailsViewSet(viewsets.ModelViewSet):
         file_obj = Files.objects.filter(Q(location__icontains=location) |
                                         Q(manufacturer_name__full_name__icontains=location) |
                                         Q(manufacturing_number__icontains=location),
-                                        project_id=pk, is_admin_approved=True)
+                                        project_id=pk, is_admin_approved=True, is_marked_deleted=False)
 
         # Apply pagination        
         if page_size:
