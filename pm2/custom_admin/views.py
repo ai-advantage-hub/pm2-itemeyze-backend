@@ -1200,7 +1200,7 @@ class DashBoardViewSet(viewsets.ViewSet):
     """
         This view is of Dashboard
     """
-    permission_classes = (IsAuthenticated, CheckAdminOrSubAdminRoleStatusPermission,)
+    permission_classes = (IsAuthenticated, CheckAdminRoleStatusPermission,)
 
     def get(self, request, *args, **kwargs):
         month = self.request.query_params.get('month', None)
