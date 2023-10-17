@@ -20,10 +20,10 @@ class AdminLoginSerializer(serializers.Serializer):
         log_user = User.all_objects.filter(email=email.lower(), is_active=False, user_role=3).exists()
 
         if User.all_delete_objects.filter(email=email.lower(), user_role=3, is_deleted=True).exists():
-            raise CustomException(status_code=400, message="User is Deleted.", location="Login")
+            raise CustomException(status_code=400, message= "Subadmin is Deleted.", location="Login")
         
         if log_user:
-            raise CustomException(status_code=400, message="User inactive or deleted.", location="Login")
+            raise CustomException(status_code=400, message= "Subadmin is Inactive.", location="Login")
         
         if user is None:
             raise CustomException(status_code=400, message = "Invalid email or password.", location="Login")
