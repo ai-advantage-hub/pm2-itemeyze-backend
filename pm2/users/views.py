@@ -243,7 +243,7 @@ class UserLoginViewSet(viewsets.ViewSet):
                 response_data["is_admin_approved"] = is_admin_approved
 
                 if is_email_verified and is_admin_approved:
-                    if not UserCompany.objects.filter(user=user).exists():
+                    if not UserCompany.objects.filter(user=user, company__is_active=True):
                         # The company exists for the user
                         response_data["msg"] = "User Company Does not Exist"
                         token, created = Token.objects.get_or_create(user=user)
