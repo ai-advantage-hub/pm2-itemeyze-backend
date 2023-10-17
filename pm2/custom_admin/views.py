@@ -1189,10 +1189,10 @@ class ManageSubadminViewSet(viewsets.ViewSet):
         sub_admin = User.all_objects.filter(id=user_id, user_role=3).first()
         if not sub_admin:
             return CustomResponse({"message": "Subadmin not found."}, status=status_code.HTTP_404_NOT_FOUND)
+        subadmin_deleted(sub_admin.email)
         sub_admin.email = None
         sub_admin.is_deleted = True
         sub_admin.save()
-        subadmin_deleted(sub_admin.email)
         Token.objects.filter(user=sub_admin).delete()
             
         return CustomResponse({"message": "Subadmin Deleted Successfully."}, status=status_code.HTTP_200_OK)

@@ -127,7 +127,6 @@ def subadmin_deleted(email):
         ctx_dict = {"email" : email}
         html_template = "subadmin_deleted.html"
         subject = "Subadmin Account Deleted by Admin"
-        print("sendd")
         send_html_mail_to_single_user(subject, email, html_template, ctx_dict)
 
     except Exception as e:
