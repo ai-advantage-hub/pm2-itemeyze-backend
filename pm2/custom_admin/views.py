@@ -62,6 +62,7 @@ class AdminLoginView(viewsets.ViewSet):
             token, created = Token.objects.get_or_create(user=user)
             return CustomResponse({"token": token.key, "user_role": user.user_role, "modules_accessible": user.modules_accessible}, status=status.HTTP_200_OK)
         else:
+            # return CustomResponse(serializer.validate.ValidationError, status=status_code.HTTP_200_OK)
             return CustomResponse({"msg": "Please provide valid Credentials"}, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -1190,7 +1191,7 @@ class ManageSubadminViewSet(viewsets.ViewSet):
         if not sub_admin:
             return CustomResponse({"message": "Subadmin not found."}, status=status_code.HTTP_404_NOT_FOUND)
         subadmin_deleted(sub_admin.email)
-        sub_admin.email = None
+        # sub_admin.email = None
         sub_admin.is_deleted = True
         sub_admin.save()
         Token.objects.filter(user=sub_admin).delete()

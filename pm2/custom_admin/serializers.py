@@ -6,6 +6,7 @@ from rest_framework.authtoken.models import Token
 from django.contrib.auth.hashers import check_password
 from core.common_utils import generate_otp, send_verification_email, send_verification_link
 from django.contrib.gis.geos import Point
+from core.exception import CustomException
 
 
 class AdminLoginSerializer(serializers.Serializer):
@@ -16,14 +17,22 @@ class AdminLoginSerializer(serializers.Serializer):
         email = data['email']
         password = data['password']
         user = authenticate(email=email, password=password)
-        if user is None:
-            raise serializers.ValidationError({"message": "Invalid email or password."})
+        log_user = User.all_objects.filter(email=email.lower(), is_active=False, user_role=3).exists()
+
+        if User.all_delete_objects.filter(email=email.lower(), user_role=3, is_deleted=True).exists():
+            raise CustomException(status_code=400, message="User is Deleted.", location="Login")
         
-        if user.is_deleted==True:
-            raise serializers.ValidationError({"message": "Subadmin is Deleted."})
+        if log_user:
+            raise CustomException(status_code=400, message="User inactive or deleted.", location="Login")
+        
+        if user is None:
+            raise CustomException(status_code=400, message = "Invalid email or password.", location="Login")
+        
+        # if user.is_deleted==True:
+        #     raise CustomException(status_code=400, message = "Subadmin is Deleted.", location="Login")
 
         if user.user_role == 2 or user.is_email_verified is False:
-            raise serializers.ValidationError({"message": "User is not an admin."})
+            raise CustomException(status_code=400, message= "User is not an admin.", location="Login")
         data['user'] = user
         return data
 
