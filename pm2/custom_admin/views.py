@@ -1624,7 +1624,8 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
         if not user:
             return CustomResponse({"message": "User not found"}, status=status.HTTP_400_BAD_REQUEST)
 
-        user.delete()
+        user.is_deleted=True
+        user.save()
         return CustomResponse({"message": "User deleted sucessfully by Admin"}, status=status_code.HTTP_200_OK)
 
     def view_file_admin(self, request, id):
