@@ -188,11 +188,43 @@ class VerifyOTPViewSet(viewsets.ViewSet):
 #         else:
 #             return CustomResponse({"msg": "Please provide valid Credentials"}, status=status_code.HTTP_400_BAD_REQUEST)
 
+# class UserLoginViewSet(viewsets.ViewSet):
+#     """
+#         UserLoginViewSet for User Login
+#     """ 
+
+#     def create(self, request):
+#         serializer = UserLoginSerializer(data=request.data)
+
+#         if serializer.is_valid():
+#             user = serializer.validated_data['user']
+#             is_email_verified = user.is_email_verified
+#             is_admin_approved = user.is_admin_approved
+
+#             response_data = {
+#                 "is_email_verified": is_email_verified,
+#             }
+
+#             if not is_email_verified:
+#                 response_data["msg"] = "User email is not verified. Please check your email inbox."
+#             else:
+#                 response_data["is_admin_approved"] = is_admin_approved
+
+#                 if is_email_verified and is_admin_approved:
+#                     token, created = Token.objects.get_or_create(user=user)
+#                     response_data["token"] = token.key
+#                 else:
+#                     response_data["msg"] = "Your account has been sent to admin for approval."
+#                     response_data["is_admin_approved"] = False
+
+#             return CustomResponse(response_data, status=status_code.HTTP_200_OK)
+#         else:
+#             return CustomResponse({"msg": "Please provide valid Credentials"}, status=status_code.HTTP_400_BAD_REQUEST)
+
 class UserLoginViewSet(viewsets.ViewSet):
     """
         UserLoginViewSet for User Login
     """ 
-
     def create(self, request):
         serializer = UserLoginSerializer(data=request.data)
 
@@ -211,21 +243,25 @@ class UserLoginViewSet(viewsets.ViewSet):
                 response_data["is_admin_approved"] = is_admin_approved
 
                 if is_email_verified and is_admin_approved:
-                    token, created = Token.objects.get_or_create(user=user)
-                    response_data["token"] = token.key
+                    if not UserCompany.objects.filter(user=user).exists():
+                        # The company exists for the user
+                        response_data["msg"] = "User Company Does not Exist"
+                        token, created = Token.objects.get_or_create(user=user)
+                        response_data["token"] = token.key
+                    else:
+                        token, created = Token.objects.get_or_create(user=user)
+                        response_data["token"] = token.key
+                        return CustomResponse(response_data, status=status_code.HTTP_400_BAD_REQUEST)
                 else:
                     response_data["msg"] = "Your account has been sent to admin for approval."
                     response_data["is_admin_approved"] = False
 
+            # This line will be executed when token is created
             return CustomResponse(response_data, status=status_code.HTTP_200_OK)
         else:
             return CustomResponse({"msg": "Please provide valid Credentials"}, status=status_code.HTTP_400_BAD_REQUEST)
 
-
-
-
         
-
 class ForgotPasswordViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
     """
         ForgotPasswordViewSet for forget password
