@@ -10,7 +10,7 @@ from django.contrib.auth.hashers import check_password
 from custom_admin.models import *
 from core.response import CustomResponse
 from django.db.models import Count
-from core.common_utils import generate_otp, send_verification_email, send_subadmin_credentials, send_notification_bulk, logged_out_users, subadmin_deleted
+from core.common_utils import generate_otp, send_verification_email, send_subadmin_credentials, send_notification_bulk, logged_out_users, subadmin_deleted, send_updated_subadmin_credentials
 from core.permissions import CheckAdminRoleStatusPermission, CheckAdminOrSubAdminRoleStatusPermission
 from rest_framework.permissions import IsAuthenticated
 from users.models import OTP
@@ -1168,6 +1168,9 @@ class ManageSubadminViewSet(viewsets.ViewSet):
         sub_admin = User.all_objects.filter(id=id, user_role=3).first()
         if not sub_admin:
             return CustomResponse({"message": "Subadmin not found"}, status=status.HTTP_404_NOT_FOUND)
+        # send_updated_subadmin_credentials(sub_admin.email)
+        old_cred = User.all_objects.filter(id=id, user_role=3).first()
+        old_email = old_cred.email
         if full_name:
             sub_admin.full_name = full_name
         if email:
@@ -1178,7 +1181,10 @@ class ManageSubadminViewSet(viewsets.ViewSet):
             sub_admin.modules_accessible = modules_accessible
 
         sub_admin.save()
-
+        if full_name or email or phone_number or modules_accessible:
+            print("oldemail===",old_email)
+            send_updated_subadmin_credentials(old_email)
+            print("old2", old_email)
         return CustomResponse({"message": "Subadmin details updated successfully"}, status=status.HTTP_200_OK)
     
     def update(self, request):
@@ -1627,6 +1633,7 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
 
         user.is_deleted=True
         user.save()
+        Token.objects.filter(user=user).delete()
         return CustomResponse({"message": "User deleted sucessfully by Admin"}, status=status_code.HTTP_200_OK)
 
     def view_file_admin(self, request, id):

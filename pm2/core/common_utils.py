@@ -111,6 +111,17 @@ def send_subadmin_credentials(email, temporary_password):
         print("error", e)    
 
 
+def send_updated_subadmin_credentials(email):
+    try:
+        ctx_dict = {"email": email}
+        html_template = "update_subadmin.html"
+        subject = "You are Subadmin now"
+        send_html_mail_to_single_user(subject, email, html_template, ctx_dict)
+
+    except Exception as e:
+        print("error", e) 
+
+
 def logged_out_users(email):
     try:
         ctx_dict = {"email": email}
