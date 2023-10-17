@@ -265,9 +265,12 @@ class UserLoginSerializer(serializers.Serializer):
 
         if log_user:
             raise CustomException(status_code=400, message="Your Account has been Deactivated by Admin", location="Login")
-        
+
         if user is None:
             raise CustomException(status_code=400, message="Invalid email or password.", location="Login")
+        
+        if user.is_deleted==True:
+            raise CustomException(status_code=400, message="User is Deleted.", location="Login")
 
         if not user.is_active:
             raise CustomException(status_code=400, message="User account is not active.", location="Login")

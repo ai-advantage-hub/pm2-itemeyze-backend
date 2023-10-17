@@ -10,7 +10,7 @@ from django.contrib.auth.hashers import check_password
 from custom_admin.models import *
 from core.response import CustomResponse
 from django.db.models import Count
-from core.common_utils import generate_otp, send_verification_email, send_subadmin_credentials, send_notification_bulk, logged_out_users
+from core.common_utils import generate_otp, send_verification_email, send_subadmin_credentials, send_notification_bulk, logged_out_users, subadmin_deleted
 from core.permissions import CheckAdminRoleStatusPermission, CheckAdminOrSubAdminRoleStatusPermission
 from rest_framework.permissions import IsAuthenticated
 from users.models import OTP
@@ -933,15 +933,15 @@ class ManageProjectViewSet(viewsets.ViewSet):
                 "title": title,
                 "message": message,
             }
-            notifyer = User.objects.filter(id=file.manufacturer_name.id).first()
+            notifyer = User.objects.filter(id=file.created_by.id).first()
             if notifyer.is_notification_enabled==True:
 
-                notification = UserNotification.objects.create(user_id=file.manufacturer_name.id,title=title,message=message)
+                notification = UserNotification.objects.create(user_id=file.created_by.id,title=title,message=message)
                 notification.save()
                 data.update({"notification_id": str(notification.id)})
 
                 send_notification_bulk(
-                    user_ids=[file.manufacturer_name.id], title=title, message=message, data=data)
+                    user_ids=[file.created_by.id], title=title, message=message, data=data)
             return CustomResponse({"message": "File approved by the admin"}, status=status_code.HTTP_200_OK)
         
     def delete_file_list(self, request, id):
@@ -1192,6 +1192,8 @@ class ManageSubadminViewSet(viewsets.ViewSet):
         sub_admin.email = None
         sub_admin.is_deleted = True
         sub_admin.save()
+        subadmin_deleted(sub_admin.email)
+        Token.objects.filter(user=sub_admin).delete()
             
         return CustomResponse({"message": "Subadmin Deleted Successfully."}, status=status_code.HTTP_200_OK)
 
@@ -1593,7 +1595,7 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
             function to list and search the projects of a particular user.
         """
         page_size = request.GET.get('page_size', '')
-        user = User.objects.filter(id=id).first()
+        user = User.all_objects.filter(id=id).first()
         if not user:
             return CustomResponse({"message": "User not found"}, status=status.HTTP_400_BAD_REQUEST)
         # projects = Project.objects.filter((Q(users__id=id) | Q(created_by_id=id)) & Q(is_admin_approved=True)).values("id","project_name", "created_at")
@@ -1618,7 +1620,7 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
         return CustomResponse(serializer.data)
 
     def delete_user_admin(self, request,id):
-        user = User.objects.filter(id=id).first()
+        user = User.all_objects.filter(id=id).first()
         if not user:
             return CustomResponse({"message": "User not found"}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -1749,7 +1751,7 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
         month = request.GET.get('month')
         selected_project_id = request.GET.get('project_id', None)
         
-        user = User.objects.filter(id=id).first()
+        user = User.all_objects.filter(id=id).first()
         if not user:
             return CustomResponse({"message": "User not found"}, status=status.HTTP_400_BAD_REQUEST)
 

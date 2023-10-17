@@ -122,6 +122,18 @@ def logged_out_users(email):
         print("error", e)
 
 
+def subadmin_deleted(email):
+    try:
+        ctx_dict = {"email" : email}
+        html_template = "subadmin_deleted.html"
+        subject = "Subadmin Account Deleted by Admin"
+        print("sendd")
+        send_html_mail_to_single_user(subject, email, html_template, ctx_dict)
+
+    except Exception as e:
+        print("error", e)
+
+
 def check_file_size(file_obj):
     """
         check_file_size function to check the size of files
