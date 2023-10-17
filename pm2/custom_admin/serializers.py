@@ -18,6 +18,9 @@ class AdminLoginSerializer(serializers.Serializer):
         user = authenticate(email=email, password=password)
         if user is None:
             raise serializers.ValidationError({"message": "Invalid email or password."})
+        
+        if user.is_deleted==True:
+            raise serializers.ValidationError({"message": "Subadmin is Deleted."})
 
         if user.user_role == 2 or user.is_email_verified is False:
             raise serializers.ValidationError({"message": "User is not an admin."})

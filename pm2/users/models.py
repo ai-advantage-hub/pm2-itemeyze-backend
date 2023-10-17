@@ -175,6 +175,7 @@ class Files(BaseModel):
     is_admin_approved = models.BooleanField(default=False, null=True)
     is_marked_deleted = models.BooleanField(default = False, null=True)
     deleted_at = models.DateTimeField(null=True, blank=True, verbose_name="File_Deleted_At")
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_by_file', null=True)
     
     # Add other fields as needed
 
