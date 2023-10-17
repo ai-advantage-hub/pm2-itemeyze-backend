@@ -251,7 +251,7 @@ class UserLoginViewSet(viewsets.ViewSet):
                     else:
                         token, created = Token.objects.get_or_create(user=user)
                         response_data["token"] = token.key
-                        return CustomResponse(response_data, status=status_code.HTTP_400_BAD_REQUEST)
+                        return CustomResponse(response_data, status=status_code.HTTP_200_OK)
                 else:
                     response_data["msg"] = "Your account has been sent to admin for approval."
                     response_data["is_admin_approved"] = False
