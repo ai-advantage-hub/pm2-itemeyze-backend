@@ -1112,7 +1112,8 @@ class ManageSubadminViewSet(viewsets.ViewSet):
             User.all_objects.filter(id=id, user_role=3).update(is_active=True)
             return CustomResponse({"message": "Subadmin Activated successfully"}, status=status.HTTP_200_OK)
         if status_value == 2:
-            User.all_objects.filter(id=id, user_role=3).update(is_active=False)
+            user = User.all_objects.filter(id=id, user_role=3).update(is_active=False)
+            Token.objects.filter(user=user).delete()
             return CustomResponse({"message": "Subadmin deactivated successfully"}, status=status.HTTP_200_OK)
 
     def create(self, request):
