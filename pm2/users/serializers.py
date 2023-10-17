@@ -10,7 +10,7 @@ from .models import (
 
 )
 from custom_admin.models import ContentManagement
-from core.common_utils import generate_otp, send_verification_email, update_or_create_fcm_detail
+from core.common_utils import generate_otp, send_verification_email, update_or_create_fcm_detail, send_reset_password_email
 from django.contrib.auth import authenticate
 import re
 from core.exception import CustomException
@@ -329,6 +329,7 @@ class ResetPasswordSerializer(serializers.Serializer):
 
         if new_password != confirm_password:
             raise CustomException(status_code=400, message="Passwords do not match.", location="LOCATION")
+        send_reset_password_email(email)
         user = User.objects.filter(email=email.lower()).first()
 
         data['user'] = user 
