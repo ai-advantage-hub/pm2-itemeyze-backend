@@ -1222,8 +1222,8 @@ class DashBoardViewSet(viewsets.ViewSet):
         if year:
             filters['created_at__year'] = int(year)
 
-        total_users = User.objects.filter(user_role=User.USER, **filters).count()
-        total_subadmins = User.objects.filter(user_role=User.SUB_ADMIN, **filters).count()
+        total_users = User.all_objects.filter(user_role=User.USER, **filters).count()
+        total_subadmins = User.all_objects.filter(user_role=User.SUB_ADMIN, **filters).count()
         total_projects = Project.objects.filter(**filters).count()
         total_companies = Company.objects.filter(**filters).count()
 
