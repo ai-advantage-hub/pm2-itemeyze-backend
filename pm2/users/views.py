@@ -372,7 +372,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
             ).values(
             'id', 'created_at', 'updated_at', 'project_name', 'project_description',
             'is_admin_approved', 'is_marked_deleted', 'project_number', 'created_by_id'
-            )
+            ).order_by('-created_at')
         # if project_name:
         #     projects = projects.filter(name__icontains=project_name)
         if project_name:
@@ -564,7 +564,7 @@ class ProjectDetailsViewSet(viewsets.ModelViewSet):
         file_obj = Files.objects.filter(Q(location__icontains=location) |
                                         Q(manufacturer_name__full_name__icontains=location) |
                                         Q(manufacturing_number__icontains=location),
-                                        project_id=pk, is_admin_approved=True, is_marked_deleted=False)
+                                        project_id=pk, is_admin_approved=True, is_marked_deleted=False).order_by('-created_at')
 
         # Apply pagination        
         if page_size:
