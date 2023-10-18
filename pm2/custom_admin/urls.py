@@ -94,4 +94,7 @@ urlpatterns = [
     path("company_status", views.DeactivateCompanyViewSet.as_view({"put": "update"}), name="company_status"),
 
 
+    path("users_listing", views.UserListingViewSet.as_view({"get": "list"}), name="users_listing"),
+
+
 ]

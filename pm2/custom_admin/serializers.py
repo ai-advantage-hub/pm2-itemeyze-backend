@@ -243,3 +243,10 @@ class UserDetailSerializer(serializers.ModelSerializer):
     # def get_assigned_projects(self, obj):          
     #     approved_projects = obj.assigned_projects.filter(is_admin_approved=True)[:5]        
     #     return ProjectSerializer(approved_projects, many=True).data
+
+
+
+class UserListingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('id', 'full_name')

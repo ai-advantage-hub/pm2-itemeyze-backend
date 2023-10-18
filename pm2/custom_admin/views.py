@@ -2,7 +2,7 @@ from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, viewsets, mixins, generics, filters
-from custom_admin.serializers import AdminLoginSerializer,AdminResetPasswordSerializer, CreateFileDetailsSerializer, ForgotPasswordSerializer, ProjectDetailSerializer,FilesSerializer,FilesPointSerializer, UserListAdminSerializer,UserDetailSerializer
+from custom_admin.serializers import AdminLoginSerializer,AdminResetPasswordSerializer, CreateFileDetailsSerializer, ForgotPasswordSerializer, ProjectDetailSerializer,FilesSerializer,FilesPointSerializer, UserListAdminSerializer,UserDetailSerializer, UserListingSerializer
 from django.contrib.auth import authenticate
 from rest_framework.authtoken.models import Token
 from users.models import Company, UserCompany, User,Project,Files, UserNotification
@@ -1982,4 +1982,23 @@ class DeactivateCompanyViewSet(viewsets.ViewSet):
                 logged_out_users(user.email)
             return CustomResponse({"message": "Status deactivated successfully. Users associated with this company have been logged out."}, status=status.HTTP_200_OK)
 
-            
+
+
+class UserListingViewSet(viewsets.ViewSet):
+    """
+       UserListingViewSet for getting the list of users 
+    """
+    permission_classes = (IsAuthenticated, CheckAdminOrSubAdminRoleStatusPermission,)
+
+    def list(self, request):
+        name = request.GET.get('name')
+        # users = User.objects.filter(is_admin_approved=True, full_name__icontains=name).all()
+        # serializer = UserListingSerializer(users, many=True)
+
+        # return CustomResponse(serializer.data, status=status_code.HTTP_200_OK)
+        if name is not None:
+            users = User.objects.filter(is_admin_approved=True, full_name__icontains=name).all()
+        else:
+            users = User.objects.filter(is_admin_approved=True).all()
+        serializer = UserListingSerializer(users, many=True)
+        return CustomResponse(serializer.data, status=status_code.HTTP_200_OK)
