@@ -796,7 +796,10 @@ class UserEditProfileViewSet(viewsets.ViewSet):
         if profile_pic:
             update_data["profile_pic"] = profile_pic
         if company_id:
-            UserCompany.objects.filter(user=request.user).update(company_id=company_id)
+            if UserCompany.objects.filter(user=request.user).exists():
+                UserCompany.objects.filter(user=request.user).update(company_id=company_id)
+            else:
+                UserCompany.objects.create(user=request.user, company_id=company_id)
          
         # Perform the update in a single query
         User.objects.filter(id=request.user.id).update(**update_data)

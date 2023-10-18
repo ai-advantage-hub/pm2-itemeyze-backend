@@ -1961,7 +1961,7 @@ class DeactivateCompanyViewSet(viewsets.ViewSet):
         # print("id====", users_to_logout.user.id)
         if status_value == 1:
             Company.objects.filter(id=id).update(is_active=True)
-            return CustomResponse({"message": "Status Activated successfully"})
+            return CustomResponse({"message": "Status Activated successfully"}, status=status.HTTP_200_OK)
         if status_value == 2:
             # Deactivate the company
             Company.objects.filter(id=id).update(is_active=False)
@@ -1971,8 +1971,8 @@ class DeactivateCompanyViewSet(viewsets.ViewSet):
                 print("useeeee", user)
                 print("emaiiilll", user.user.email)
                 print("iiiiiiddddd", user.user.id)
-                Token.objects.filter(user=user.user_id).delete()
+                Token.objects.filter(user=user).delete()
                 logged_out_users(user.user.email)
-            return CustomResponse({"message": "Status deactivated successfully. Users associated with this company have been logged out."})
+            return CustomResponse({"message": "Status deactivated successfully. Users associated with this company have been logged out."}, status=status.HTTP_200_OK)
 
             
