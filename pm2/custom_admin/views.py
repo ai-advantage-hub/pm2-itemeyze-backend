@@ -539,6 +539,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
         location = data.get("location")
         quantity = data.get("quantity")
         project_details = data.get("project_details")
+        recording = data.get('recording')
         additional_details = data.get("additional_details")
         location_points = data.get('location_points')
 
@@ -547,14 +548,14 @@ class ManageProjectViewSet(viewsets.ViewSet):
         if manual_manufacturer_name:
             new_user = User.objects.create(full_name=manual_manufacturer_name)
             print("newwwwww", new_user.id)
-            file = Files.objects.create(manufacturer_name_id=new_user.id, manual_manufacturer_name=manual_manufacturer_name, project_id=project_id, manufacturing_number=manufacturing_number, quantity=quantity, project_details=project_details, additional_details=additional_details,location=location,file_name=file_name, location_points=location_points,is_admin_approved=True)
+            file = Files.objects.create(manufacturer_name_id=new_user.id, manual_manufacturer_name=manual_manufacturer_name, project_id=project_id, manufacturing_number=manufacturing_number, quantity=quantity, project_details=project_details, additional_details=additional_details,location=location,file_name=file_name, recording=recording, location_points=location_points,is_admin_approved=True)
             # c = str(project_id)+'_'+str(file.id)+'_'+'filename'
             # print("ccccccccc",c)
             # b = Files.objects.filter(id=file.id).update(file_name=c)
             # print("new filleeeee", file)
             return CustomResponse({"message": "File Created with new user Successfully", "file_id": file.id})
         else:
-            file = Files.objects.create(file_name=file_name, thumbnail=thumbnail, manufacturing_number=manufacturing_number, project_id=project_id, location=location, manufacturer_name_id=manufacturer_name, quantity=quantity, project_details=project_details, additional_details=additional_details, location_points=location_points, is_admin_approved=True)
+            file = Files.objects.create(file_name=file_name, thumbnail=thumbnail, manufacturing_number=manufacturing_number, project_id=project_id, location=location, manufacturer_name_id=manufacturer_name, quantity=quantity, project_details=project_details, additional_details=additional_details, recording=recording, location_points=location_points, is_admin_approved=True)
             return CustomResponse({"message": "File created successfully", "file_id": file.id})
         
     # def un_approved_project(self, request):
@@ -934,15 +935,18 @@ class ManageProjectViewSet(viewsets.ViewSet):
                 "title": title,
                 "message": message,
             }
+            print("createddddd", file.created_by, file.created_by.id)
             notifyer = User.objects.filter(id=file.created_by.id).first()
             if notifyer.is_notification_enabled==True:
 
                 notification = UserNotification.objects.create(user_id=file.created_by.id,title=title,message=message)
+                print("createddddd2", file.created_by, file.created_by.id)
                 notification.save()
                 data.update({"notification_id": str(notification.id)})
 
                 send_notification_bulk(
                     user_ids=[file.created_by.id], title=title, message=message, data=data)
+                print("createddddd3", file.created_by, file.created_by.id)
             return CustomResponse({"message": "File approved by the admin"}, status=status_code.HTTP_200_OK)
         
     def delete_file_list(self, request, id):
