@@ -159,7 +159,7 @@ class SignupSerializer(serializers.ModelSerializer):
                 user.company_name=company_name
                 user.save()
             otp = generate_otp()
-            OTP.objects.create(user=user, otp=generate_otp(), otp_type=1)
+            OTP.objects.create(user=user, otp=otp, otp_type=1)
             send_verification_email(user.email, otp)
 
             return user
