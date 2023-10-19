@@ -436,7 +436,6 @@ class ViewUserCompanySerializer(serializers.ModelSerializer):
         model = Company
         fields = ('name',)
 
-
 class UserCompanySerializer(serializers.ModelSerializer):
     company = ViewUserCompanySerializer()
 
@@ -446,11 +445,35 @@ class UserCompanySerializer(serializers.ModelSerializer):
 
 
 class ViewProfileSerializer(serializers.ModelSerializer):
-    user_company = UserCompanySerializer(many=True)
+    # user_company = UserCompanySerializer(many=True)
+    user_company = serializers.SerializerMethodField()
 
     class Meta:
         model = User
         fields = ('full_name', 'email', 'profile_pic', 'user_company')
+
+    # def get_user_company(self, obj):
+    #     print("validate")
+    #     a = UserCompany.objects.filter(user=obj.user).values_list('company_id', flat=True)
+    #     print("a===",a)
+    #     list = []
+    #     for i in a:
+    #         d = Company.objects.filter(id=i).first()
+    #         if d.is_active==True:
+    #             list.append(d.name)
+    #     # if len(list)==0:
+    #     #     list = None
+    #     return list
+    def get_user_company(self, obj):
+        print("validate")
+        a = UserCompany.objects.filter(user=obj).values_list('company_id', flat=True)
+        print("a===", a)
+        company_list = []
+        for i in a:
+            company = Company.objects.filter(id=i, is_active=True).first()
+            if company:
+                company_list.append({'id': company.id, 'name': company.name})
+        return company_list
 
 
 class UserListingSerializer(serializers.ModelSerializer):
