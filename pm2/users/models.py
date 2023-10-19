@@ -52,6 +52,7 @@ class User(AbstractBaseUser, BaseModel):
 
     full_name = models.CharField(max_length=50, blank=False, null=True, verbose_name='Full Name')
     email = models.EmailField("Email", max_length=70, unique=True, blank=True, null=True)
+    company_name = models.CharField(max_length=255, null = True, blank=True, verbose_name='company_name')
     user_role = models.IntegerField("User role", choices=ROLE, default=USER)
     profile_pic = models.CharField(blank=True, null=True, max_length=254)
     phone_number = models.CharField("Phone Number", max_length=15, blank=True, null=True) 

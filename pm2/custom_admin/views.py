@@ -1920,7 +1920,13 @@ class EditUserCompanyViewSet(viewsets.ViewSet):
         elif status_value == 1:
             user.is_admin_approved = True
             user.save()
-
+            
+            c = User.objects.filter(id=user_id).first()
+            if c.company_name!=None:
+                d = Company.objects.create(name=c.company_name)
+                UserCompany.objects.create(user_id=user_id, company_id=d.id)
+                c.company_name=None
+                c.save()
             if new_company:
                 if not Company.objects.filter(name=new_company).exists():
                     created_company = Company.objects.create(name = new_company)

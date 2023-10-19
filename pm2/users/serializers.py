@@ -38,32 +38,99 @@ class UserSerializer():
         )
 
 
+# class SignupSerializer(serializers.ModelSerializer):
+#     """
+#         Serializer for Signup
+#     """
+#     email = serializers.EmailField(min_length=5, max_length=50, required=True)
+#     confirm_password = serializers.CharField(write_only=True, required=True)
+#     company_id = serializers.IntegerField(write_only=True, required=True)
+#     full_name = serializers.CharField(required=True)
+#     profile_pic = serializers.CharField(max_length = 254, allow_blank=True, allow_null=True)
+
+#     class Meta:
+#         model = User
+#         fields = ("profile_pic", "full_name", "email", "password", "confirm_password", "company_id")
+
+#     @staticmethod
+#     def validate_email(email: str):
+#         """
+#             validate_email method to validate email
+#         """
+#         if User.objects.filter(email=email.lower()).exists():
+#             raise CustomException(status_code=400, message="This Email already exists.", location="LOCATION")
+#         return email.lower()
+
+#     def validate(self, data):
+#         """
+#             validate method to validate passwords
+#         """
+#         password = data.get('password')
+#         confirm_password = data.pop('confirm_password', None)
+
+#         if password != confirm_password:
+#             raise CustomException(status_code=400, message="Passwords do not match.", location="LOCATION")
+
+#         return data
+    
+#     def validate_company(self, request):
+#         data = request.data
+#         company_id = data.get('company_id')
+#         c = Company.objects.filter(id=company_id).first()
+#         if not c:
+#             raise CustomException(status_code=400, message="Company Not Found.", location="LOCATION")
+
+#     def create(self, validated_data):
+#         """
+#         Create method to create user and generate otp
+#         """
+#         with transaction.atomic():
+#             self.validate_email(validated_data.get('email'))
+            
+#             company_id = validated_data['company_id']
+#             c = Company.objects.filter(id=company_id).first()
+#             if not c:
+#                 raise CustomException(status_code=400, message="Company Not Found.", location="LOCATION")
+            
+#             user = User(email=validated_data['email'], full_name=validated_data['full_name'], profile_pic=validated_data['profile_pic'])
+#             user.set_password(validated_data['password'])
+#             user.save()
+            
+#             UserCompany.objects.create(user=user, company_id=company_id)
+            
+#             otp = generate_otp()
+#             OTP.objects.create(user=user,otp=otp,otp_type=1)
+#             send_verification_email(user.email, otp)
+            
+#             return user
+
 class SignupSerializer(serializers.ModelSerializer):
     """
-        Serializer for Signup
+    Serializer for Signup
     """
     email = serializers.EmailField(min_length=5, max_length=50, required=True)
     confirm_password = serializers.CharField(write_only=True, required=True)
-    company_id = serializers.IntegerField(write_only=True, required=True)
+    company_name = serializers.CharField(required=True)
     full_name = serializers.CharField(required=True)
-    profile_pic = serializers.CharField(max_length = 254, allow_blank=True, allow_null=True)
+    profile_pic = serializers.CharField(max_length=254, allow_blank=True, allow_null=True)
 
     class Meta:
         model = User
-        fields = ("profile_pic", "full_name", "email", "password", "confirm_password", "company_id")
+        fields = ("profile_pic", "full_name", "email", "password", "confirm_password", "company_name")
 
     @staticmethod
     def validate_email(email: str):
         """
-            validate_email method to validate email
+        validate_email method to validate email
         """
         if User.objects.filter(email=email.lower()).exists():
             raise CustomException(status_code=400, message="This Email already exists.", location="LOCATION")
         return email.lower()
+    
 
     def validate(self, data):
         """
-            validate method to validate passwords
+        validate method to validate passwords
         """
         password = data.get('password')
         confirm_password = data.pop('confirm_password', None)
@@ -72,13 +139,6 @@ class SignupSerializer(serializers.ModelSerializer):
             raise CustomException(status_code=400, message="Passwords do not match.", location="LOCATION")
 
         return data
-    
-    def validate_company(self, request):
-        data = request.data
-        company_id = data.get('company_id')
-        c = Company.objects.filter(id=company_id).first()
-        if not c:
-            raise CustomException(status_code=400, message="Company Not Found.", location="LOCATION")
 
     def create(self, validated_data):
         """
@@ -86,22 +146,22 @@ class SignupSerializer(serializers.ModelSerializer):
         """
         with transaction.atomic():
             self.validate_email(validated_data.get('email'))
-            
-            company_id = validated_data['company_id']
-            c = Company.objects.filter(id=company_id).first()
-            if not c:
-                raise CustomException(status_code=400, message="Company Not Found.", location="LOCATION")
-            
-            user = User(email=validated_data['email'], full_name=validated_data['full_name'], profile_pic=validated_data['profile_pic'])
+
+            company_name = validated_data['company_name'].lower()
+            user = User(email=validated_data['email'], full_name=validated_data['full_name'],
+                        profile_pic=validated_data['profile_pic'])
             user.set_password(validated_data['password'])
             user.save()
-            
-            UserCompany.objects.create(user=user, company_id=company_id)
-            
+            if Company.objects.filter(name=company_name).exists():
+                c = Company.objects.filter(name=company_name).first()
+                UserCompany.objects.create(company=c, user_id=user.id)
+            else:
+                user.company_name=company_name
+                user.save()
             otp = generate_otp()
-            OTP.objects.create(user=user,otp=otp,otp_type=1)
+            OTP.objects.create(user=user, otp=otp, otp_type=1)
             send_verification_email(user.email, otp)
-            
+
             return user
         
 
