@@ -1554,7 +1554,17 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
             function to get the list of unapproved users
         """
         page_size = request.GET.get('page_size', '')
-        user = User.objects.filter(is_admin_approved=False, is_email_verified=True, user_role=2).all().values('id', 'full_name', 'profile_pic', 'email', 'user_company', 'user_company__company__name', 'company_name').exclude(email=None).order_by('-created_at')
+        # user = User.objects.filter(is_admin_approved=False, is_email_verified=True, user_role=2).all().values('id', 'full_name', 'profile_pic', 'email', 'user_company', 'user_company__company__name', 'company_name').exclude(email=None).distinct('id')
+        # user = user.order_by('-created_at')
+        user = (
+            User.objects
+            .filter(is_admin_approved=False, is_email_verified=True, user_role=2)
+            .exclude(email=None)
+            .order_by('-id', '-created_at')
+            .distinct('id')
+            .values('id', 'full_name', 'profile_pic', 'email', 'user_company', 'user_company__company__name', 'company_name')
+        )
+
         page = None
         if page_size:
             pagination_class = self.pagination_class()
@@ -1923,10 +1933,18 @@ class EditUserCompanyViewSet(viewsets.ViewSet):
             
             c = User.objects.filter(id=user_id).first()
             if c.company_name!=None:
-                d = Company.objects.create(name=c.company_name)
-                UserCompany.objects.create(user_id=user_id, company_id=d.id)
-                c.company_name=None
-                c.save()
+                e = Company.objects.filter(name=c.company_name).exists()
+                if e:
+                    f = Company.objects.filter(name=c.company_name).first()
+                    UserCompany.objects.filter(user_id=user_id).update(company_id=f.id)
+                else:
+                    d = Company.objects.create(name=c.company_name)
+                    if UserCompany.objects.filter(user_id=user_id).exists():
+                        UserCompany.objects.filter(user_id=user_id).update(company_id=d.id)
+                    else:
+                        UserCompany.objects.create(user_id=user_id, company_id=d.id)
+                        c.company_name=None
+                        c.save()
             if new_company:
                 if not Company.objects.filter(name=new_company).exists():
                     created_company = Company.objects.create(name = new_company)
