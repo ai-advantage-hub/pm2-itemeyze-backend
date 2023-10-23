@@ -705,71 +705,72 @@ class UserListingViewSet(viewsets.ViewSet):
 
         return CustomResponse(serializer.data, status=status_code.HTTP_200_OK)
 
-            
+    
 # class UserEditProfileViewSet(viewsets.ViewSet):
 #     """
 #         UserEditProfileViewSet to Edit the Personal Details of User
 #     """
-#     permission_classes = (IsAuthenticated,)
+#     permission_classes = (IsAuthenticated, CheckUserRoleStatusPermission)
 
 #     def update(self, request):
 #         data = request.data
-#         email = data.get('email')
-#         serializer = UserEditProfileSerializer(
-#             instance=request.user, data=request.data, partial=True
-#         )
+#         full_name = data.get("full_name")
+#         email = data.get("email")
+#         profile_pic = data.get("profile_pic")
+#         company_id = data.get("company_id")
 
-#         serializer.is_valid(raise_exception=True)
+#         # Validate full name
+#         if not full_name:
+#             return CustomResponse({"message": "Please provide full name."}, status=status_code.HTTP_400_BAD_REQUEST)
 
-#         serializer.save()
-#         if email:
-#             if email and User.objects.filter(email=email).exclude(id=request.user.id).exists():
-#                 return CustomResponse({"message": "Email already exists."})
+#         # Check if email already exists, but ignore the current user's email
+#         if email and User.objects.filter(email=email).exclude(id=request.user.id).exists():
+#             return CustomResponse({"message": "Email already exists."}, status=status_code.HTTP_400_BAD_REQUEST)    
+
+#         update_data = {"full_name": full_name}
+#         d = User.objects.filter(id=request.user.id).first()
+
+#         # Update email and its verification status if provided
+#         if email and email != d.email:
+#             update_data["email"] = email
+#             update_data["is_email_verified"] = False
+#             otp = generate_otp()
+#             OTP.objects.update_or_create(user_id=request.user.id, otp=otp, otp_type=1)
+#             try:
+#                 send_verification_email(email, otp)
+#             except Exception as e:
+#                 pass
+
+#         # Update profile picture if provided
+#         if profile_pic:
+#             update_data["profile_pic"] = profile_pic
+#         if company_id:
+#             if UserCompany.objects.filter(user=request.user).exists():
+#                 UserCompany.objects.filter(user=request.user).update(company_id=company_id)
 #             else:
-#                 return CustomResponse({"message": "OTP sent successfully"}, status=status_code.HTTP_200_OK)
-#         else:
-#             return CustomResponse({"message": "Profile information updated successfully"}, status=status_code.HTTP_200_OK)
-    
+#                 UserCompany.objects.create(user=request.user, company_id=company_id)
+         
+#         # Perform the update in a single query
+#         User.objects.filter(id=request.user.id).update(**update_data)
+#         if email and email != d.email:
+#             return CustomResponse({"message": "Email changed, otp sent successfully."}, status=status_code.HTTP_200_OK)
+        
+#         return CustomResponse({"message": "Profile updated successfully"}, status=status_code.HTTP_200_OK)
+
 class UserEditProfileViewSet(viewsets.ViewSet):
     """
         UserEditProfileViewSet to Edit the Personal Details of User
     """
     permission_classes = (IsAuthenticated, CheckUserRoleStatusPermission)
 
-    # def update(self, request):
-    #     serializer = UserEditProfileSerializer(
-    #         instance=request.user, data=request.data, partial=True
-    #     )
-
-    #     if serializer.is_valid():
-    #         instance = serializer.save()
-    #         message = "Profile information updated successfully"
-
-    #         # Check if the email field was modified
-    #         if serializer.email_changed:
-    #             otp = generate_otp()
-    #             OTP.objects.update_or_create(user_id=instance.id, otp=otp, otp_type=1)
-    #             instance.otp = otp
-    #             instance.is_email_verified = False
-    #             instance.save()
-
-    #             try:
-    #                 send_verification_email(instance.email, otp)
-    #                 message = "OTP sent successfully."
-    #             except Exception as e:
-    #                 message = f"Profile information updated successfully. Failed to send OTP: {str(e)}"
-
-    #         return Response({"message": message}, status=status_code.HTTP_200_OK)
-        
-    #     return Response(serializer.errors, status=status_code.HTTP_400_BAD_REQUEST)
-
     def update(self, request):
         data = request.data
         full_name = data.get("full_name")
         email = data.get("email")
         profile_pic = data.get("profile_pic")
-        company_id = data.get("company_id")
+        company_name = data.get("company_name")
 
+        user = User.objects.filter(id=request.user.id).first()
         # Validate full name
         if not full_name:
             return CustomResponse({"message": "Please provide full name."}, status=status_code.HTTP_400_BAD_REQUEST)
@@ -795,11 +796,18 @@ class UserEditProfileViewSet(viewsets.ViewSet):
         # Update profile picture if provided
         if profile_pic:
             update_data["profile_pic"] = profile_pic
-        if company_id:
-            if UserCompany.objects.filter(user=request.user).exists():
-                UserCompany.objects.filter(user=request.user).update(company_id=company_id)
+        if company_name:
+            # if UserCompany.objects.filter(user=request.user).exists():
+            #     UserCompany.objects.filter(user=request.user).update(company_id=company_id)
+            # else:
+            #     UserCompany.objects.create(user=request.user, company_id=company_id)
+            if Company.objects.filter(name=company_name).exists():
+                c = Company.objects.filter(name=company_name).first()
+                UserCompany.objects.create(company=c, user_id=user.id)
             else:
-                UserCompany.objects.create(user=request.user, company_id=company_id)
+                user.company_name=company_name
+                user.save()
+            return CustomResponse({"message": "Company Updated, Request Sent to Admin for Approval"}, status=status_code.HTTP_200_OK)
          
         # Perform the update in a single query
         User.objects.filter(id=request.user.id).update(**update_data)
@@ -808,21 +816,6 @@ class UserEditProfileViewSet(viewsets.ViewSet):
         
         return CustomResponse({"message": "Profile updated successfully"}, status=status_code.HTTP_200_OK)
     
-# class UserEditProfileViewSet(viewsets.ViewSet):
-#     """
-#         UserEditProfileViewSet to Edit the Personal Details of User
-#     """
-#     permission_classes = (IsAuthenticated,)
-
-#     def update(self, request):
-#         serializer = UserEditProfileSerializer(
-#             instance=request.user, data=request.data, partial=True
-#         )
-
-#         serializer.is_valid(raise_exception=True)
-
-#         serializer.save()
-#         return CustomResponse({"message": "Profile information updated successfully"}, status=status_code.HTTP_200_OK)
 
 class UserChangePasswordViewSet(viewsets.ViewSet):
     """
@@ -885,7 +878,7 @@ class GlobalSearchViewSet(viewsets.ViewSet):
         file_obj = Files.objects.filter(Q(location__icontains=search) |
                                         Q(manufacturer_name__full_name__icontains=search) |
                                         Q(manufacturing_number__icontains=search)).filter(Q(project__created_by_id=request.user.id) | Q(manufacturer_name=request.user) | Q(project__users__id=request.user.id)).filter(
-                                           is_admin_approved=True).order_by("-created_at")
+                                           is_admin_approved=True, is_marked_deleted=False).order_by("-created_at")
         # file_serializer = FilesSerializer(file_obj, many=True)
         # serializer = self.get_serializer(queryset, many=True, context = {"search": search})
         # data = dict()
