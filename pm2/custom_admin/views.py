@@ -1188,7 +1188,7 @@ class ManageSubadminViewSet(viewsets.ViewSet):
         sub_admin.save()
         if full_name or email or phone_number or modules_accessible:
             print("oldemail===",old_email)
-            send_updated_subadmin_credentials(old_email)
+            send_updated_subadmin_credentials(old_email, email)
             print("old2", old_email)
         return CustomResponse({"message": "Subadmin details updated successfully"}, status=status.HTTP_200_OK)
     

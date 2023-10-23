@@ -122,12 +122,13 @@ def send_subadmin_credentials(email, temporary_password):
         print("error", e)    
 
 
-def send_updated_subadmin_credentials(email):
+def send_updated_subadmin_credentials(old_email, email):
     try:
-        ctx_dict = {"email": email}
+        ctx_dict = {"old_email": old_email, "new_email": email}
         html_template = "update_subadmin.html"
         subject = "You are Subadmin now"
-        send_html_mail_to_single_user(subject, email, html_template, ctx_dict)
+        send_html_mail_to_single_user(subject, old_email, html_template, ctx_dict)
+        print("email sentttttt")
 
     except Exception as e:
         print("error", e) 
