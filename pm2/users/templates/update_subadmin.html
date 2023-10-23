@@ -27,13 +27,15 @@
                 background: white;
                 border:5px solid #FFBD71;
                 border-radius: 20px;">
-            {% blocktranslate %}Hi {% endblocktranslate %}<strong>{{email}}</strong>,
+            {% blocktranslate %}Hi {% endblocktranslate %}<strong>{{old_email}}</strong>,
             <br><br>
             {% blocktranslate %}Welcome to PM2!{% endblocktranslate %}
             <br><br>
-            {% blocktranslate %}Your Subadmin Account Credentials are changed:{% endblocktranslate %}
+            {% blocktranslate %}Your Subadmin Account Credentials are changed{% endblocktranslate %}
             <br><br>
-            <strong>{{email}}<br>{{temporary_password}}</strong>
+            {% blocktranslate %}Your New Email is:{% endblocktranslate %}
+            <br><br>
+            <strong>{{new_email}}</strong>
             <br><br>
             <strong>{% blocktranslate %} Thank You {% endblocktranslate %}</strong><br>
             <strong>Team PM2</strong>
