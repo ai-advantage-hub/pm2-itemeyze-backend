@@ -1135,8 +1135,10 @@ class ManageSubadminViewSet(viewsets.ViewSet):
             return CustomResponse({"message": "Full Name is required"}, status=status.HTTP_400_BAD_REQUEST)
         if not email:
             return CustomResponse({"message": "Email is required"}, status=status.HTTP_400_BAD_REQUEST)
-        if not phone_number:
-            return CustomResponse({"message": "Phone Number is required"}, status=status.HTTP_400_BAD_REQUEST)
+        # if not phone_number:
+        #     return CustomResponse({"message": "Phone Number is required"}, status=status.HTTP_400_BAD_REQUEST)
+        if not phone_number or len(str(phone_number)) < 8:
+            return CustomResponse({"message": "Minimum 8 digits of Phone Number required"}, status=status.HTTP_400_BAD_REQUEST)
         if not temporary_password:
             return CustomResponse({"message": "Temporary Password is required"}, status=status.HTTP_400_BAD_REQUEST)
         if not modules_accessible or len(modules_accessible)==0:
@@ -1173,6 +1175,10 @@ class ManageSubadminViewSet(viewsets.ViewSet):
         sub_admin = User.all_objects.filter(id=id, user_role=3).first()
         if not sub_admin:
             return CustomResponse({"message": "Subadmin not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+        if phone_number and len(phone_number) < 8:
+            return CustomResponse({"message": "Minimum 8 digits of Phone Number required"}, status=status.HTTP_400_BAD_REQUEST)
+            
         # send_updated_subadmin_credentials(sub_admin.email)
         old_cred = User.all_objects.filter(id=id, user_role=3).first()
         old_email = old_cred.email
