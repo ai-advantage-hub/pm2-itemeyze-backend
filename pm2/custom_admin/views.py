@@ -1149,7 +1149,7 @@ class ManageSubadminViewSet(viewsets.ViewSet):
         if User.objects.filter(phone_number=phone_number).exists():
             return CustomResponse({"message": "Phone Number Already Exists"}, status=status.HTTP_400_BAD_REQUEST)
         with transaction.atomic():
-            sub_admin = User.objects.create(full_name=full_name, email=email, phone_number=phone_number, user_role=3, is_admin_approved=True, is_email_verified=True)
+            sub_admin = User.objects.create(full_name=full_name, email=email.lower(), phone_number=phone_number, user_role=3, is_admin_approved=True, is_email_verified=True)
             sub_admin.set_password(temporary_password)
             sub_admin.save()
             c = sub_admin.id
@@ -1172,6 +1172,15 @@ class ManageSubadminViewSet(viewsets.ViewSet):
         phone_number = data.get('phone_number')
         modules_accessible = data.get("modules_accessible", [])
 
+        if email:
+            User.objects.filter(email=email).exists()
+            return CustomResponse({"message": "Email Already Exists"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if phone_number:
+            User.objects.filter(phone_number=phone_number).exists()
+            return CustomResponse({"message": "Phone Number Already Exists"}, status=status.HTTP_400_BAD_REQUEST)
+
+
         sub_admin = User.all_objects.filter(id=id, user_role=3).first()
         if not sub_admin:
             return CustomResponse({"message": "Subadmin not found"}, status=status.HTTP_404_NOT_FOUND)
@@ -1185,7 +1194,7 @@ class ManageSubadminViewSet(viewsets.ViewSet):
         if full_name:
             sub_admin.full_name = full_name
         if email:
-            sub_admin.email = email
+            sub_admin.email = email.lower()
         if phone_number:
             sub_admin.phone_number = phone_number
         if modules_accessible:
