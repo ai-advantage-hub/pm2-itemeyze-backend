@@ -16,7 +16,7 @@ class AdminLoginSerializer(serializers.Serializer):
     def validate(self, data):
         email = data['email']
         password = data['password']
-        user = authenticate(email=email, password=password)
+        user = authenticate(email=email.lower(), password=password)
         log_user = User.all_objects.filter(email=email.lower(), is_active=False, user_role=3).exists()
 
         if User.all_delete_objects.filter(email=email.lower(), user_role=3, is_deleted=True).exists():
