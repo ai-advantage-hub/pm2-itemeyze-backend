@@ -360,7 +360,7 @@ class ManageCompanyView(viewsets.ViewSet):
         page_size = request.GET.get('page_size', '')
 
         # Query the companies
-        companies = Company.objects.annotate(num_users=Count('company')).values('id', 'name', 'num_users', 'is_active')
+        companies = Company.objects.annotate(num_users=Count('company')).values('id', 'name', 'num_users', 'is_active').order_by('-created_at')
 
         if company_name:
             companies = companies.filter(name__icontains=company_name)
