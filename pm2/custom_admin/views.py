@@ -1172,9 +1172,14 @@ class ManageSubadminViewSet(viewsets.ViewSet):
         phone_number = data.get('phone_number')
         modules_accessible = data.get("modules_accessible", [])
 
-        # if email:
-        #     User.objects.filter(email=email).exists()
-        #     return CustomResponse({"message": "Email Already Exists"}, status=status.HTTP_400_BAD_REQUEST)
+        c = User.objects.filter(id=id).first()
+
+        if email:
+            if User.objects.filter(email=email).exclude(id=c.id).exists():
+                return CustomResponse({"message": "Email Already Exists"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # if email and User.objects.filter(email=email).exclude(id=id).exists():
+        #     return CustomResponse({"message": "Email already exists."}, status=status.HTTP_400_BAD_REQUEST) 
         
         # if phone_number:
         #     User.objects.filter(phone_number=phone_number).exists()
