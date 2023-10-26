@@ -769,11 +769,14 @@ class UserEditProfileViewSet(viewsets.ViewSet):
         email = data.get("email")
         profile_pic = data.get("profile_pic")
         company_name = data.get("company_name")
+        update_data = {}
 
         user = User.objects.filter(id=request.user.id).first()
         # Validate full name
-        if not full_name:
-            return CustomResponse({"message": "Please provide full name."}, status=status_code.HTTP_400_BAD_REQUEST)
+        # if not full_name:
+        #     return CustomResponse({"message": "Please provide full name."}, status=status_code.HTTP_400_BAD_REQUEST)
+        if full_name:
+            update_data["full_name"] = full_name
 
         # Check if email already exists, but ignore the current user's email
         if email and User.objects.filter(email=email).exclude(id=request.user.id).exists():
@@ -803,7 +806,7 @@ class UserEditProfileViewSet(viewsets.ViewSet):
             #     user.is_admin_approved=False
             #     user.save()
             # else:
-                User.objects.filter(id=request.user.id).update(company_name=company_name, is_admin_approved=False)
+                User.objects.filter(id=request.user.id).update(company_name=company_name, is_edited=True)
                 # user.is_admin_approved=False
                 # user.save()
 

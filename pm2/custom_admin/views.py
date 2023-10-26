@@ -1172,13 +1172,13 @@ class ManageSubadminViewSet(viewsets.ViewSet):
         phone_number = data.get('phone_number')
         modules_accessible = data.get("modules_accessible", [])
 
-        if email:
-            User.objects.filter(email=email).exists()
-            return CustomResponse({"message": "Email Already Exists"}, status=status.HTTP_400_BAD_REQUEST)
+        # if email:
+        #     User.objects.filter(email=email).exists()
+        #     return CustomResponse({"message": "Email Already Exists"}, status=status.HTTP_400_BAD_REQUEST)
         
-        if phone_number:
-            User.objects.filter(phone_number=phone_number).exists()
-            return CustomResponse({"message": "Phone Number Already Exists"}, status=status.HTTP_400_BAD_REQUEST)
+        # if phone_number:
+        #     User.objects.filter(phone_number=phone_number).exists()
+        #     return CustomResponse({"message": "Phone Number Already Exists"}, status=status.HTTP_400_BAD_REQUEST)
 
 
         sub_admin = User.all_objects.filter(id=id, user_role=3).first()
@@ -1569,16 +1569,42 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
             function to get the list of unapproved users
         """
         page_size = request.GET.get('page_size', '')
+        edit_request = request.GET.get('edit_request', None)
         # user = User.objects.filter(is_admin_approved=False, is_email_verified=True, user_role=2).all().values('id', 'full_name', 'profile_pic', 'email', 'user_company', 'user_company__company__name', 'company_name').exclude(email=None).distinct('id')
         # user = user.order_by('-created_at')
-        user = (
-            User.objects
-            .filter(is_admin_approved=False, is_email_verified=True, user_role=2)
-            .exclude(email=None)
-            .order_by('-id', '-created_at')
-            .distinct('id')
-            .values('id', 'full_name', 'profile_pic', 'email', 'user_company', 'user_company__company__name', 'company_name')
-        )
+        print("edit request", edit_request)
+        if edit_request==None:
+            print("edit 2")
+            user = (
+                    User.objects
+                    .filter(is_admin_approved=False, is_email_verified=True, user_role=2)
+                    .exclude(email=None)
+                    .order_by('-id', '-created_at')
+                    .distinct('id')
+                    .values('id', 'full_name', 'profile_pic', 'email', 'user_company', 'user_company__company__name', 'company_name')
+                )
+            print("edit3")
+        if edit_request=='1':
+            print("edit4")
+            user = (
+                User.objects
+                .filter(is_admin_approved=False, is_email_verified=True, user_role=2)
+                .exclude(email=None)
+                .order_by('-id', '-created_at')
+                .distinct('id')
+                .values('id', 'full_name', 'profile_pic', 'email', 'user_company', 'user_company__company__name', 'company_name')
+            )
+
+        if edit_request=='2':
+            print("edit5")
+            user = (
+                User.objects
+                .filter(is_edited=True, is_email_verified=True, user_role=2)
+                .exclude(email=None)
+                .order_by('-id', '-created_at')
+                .distinct('id')
+                .values('id', 'full_name', 'profile_pic', 'email', 'user_company', 'user_company__company__name', 'company_name')
+            )
 
         page = None
         if page_size:
@@ -2019,6 +2045,8 @@ class DeactivateCompanyViewSet(viewsets.ViewSet):
             # Deactivate the company
             Company.objects.filter(id=id).update(is_active=False)
             # Force logout all associated users
+            if UserCompany.objects.filter(company_id=id).count()==0:
+                return CustomResponse({"message": "Status deactivated successfully."}, status=status.HTTP_200_OK)
             for user in list:
                 print("user",user)
                 Token.objects.filter(user=user).delete()
