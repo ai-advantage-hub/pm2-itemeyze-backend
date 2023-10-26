@@ -806,7 +806,7 @@ class UserEditProfileViewSet(viewsets.ViewSet):
             #     user.is_admin_approved=False
             #     user.save()
             # else:
-                User.objects.filter(id=request.user.id).update(company_name=company_name, is_edited=True)
+                User.objects.filter(id=request.user.id).update(company_name=company_name, is_admin_approved=False)
                 # user.is_admin_approved=False
                 # user.save()
 
