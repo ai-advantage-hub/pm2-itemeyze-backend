@@ -1574,24 +1574,12 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
             function to get the list of unapproved users
         """
         page_size = request.GET.get('page_size', '')
-        edit_request = request.GET.get('edit_request', None)
+        # edit_request = request.GET.get('edit_request', None)
         # user = User.objects.filter(is_admin_approved=False, is_email_verified=True, user_role=2).all().values('id', 'full_name', 'profile_pic', 'email', 'user_company', 'user_company__company__name', 'company_name').exclude(email=None).distinct('id')
         # user = user.order_by('-created_at')
-        print("edit request", edit_request)
-        if edit_request==None:
-            print("edit 2")
-            user = (
-                    User.objects
-                    .filter(is_admin_approved=False, is_email_verified=True, user_role=2)
-                    .exclude(email=None)
-                    .order_by('-id', '-created_at')
-                    .distinct('id')
-                    .values('id', 'full_name', 'profile_pic', 'email', 'user_company', 'user_company__company__name', 'company_name')
-                )
-            print("edit3")
-        if edit_request=='1':
-            print("edit4")
-            user = (
+        # print("edit request", edit_request)
+        # print("edit 2")
+        user = (
                 User.objects
                 .filter(is_admin_approved=False, is_email_verified=True, user_role=2)
                 .exclude(email=None)
@@ -1599,17 +1587,28 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
                 .distinct('id')
                 .values('id', 'full_name', 'profile_pic', 'email', 'user_company', 'user_company__company__name', 'company_name')
             )
+        # print("edit3")
+        # if edit_request=='1':
+        #     print("edit4")
+        #     user = (
+        #         User.objects
+        #         .filter(is_admin_approved=False, is_email_verified=True, user_role=2)
+        #         .exclude(email=None)
+        #         .order_by('-id', '-created_at')
+        #         .distinct('id')
+        #         .values('id', 'full_name', 'profile_pic', 'email', 'user_company', 'user_company__company__name', 'company_name')
+        #     )
 
-        if edit_request=='2':
-            print("edit5")
-            user = (
-                User.objects
-                .filter(is_edited=True, is_email_verified=True, user_role=2)
-                .exclude(email=None)
-                .order_by('-id', '-created_at')
-                .distinct('id')
-                .values('id', 'full_name', 'profile_pic', 'email', 'user_company', 'user_company__company__name', 'company_name')
-            )
+        # if edit_request=='2':
+        #     print("edit5")
+        #     user = (
+        #         User.objects
+        #         .filter(is_edited=True, is_email_verified=True, user_role=2)
+        #         .exclude(email=None)
+        #         .order_by('-id', '-created_at')
+        #         .distinct('id')
+        #         .values('id', 'full_name', 'profile_pic', 'email', 'user_company', 'user_company__company__name', 'company_name')
+        #     )
 
         page = None
         if page_size:
@@ -2015,6 +2014,50 @@ class EditUserCompanyViewSet(viewsets.ViewSet):
             return CustomResponse({"message": "User Approved by Admin"}, status=status_code.HTTP_200_OK)
         else:
             return CustomResponse({"message": "Please give the right value in status value"}, status=status.HTTP_400_BAD_REQUEST)
+        
+
+    # def edit_approve_user(self, request):
+    #     """
+    #     Function to approve the users
+    #     """
+    #     data = request.data
+    #     user_id = data.get("user_id")
+    #     status_value = data.get("status_value")
+    #     new_company = data.get("new_company")
+
+    #     user = User.objects.filter(id=user_id).first()
+    #     if not user:
+    #         return CustomResponse({"message": "User not found."}, status=status.HTTP_400_BAD_REQUEST)
+
+    #     if status_value == 2:
+    #         user.is_edited=False
+    #         user.save()
+    #         return CustomResponse({"message": "User Edit Request Denied"}, status=status_code.HTTP_200_OK)
+    #     elif status_value == 1:
+    #         user.is_edited = False
+    #         user.save()
+            
+    #         c = User.objects.filter(id=user_id).first()
+    #         if c.company_name!=None:
+    #             e = Company.objects.filter(name=c.company_name).exists()
+    #             if e:
+    #                 f = Company.objects.filter(name=c.company_name).first()
+    #                 UserCompany.objects.filter(user_id=user_id).update(company_id=f.id)
+    #             else:
+    #                 d = Company.objects.create(name=c.company_name)
+    #                 if UserCompany.objects.filter(user_id=user_id).exists():
+    #                     UserCompany.objects.filter(user_id=user_id).update(company_id=d.id)
+    #                 else:
+    #                     UserCompany.objects.create(user_id=user_id, company_id=d.id)
+    #                     c.company_name=None
+    #                     c.save()
+    #         if new_company:
+    #             if not Company.objects.filter(name=new_company).exists():
+    #                 created_company = Company.objects.create(name = new_company)
+    #                 UserCompany.objects.filter(user_id=user_id).update(company_id=created_company.id)
+    #             else:
+    #                 c = Company.objects.filter(name=new_company).first()
+    #                 UserCompany.objects.filter(user_id=user_id).update(company_id=c.id)
 
                 
 class DeactivateCompanyViewSet(viewsets.ViewSet):
@@ -2078,3 +2121,136 @@ class UserListingViewSet(viewsets.ViewSet):
             users = User.objects.filter(is_admin_approved=True).all()
         serializer = UserListingSerializer(users, many=True)
         return CustomResponse(serializer.data, status=status_code.HTTP_200_OK)
+    
+
+
+#CR 2 Points
+
+# class FilesListingViewSet(viewsets.ViewSet):
+#     """
+#         FilesListingViewSet to give the listing of files
+#     """
+#     pagination_class = CustomPagination
+
+#     def approved_files_list(self, request):
+#         page_size = self.request.GET.get('page_size', '')
+#         files = Files.objects.filter(is_admin_approved=True, is_marked_deleted=False).order_by('-created_at')
+#         page = None
+
+#         if page_size:
+#             pagination_class = self.pagination_class()
+#             page = pagination_class.paginate_queryset(files, request)
+
+#         if page is not None:
+#             return CustomResponse(pagination_class.get_paginated_response(page).data)
+
+#         return CustomResponse(files)
+    
+#     def disapproved_files_list(self, request):
+#         page_size = self.request.GET.get('page_size', '')
+#         files = Files.objects.filter(is_admin_approved=False, is_marked_deleted=False).order_by('-created_at')
+#         page = None
+
+#         if page_size:
+#             pagination_class = self.pagination_class()
+#             page = pagination_class.paginate_queryset(files, request)
+
+#         if page is not None:
+#             return CustomResponse(pagination_class.get_paginated_response(page).data)
+
+#         return CustomResponse(files)
+    
+#     def marked_for_delete_files_list(self, request):
+#         page_size = self.request.GET.get('page_size', '')
+#         files = Files.objects.filter(is_admin_approved=False, is_marked_deleted=True).order_by('-created_at')
+#         page = None
+
+#         if page_size:
+#             pagination_class = self.pagination_class()
+#             page = pagination_class.paginate_queryset(files, request)
+
+#         if page is not None:
+#             return CustomResponse(pagination_class.get_paginated_response(page).data)
+
+#         return CustomResponse(files)
+    
+#     def deleted_files_list(self, request):
+#         page_size = self.request.GET.get('page_size', '')
+#         files = Files.objects.filter(is_admin_approved=False, is_marked_deleted=False, is_deleted=True).order_by('-created_at')
+#         page = None
+
+#         if page_size:
+#             pagination_class = self.pagination_class()
+#             page = pagination_class.paginate_queryset(files, request)
+
+#         if page is not None:
+#             return CustomResponse(pagination_class.get_paginated_response(page).data)
+
+#         return CustomResponse(files)
+    
+
+# class ViewFilesViewSet(viewsets.ViewSet):
+#     """
+#         ViewFilesViewSet to view the files
+#     """
+
+#     def approved_files(self, request, id):
+#         files = Files.objects.filter(id=id, is_admin_approved=True).all().values('file_name', 'thumbnail', 'manufacturer_name', 'manufacturer_number', 'location', 'quantity', 'project_details', 'additional_details')
+#         if not files:
+#             return CustomResponse({"Message": "File Not Found"}, status=status_code.HTTP_400_BAD_REQUEST)
+#         return CustomResponse(files)
+    
+#     def disapproved_files(self, request, id):
+#         files = Files.objects.filter(id=id, is_admin_approved=False).all().values('file_name', 'thumbnail', 'manufacturer_name', 'manufacturer_number', 'location', 'quantity', 'project_details', 'additional_details')
+#         if not files:
+#             return CustomResponse({"Message": "File Not Found"}, status=status_code.HTTP_400_BAD_REQUEST)
+#         return CustomResponse(files)
+    
+
+# class ApproveDenyFilesViewSet(viewsets.ViewSet):
+#     """
+#         ApproveDenyFilesViewSet to approve or deny files
+#     """
+
+#     def disapprove_files(self, request, id):
+#         data = request.data
+#         file_id = data.get('file_id')
+#         status_value = data.get('status_value')
+#         file = Files.objects.filter(id=file_id, is_admin_approved=False).first()
+#         if not file:
+#             return CustomResponse({"Message": "File Not Found"}, status=status_code.HTTP_400_BAD_REQUEST)
+        
+#         if status_value==1:
+#             Files.objects.filter(id=file_id).update(is_admin_approved=True)
+#             return CustomResponse({"Message": "File Approved Successfully"}, status=status_code.HTTP_200_OK)
+        
+#         if status_value==2:
+#             Files.objects.filter(id=file_id).update(is_admin_approved=False)
+#             return CustomResponse({"Message": "File Denied Successfully"}, status=status_code.HTTP_200_OK)
+        
+#         else:
+#             return CustomPagination({"Message": "Please Provide valid Status"}, status=status_code.HTTP_400_BAD_REQUEST)
+        
+    
+#     def Marked_for_deleted_files(self, request, id):
+#         data = request.data
+#         file_id = data.get('file_id')
+#         status_value = data.get('status_value')
+#         file = Files.objects.filter(id=file_id, is_marked_deleted=True).first()
+#         if not file:
+#             return CustomResponse({"Message": "File Not Found"}, status=status_code.HTTP_400_BAD_REQUEST)
+        
+#         if status_value==1:
+#             Files.objects.filter(id=file_id).update(is_deleted=True)
+#             return CustomResponse({"Message": "File Deleted Successfully"}, status=status_code.HTTP_200_OK)
+        
+#         if status_value==2:
+#             Files.objects.filter(id=file_id).update(is_marked_deleted=False)
+#             return CustomResponse({"Message": "File Denied Successfully"}, status=status_code.HTTP_200_OK)
+        
+#         else:
+#             return CustomResponse({"Message": "Please Provide Valid Status"}, status=status_code.HTTP_400_BAD_REQUEST)
+        
+
+    
+
