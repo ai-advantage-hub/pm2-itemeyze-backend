@@ -937,13 +937,13 @@ class ManageProjectViewSet(viewsets.ViewSet):
             }
             print("createddddd", file.created_by, file.created_by.id)
             notifyer = User.objects.filter(id=file.created_by.id).first()
+            # if notifyer.is_notification_enabled==True:
+
+            notification = UserNotification.objects.create(user_id=file.created_by.id,title=title,message=message)
+            print("createddddd2", file.created_by, file.created_by.id)
+            notification.save()
+            data.update({"notification_id": str(notification.id)})
             if notifyer.is_notification_enabled==True:
-
-                notification = UserNotification.objects.create(user_id=file.created_by.id,title=title,message=message)
-                print("createddddd2", file.created_by, file.created_by.id)
-                notification.save()
-                data.update({"notification_id": str(notification.id)})
-
                 send_notification_bulk(
                     user_ids=[file.created_by.id], title=title, message=message, data=data)
                 print("createddddd3", file.created_by, file.created_by.id)
