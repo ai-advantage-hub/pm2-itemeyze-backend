@@ -1038,10 +1038,10 @@ class SendNotiticationViewSet(viewsets.ViewSet):
             "title": title,
             "message": message,
         }
-        notification = UserNotification.objects.create(user_id=356,title=title,message=message)
+        notification = UserNotification.objects.create(user_id=request.user.id,title=title,message=message)
         notification.save()
         data.update({"notification_id": str(notification.id)})
-        res = send_notification_bulk([356], title, message, data) #to be sent to 356
+        res = send_notification_bulk([request.user.id], title, message, data) #to be sent to 356
         return CustomResponse({"message": "Notification Sent Successfully"}, status=status_code.HTTP_200_OK)
     
 
@@ -1058,7 +1058,8 @@ class NotificationViewSet(viewsets.ViewSet, viewsets.GenericViewSet):
         """method to get notification list"""
         queryset = UserNotification.objects.filter(user=request.user).\
             order_by('-created_at')
-        unread = queryset.filter(is_read=False).count()
+        unread = queryset.update(is_read=True)
+        unread_new = queryset.filter(is_read=False).count()
         is_all_read = True #if unread == 0 else False
         serializer = self.serializer_detail_class(queryset, many=True)
         data = serializer.data
@@ -1068,10 +1069,17 @@ class NotificationViewSet(viewsets.ViewSet, viewsets.GenericViewSet):
             serializer = self.serializer_detail_class(page, many=True)
             data = pagination_class.get_paginated_response(
                 serializer.data).data
-        updated_data = {"unread_notification": unread,
+        updated_data = {"unread_notification": unread_new,
                         "notification_data": data, "is_all_read": is_all_read}
         return CustomResponse(updated_data)
-
+    
+    def notification_count(self, request):
+        queryset = UserNotification.objects.filter(user=request.user).\
+            order_by('-created_at')
+        unread_new = queryset.filter(is_read=False).count()
+        print("unread", unread_new)
+        return CustomResponse(unread_new)
+    
     def retrieve(self, request, *args, **kwargs):
         """method to get the notification details"""
         notification_id = kwargs.get('notification_id')

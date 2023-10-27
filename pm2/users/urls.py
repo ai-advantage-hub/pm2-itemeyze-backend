@@ -65,6 +65,8 @@ urlpatterns = [
         {"put": "update"}, name="send_notifications")),
     path("list_notifications", views.NotificationViewSet.as_view(
         {"get": "list"}, name="list_notifications")),
+    path("notification_count", views.NotificationViewSet.as_view(
+        {"get": "notification_count"}, name="notification_count")),
     path("clear_notifications", views.ClearAllNotificationViewset.as_view(
         {"put": "update"}, name="clear_notifications")),
    
