@@ -97,4 +97,8 @@ urlpatterns = [
     path("users_listing", views.UserListingViewSet.as_view({"get": "list"}), name="users_listing"),
 
 
+
+    #TotalUsers
+    path("total_users", views.TotalUserCountViewSet.as_view({"get": "list"}), name="total_users"),
+
 ]
