@@ -2047,3 +2047,17 @@ class UserListingViewSet(viewsets.ViewSet):
 
     
 
+class TotalUserCountViewSet(viewsets.ViewSet):
+    def get(self, request):
+        total_users = User.all_objects.filter(user_role=User.USER).count()
+        total_deleted_users = User.all_delete_objects.filter(user_role=User.USER).count()
+        total_active_users = User.objects.filter(user_role=User.USER).count()
+        total_deactivated_users = User.all_objects.filter(is_active=False,user_role=User.USER).count()
+        data = {
+            "total_users":total_users,
+            "total_deleted_users":total_deleted_users,
+            "total_active_users":total_active_users,
+            "total_deactivated_users":total_deactivated_users
+
+        }
+        return CustomResponse(data)
