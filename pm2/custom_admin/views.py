@@ -2055,7 +2055,8 @@ class TotalUserCountViewSet(viewsets.ViewSet):
         total_deactivated_users = User.all_objects.filter(is_active=False,user_role=User.USER).count()
         approved_users = User.all_objects.filter(is_admin_approved=True,user_role=2).count()
         active_unapproved_users = User.all_objects.filter(is_admin_approved=False,user_role=2, is_active=True).count()
-        inactive_unapproved_users = User.all_objects.filter(is_admin_approved=False,user_role=2, is_active=False).count()
+        inactive_unapproved_users = User.all_objects.filter(is_admin_approved=False,user_role=2, is_active=True, is_email_verified=True).count()
+        unverified_unapproved_users = User.all_objects.filter(is_admin_approved=False,user_role=2, is_active=True, is_email_verified=False).count()
         data = {
             "total_users":total_users,
             "total_deleted_users":total_deleted_users,
@@ -2063,7 +2064,8 @@ class TotalUserCountViewSet(viewsets.ViewSet):
             "total_deactivated_users":total_deactivated_users,
             "approved_users":approved_users,
             "active_unapproved_users":active_unapproved_users,
-            "inactive_unapproved_users":inactive_unapproved_users
+            "inactive_unapproved_users":inactive_unapproved_users,
+            "unverified_unapproved_users":unverified_unapproved_users
 
         }
         return CustomResponse(data)
