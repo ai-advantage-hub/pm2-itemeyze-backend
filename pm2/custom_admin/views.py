@@ -1876,6 +1876,8 @@ class DeactivateCompanyViewSet(viewsets.ViewSet):
             # Force logout all associated users
             if UserCompany.objects.filter(company_id=id).count()==0:
                 return CustomResponse({"message": "Status deactivated successfully."}, status=status.HTTP_200_OK)
+            list.remove(None)
+            print("newlist==",list)
             for user in list:
                 print("user",user)
                 Token.objects.filter(user=user).delete()
