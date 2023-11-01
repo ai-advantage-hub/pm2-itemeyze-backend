@@ -1414,6 +1414,9 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
         return CustomResponse(user, status=status_code.HTTP_200_OK)
     
     def unapproved_users_count(self, request):
+        """
+            function to give count og unapproved users
+        """
         user = User.objects.filter(is_admin_approved=False,user_role=2, is_email_verified=True).count()
         return CustomResponse(user)
     
@@ -1458,38 +1461,41 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
         user = User.all_objects.filter(id=id).first()
         if not user:
             return CustomResponse({"message": "User not found"}, status=status.HTTP_400_BAD_REQUEST)
-        # projects = Project.objects.filter((Q(users__id=id) | Q(created_by_id=id)) & Q(is_admin_approved=True)).values("id","project_name", "created_at")
         projects = Project.objects.filter(users__id=id, is_admin_approved=True, is_marked_deleted=False).values("id","project_name", "created_at")
-
         page = None
-
         if page_size:
             pagination_class = self.pagination_class()
             page = pagination_class.paginate_queryset(projects, request)
-
         if page is not None:
             return CustomResponse(pagination_class.get_paginated_response(page).data)
-
         return CustomResponse(projects)
     
     queryset = Project.objects.all()
-    def retrieve_user_project(self, request, pk=None):  
+    def retrieve_user_project(self, request, pk=None): 
+        """
+            function to retrieve users project
+        """ 
         project = get_object_or_404(self.queryset, pk=pk)
         serializer = ProjectDetailSerializer(project)
 
         return CustomResponse(serializer.data)
 
     def delete_user_admin(self, request,id):
+        """
+            function to delete a user
+        """
         user = User.all_objects.filter(id=id).first()
         if not user:
             return CustomResponse({"message": "User not found"}, status=status.HTTP_400_BAD_REQUEST)
-
         user.is_deleted=True
         user.save()
         Token.objects.filter(user=user).delete()
         return CustomResponse({"message": "User deleted sucessfully by Admin"}, status=status_code.HTTP_200_OK)
 
     def view_file_admin(self, request, id):
+        """
+            function to view file of a user
+        """
         file = Files.objects.filter(id=id)
         if not file.exists():
             return CustomResponse({"error": "File not found."}, status=status.HTTP_400_BAD_REQUEST)
@@ -1497,7 +1503,9 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
         return CustomResponse(serialized_file)
     
     def delete_file_user(self, request,id):
-        
+        """
+            Function to delete file of a user
+        """        
         file = Files.objects.filter(id=id).first()
         if not file:
             return CustomResponse({"message": "File dont exist"}, status=status.HTTP_400_BAD_REQUEST)
@@ -1507,6 +1515,9 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
 
     @action(detail=True, methods=['get'])
     def admin_user_csv(self, request, pk=None):
+        """
+            function to export csv
+        """
         # Retrieve the serialized data
         queryset = Project.objects.all()
         project = get_object_or_404(queryset, pk=pk)
@@ -1550,18 +1561,16 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
         queryset = self.get_queryset()
         obj = queryset.get(pk=pk)
         serializer = CreateFileDetailsSerializer(obj, data=request.data)
-        # serializer.is_valid(raise_exception=True)
-        # serializer.save()
-        # return CustomResponse({"message": gettext(SUCCESS_MESSAGES.get('FILE_UPDATED'))}, status=status_code.HTTP_200_OK)
         if serializer.is_valid():
             serializer.save()
-            #return CustomResponse({'message': 'File details edited successfully.'})
             return CustomResponse({"message": "File updated sucessfully"}, status=status_code.HTTP_200_OK)
         else:
             return CustomResponse(serializer.errors, status=status_code.HTTP_200_OK)
     
-
     def remove_user_from_project(self, request):
+        """
+            function to remove user from a project
+        """
         user_id = request.query_params.get('user_id')
         project_id = request.query_params.get('project_id')
         try:
@@ -1573,42 +1582,12 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
         except Project.DoesNotExist:
             return CustomResponse("Project not found!")
         except User.DoesNotExist:
-            return CustomResponse("User not found!")
-
-
-    # def project_graph(self, request, id):
-    #     """
-    #         function to list and search the projects of a particular user.
-    #     """
-    #     page_size = request.GET.get('page_size', '')
-    #     selected_project_id = request.GET.get('project_id', None)
-    #     user = User.objects.filter(id=id).first()
-
-    #     if not user:
-    #         return CustomResponse({"message": "User not found"}, status=status.HTTP_400_BAD_REQUEST)
-
-    #     if selected_project_id:
-
-    #         daily_files_count = Files.objects.filter(project_id=selected_project_id, project__users__id=id).annotate(day=TruncDate('created_at')).values('day').annotate(files_count=Count('id'))
-    #         return CustomResponse(daily_files_count)
-
-    #     else:
-
-    #         monthly_files_count = Files.objects.filter(project__users__id=id).annotate(month=TruncMonth('created_at')).values('month').annotate(files_count=Count('id'))
-
-    #         page = None
-    #         if page_size:
-    #             pagination_class = self.pagination_class()
-    #             page = pagination_class.paginate_queryset(monthly_files_count, request)
-
-    #             if page is not None:
-    #                 return CustomResponse(pagination_class.get_paginated_response(page).data)
-
-    #         return CustomResponse(monthly_files_count)
-        
-    
+            return CustomResponse("User not found!")    
 
     def project_graph(self, request, id):
+        """
+            function to give graph of users project
+        """
         year = request.GET.get('year')
         month = request.GET.get('month')
         selected_project_id = request.GET.get('project_id', None)
@@ -1684,6 +1663,9 @@ class DeletedProjectsViewSet(viewsets.ViewSet):
     pagination_class = CustomPagination
 
     def list(self, request):
+        """
+            function to give list of deleted Projects
+        """
         page_size = request.GET.get('page_size', '')
         projects = Project.objects.filter(is_marked_deleted=True).annotate(
             num_files=Count('project_files', filter=Q(project_files__is_admin_approved=True))
@@ -1698,14 +1680,10 @@ class DeletedProjectsViewSet(viewsets.ViewSet):
 
         return CustomResponse(projects)   
 
-    # def restore(self, request, id):
-    #     project = Project.objects.filter(id=id).first()
-    #     if not project:
-    #         return CustomResponse({"Message": "Project Not Found"}, status=status_code.HTTP_400_BAD_REQUEST)
-    #     Project.objects.filter(id=id).update(is_marked_deleted=False)
-    #     return CustomResponse({"Message": "Project Restored Successfully"}, status=status_code.HTTP_200_OK)
-
     def restore(self, request, id):
+        """
+            function to restore deleted projects
+        """
         project = Project.objects.filter(id=id).first()
         if not project:
             return CustomResponse({"Message": "Project Not Found"}, status=status_code.HTTP_400_BAD_REQUEST)
@@ -1724,6 +1702,9 @@ class DeletedFilesViewSet(viewsets.ViewSet):
     pagination_class = CustomPagination
 
     def list(self, request):
+        """
+            function to give list of deleted files
+        """
         page_size = request.GET.get('page_size', '')
         files = Files.objects.filter(is_marked_deleted=True).values('id', 'file_name', 'deleted_at').order_by("-created_at")
         page = None
@@ -1737,6 +1718,9 @@ class DeletedFilesViewSet(viewsets.ViewSet):
         return CustomResponse(files)   
 
     def restore(self, request, id):
+        """
+            function to restore deleted files
+        """
         files = Files.objects.filter(id=id).first()
         if not files:
             return CustomResponse({"Message": "File Not Found"}, status=status_code.HTTP_400_BAD_REQUEST)
@@ -1749,9 +1733,10 @@ class EditUserCompanyViewSet(viewsets.ViewSet):
         EditUserCompanyViewSet to edit the company of user while approving
     """
     permission_classes = (IsAuthenticated, CheckAdminOrSubAdminRoleStatusPermission,)
+
     def approve_user(self, request):
         """
-        Function to approve the users
+            Function to approve the users
         """
         data = request.data
         user_id = data.get("user_id")
@@ -1859,6 +1844,9 @@ class DeactivateCompanyViewSet(viewsets.ViewSet):
     """    
     permission_classes = (IsAuthenticated, CheckAdminOrSubAdminRoleStatusPermission,)        
     def update(self, request):
+        """
+            function to deactivate the status of a company
+        """
         data = request.data
         id = data.get("id")
         status_value = data.get("status_value")
@@ -1888,6 +1876,8 @@ class DeactivateCompanyViewSet(viewsets.ViewSet):
             # Force logout all associated users
             if UserCompany.objects.filter(company_id=id).count()==0:
                 return CustomResponse({"message": "Status deactivated successfully."}, status=status.HTTP_200_OK)
+            list.remove(None)
+            print("newlist==",list)
             for user in list:
                 print("user",user)
                 Token.objects.filter(user=user).delete()
@@ -1904,10 +1894,6 @@ class UserListingViewSet(viewsets.ViewSet):
 
     def list(self, request):
         name = request.GET.get('name')
-        # users = User.objects.filter(is_admin_approved=True, full_name__icontains=name).all()
-        # serializer = UserListingSerializer(users, many=True)
-
-        # return CustomResponse(serializer.data, status=status_code.HTTP_200_OK)
         if name is not None:
             users = User.objects.filter(is_admin_approved=True, full_name__icontains=name).all()
         else:
