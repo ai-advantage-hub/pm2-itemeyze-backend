@@ -12,10 +12,6 @@ urlpatterns = [
     path("welcome_name", views.AdminNameViewset.as_view({"get": "get"}), name="welcome_name"),
 
     #Admin profile
-
-    # path("Adminprofile", views.AdminProfileViewSet.as_view({"get": "list"}), name="Adminprofile"),
-    # path("AdminprofileUpdate", views.AdminProfileViewSet.as_view({"put": "update"}), name="AdminprofileUpdate"),
-    # path("validate_email", views.AdminProfileViewSet.as_view({"post": "validate"}), name="validate_email"),
     path("reset_password", views.AdminProfileViewSet.as_view({"put": "create"}), name="reset_password"),
 
     path("adminprofile", views.AdminProfileViewSet.as_view({"get": "list", "post": "validate", "put": "update"}), name="adminprofile"),
@@ -26,8 +22,6 @@ urlpatterns = [
     path("delete_content", views.ContentManagementViewSet.as_view({"delete": "delete"}), name="delete_content"),
 
     path("CompanyNameView", views.CompanyNameView.as_view({"get": "create"}), name="CompanyNameView"),
-    # path("Adminprofile", views.AdminProfileViewSet.as_view({"get": "list"}), name="Adminprofile"),
-    # path("AdminprofileUpdate", views.AdminProfileViewSet.as_view({"get": "update"}), name="AdminprofileUpdate")
 
     #ManageCompany
     path("company", views.ManageCompanyView.as_view({"post": "create", "get": "search", "put": "update", "delete": "delete"}), name="AddCompany"),

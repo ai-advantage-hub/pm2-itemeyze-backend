@@ -9,14 +9,15 @@ from sendgrid.helpers.mail import Content, Email, Mail, To
 from users.templates import *
 from fcm_django.models import FCMDevice
 from core.messages import VARIABLES
-from users.models import User, UserNotification
-# from users.serializers import NotificationListSerializer
-from django.db import transaction
+from users.models import User
 from fcm_django.models import FCMDevice
-from django.core.exceptions import ObjectDoesNotExist
 from firebase_admin.messaging import Message, Notification
-#from pyfcm import FCMNotification
 from config.local import *
+import logging
+log = logging.getLogger(__name__)
+from fcm_django.models import FCMDevice
+
+from firebase_admin.messaging import Message, Notification
 
 
 def generate_otp():
@@ -58,7 +59,9 @@ def send_html_mail_to_single_user(subject, email, html_template, ctx_dict):
 
 
 def send_verification_email(email, otp):
-    """to send verification email"""
+    """
+        method used to send verification email
+    """
     try:
         ctx_dict = {"email": email, "verification_code": otp}
         html_template = "forgot_password.html"
@@ -69,7 +72,9 @@ def send_verification_email(email, otp):
 
 
 def send_reset_password_email(email):
-    """to send verification email"""
+    """
+        method used to send reset password email
+    """
     try:
         ctx_dict = {"email": email}
         html_template = "password_reset.html"
@@ -79,19 +84,10 @@ def send_reset_password_email(email):
         print("error", e)
 
 
-# def send_logout_email(email):
-#     """to send verification email"""
-#     try:
-#         ctx_dict = {"email": email}
-#         html_template = "log_out_user.html"
-#         subject = "Company Deactivated"
-#         send_html_mail_to_single_user(subject, email, html_template, ctx_dict)
-#     except Exception as e:
-#         print("error", e)
-
-
 def send_verification_link(email, otp):
-    """to send verification email"""
+    """
+        method used to send verification email
+    """
     user = User.objects.filter(email=email).first()
     c = user.full_name
     try:
@@ -105,24 +101,23 @@ def send_verification_link(email, otp):
 
 
 def send_subadmin_credentials(email, temporary_password):
-    # user = User.objects.filter(email=email).first()
-    # c = user.full_name
+    """
+        method used to send email to newly created subadmins
+    """
     try:
-        # subject = 'Your Subadmin Credentials'
-        # message = f'Your subadmin credentials are:\n\nEmail: {email}\nPassword: {temporary_password}'
-        # from_email = Email(FROM_EMAIL)  # Replace with your email address or use settings variable
-        # recipient_list = To(email)
         ctx_dict = {"email": email, "temporary_password": temporary_password}
         html_template = "send_subadmin.html"
         subject = "You are Subadmin now"
         send_html_mail_to_single_user(subject, email, html_template, ctx_dict)
 
-        #send_html_mail_to_single_user(subject, message, from_email, recipient_list)
     except Exception as e:
         print("error", e)    
 
 
 def send_updated_subadmin_credentials(old_email, email):
+    """
+        method used to send email to those subadmin whose credentials are changed
+    """
     try:
         ctx_dict = {"old_email": old_email, "new_email": email}
         html_template = "update_subadmin.html"
@@ -135,6 +130,9 @@ def send_updated_subadmin_credentials(old_email, email):
 
 
 def logged_out_users(email):
+    """
+        method used to send email to those users whose company is deactivated by admin
+    """
     try:
         ctx_dict = {"email": email}
         html_template = "log_out_users.html"
@@ -146,6 +144,9 @@ def logged_out_users(email):
 
 
 def subadmin_deleted(email):
+    """
+        method used to send email to deactivated subadmins
+    """
     try:
         ctx_dict = {"email" : email}
         html_template = "subadmin_deleted.html"
@@ -199,11 +200,7 @@ def update_or_create_fcm_detail(user, registration_id, device_type):
     })
     return True
 
-import logging
-log = logging.getLogger(__name__)
-from fcm_django.models import FCMDevice
 
-from firebase_admin.messaging import Message, Notification
 
 def send_notification_bulk(user_ids, title, message, data):
     """
