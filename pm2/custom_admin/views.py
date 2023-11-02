@@ -1055,7 +1055,7 @@ class DashBoardViewSet(viewsets.ViewSet):
         if year:
             filters['created_at__year'] = int(year)
 
-        total_users = User.all_objects.filter(user_role=User.USER, **filters).count()
+        total_users = User.all_objects.filter(is_admin_approved=True, is_email_verified=True, user_role=User.USER, **filters).count()
         total_subadmins = User.all_objects.filter(user_role=User.SUB_ADMIN, **filters).count()
         total_projects = Project.objects.filter(**filters).count()
         total_companies = Company.objects.filter(**filters).count()
@@ -1958,7 +1958,7 @@ class UserListingViewSet(viewsets.ViewSet):
 #         files = Files.objects.filter(is_admin_approved=False, is_marked_deleted=True).order_by('-created_at')
 #         page = None
 
-#         if page_size:
+#         if page_size:print
 #             pagination_class = self.pagination_class()
 #             page = pagination_class.paginate_queryset(files, request)
 
