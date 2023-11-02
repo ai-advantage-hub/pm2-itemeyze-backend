@@ -27,9 +27,6 @@ class AdminLoginSerializer(serializers.Serializer):
         
         if user is None:
             raise CustomException(status_code=400, message = "Invalid email or password.", location="Login")
-        
-        # if user.is_deleted==True:
-        #     raise CustomException(status_code=400, message = "Subadmin is Deleted.", location="Login")
 
         if user.user_role == 2 or user.is_email_verified is False:
             raise CustomException(status_code=400, message= "User is not an admin.", location="Login")
@@ -155,11 +152,6 @@ class FilesPointSerializer(serializers.ModelSerializer):
 
 #Manage Users 
 
-# class UserListAdminSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = User
-#         fields = ('id', 'full_name')
-
 class UserListCompanySerializer(serializers.ModelSerializer):
     class Meta:
         model = Company
@@ -240,11 +232,6 @@ class UserDetailSerializer(serializers.ModelSerializer):
     def get_company_names(self, obj):
         return [uc.company.name for uc in obj.user_company.all()]
     
-    # def get_assigned_projects(self, obj):          
-    #     approved_projects = obj.assigned_projects.filter(is_admin_approved=True)[:5]        
-    #     return ProjectSerializer(approved_projects, many=True).data
-
-
 
 class UserListingSerializer(serializers.ModelSerializer):
     class Meta:

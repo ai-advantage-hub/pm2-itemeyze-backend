@@ -1,2 +1,2 @@
 #!/bin/bash
-source /home/ubuntu/pm2/venv/bin/activate && cd /home/ubuntu/pm2 && python delete_function.py >> cronjobreport
+source /home/ubuntu/jenkins/workspace/pm2-stage-job/pm2 && python delete_function.py >> cronjobrepo >

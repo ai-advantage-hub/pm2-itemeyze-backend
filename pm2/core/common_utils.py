@@ -71,6 +71,19 @@ def send_verification_email(email, otp):
         print("error", e)
 
 
+def send_edit_profile_verification_email(email, otp, old_email):
+    """
+        method used to send verification email 
+    """
+    try:
+        ctx_dict = {"email": email, "verification_code": otp, "old_email": old_email}
+        html_template = "edit_email_verification.html"
+        subject = "YOUR OTP VERIFICATION FOR NEW EMAIL"
+        send_html_mail_to_single_user(subject, email, html_template, ctx_dict)
+    except Exception as e:
+        print("error", e)
+
+
 def send_reset_password_email(email):
     """
         method used to send reset password email
