@@ -583,10 +583,6 @@ class ManageProjectViewSet(viewsets.ViewSet):
                     if assigned_to:
                         project = Project.objects.filter(id=project_id).update(project_name=project_name, project_number=project_number)
                         project = Project.objects.filter(id=project_id).first()
-                        # user = User.objects.filter(email=assigned_to).first()
-                        # project.users.add(user)
-                        # project.is_admin_approved=True
-                        # project.save()
                         for email in assigned_to:
                             user = User.objects.filter(email=email).first()
                             if user:
@@ -641,51 +637,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
                         if notifyer.is_notification_enabled == True:
                             send_notification_bulk(
                                 user_ids=[created_by_id.id], title=title, message=message, data=data)
-                        return CustomResponse({"message": "Project approved successfully"})    
-                    
-
-    # def approve_project(self, request):
-    #     data = request.data
-    #     project_id = data.get("project_id")
-    #     project_name = data.get("project_name")
-    #     project_number = data.get("project_number")
-    #     assigned_to = data.get("assigned_to", [])
-    #     status = data.get("status")
-
-    #     project = Project.objects.filter(id=project_id).first()
-
-    #     if not project:
-    #         return CustomResponse({"message": "Project of this id does not exist"})
-
-    #     if status == 2:
-    #         project.delete()
-    #         return CustomResponse({"message": "Project deleted"})
-
-    #     if not project_name:
-    #         return CustomResponse({"message": "Please provide project_name"})
-    #     if not project_number:
-    #         return CustomResponse({"message": "Please provide project_number"})
-
-    #     if status == 1:
-    #         if Project.objects.filter(project_name=project_name).exclude(id=project_id).exists():
-    #             return CustomResponse({"message": "Project of this name already exists"})
-    #         elif Project.objects.filter(project_number=project_number).exclude(id=project_id).exists():
-    #             return CustomResponse({"message": "Project Number of this name already exists"})
-
-    #         project.project_name = project_name
-    #         project.project_number = project_number
-    #         project.is_admin_approved = True
-    #         if assigned_to:
-    #             for email in assigned_to:
-    #                 user = User.objects.filter(email=email).first()
-    #                 if user:
-    #                     project.users.add(user)
-    #         project.save()
-    #         return CustomResponse({"message": "Project approved successfully"})
-
-    # def un_approved_file(self, request, id):
-    #     file = Files.objects.filter(project_id=id, is_admin_approved=False).all().values('file_name', 'id', 'thumbnail', 'created_at')
-    #     return CustomResponse(file)
+                        return CustomResponse({"message": "Project approved successfully"})                        
 
     def un_approved_file(self, request, id):
         """
@@ -989,14 +941,6 @@ class ManageSubadminViewSet(viewsets.ViewSet):
             if User.objects.filter(email=email).exclude(id=c.id).exists():
                 return CustomResponse({"message": "Email Already Exists"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # if email and User.objects.filter(email=email).exclude(id=id).exists():
-        #     return CustomResponse({"message": "Email already exists."}, status=status.HTTP_400_BAD_REQUEST) 
-        
-        # if phone_number:
-        #     User.objects.filter(phone_number=phone_number).exists()
-        #     return CustomResponse({"message": "Phone Number Already Exists"}, status=status.HTTP_400_BAD_REQUEST)
-
-
         sub_admin = User.all_objects.filter(id=id, user_role=3).first()
         if not sub_admin:
             return CustomResponse({"message": "Subadmin not found"}, status=status.HTTP_404_NOT_FOUND)
@@ -1112,13 +1056,6 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
         name = request.GET.get('name', '')
         page_size = request.GET.get('page_size', '')
         is_active = request.GET.get('is_active', None)
-        # users = User.objects.filter(is_admin_approved=True, full_name__icontains=name).all().annotate(num_projects=Count('assigned_projects')).values('id', 'full_name', 'email', 'user_company', 'user_company__company__name', 'is_active', 'num_projects')
-        # users = User.objects.filter(is_admin_approved=True, full_name__icontains=name) \
-        #         .annotate(num_projects=Count('assigned_projects')) \
-        #         .values('id', 'full_name', 'email', 'user_company', 'user_company__company__name', 'is_active', 'num_projects')
-        # users = User.objects.filter(is_admin_approved=True, full_name__icontains=name) \
-        #     .annotate(num_projects=Count('assigned_projects')) \
-        #     .values('id', 'full_name', 'email', 'user_company', 'user_company__company__name', 'is_active', 'num_projects')
         users = (
             User.all_objects.filter(is_admin_approved=True,user_role=2, full_name__icontains=name).annotate(
                 approved_project_count=Count(
@@ -1184,185 +1121,6 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
         user = get_object_or_404(User.all_objects.prefetch_related(prefetch).filter(id=id))
         serializer = UserDetailSerializer(user)
         return CustomResponse(serializer.data)
-        # user = get_object_or_404(User.all_objects.filter(id=id))  
-        # serializer = UserDetailSerializer(user) 
-        # return Response(serializer.data)
-    
-        # user = User.objects.filter(id=id,user_role=2).annotate(
-        #         # Get company name
-        #         company_name=F('user_company__company__name'),
-                
-        #         # Aggregate assigned project names and created_at
-        #         assigned_projects=ArrayAgg(
-        #             Func(
-        #                 F('assigned_projects__project_name'),
-        #                 F('assigned_projects__created_at'),
-        #                 function='ARRAY',
-        #                 template='%(function)s[%(expressions)s]',
-        #                 output_field=ArrayAgg('assigned_projects__project_name').output_field
-        #             )
-        #         ),
-
-        #         # Aggregate created project names and created_at for is_admin_approved projects
-        #         created_projects=ArrayAgg(
-        #             Func(
-        #                 F('created_by_project__project_name'),
-        #                 F('created_by_project__created_at'),
-        #                 function='ARRAY',
-        #                 template='%(function)s[%(expressions)s]',
-        #                 output_field=ArrayAgg('created_by_project__project_name').output_field
-        #             ),
-        #             filter=F('created_by_project__is_admin_approved')
-        #                 )
-        #             ).values(
-        #                 'id',
-        #                 'full_name',
-        #                 'modules_accessible',
-        #                 'email',
-        #                 'created_at',
-        #                 'user_company',
-        #                 'company_name',
-        #                 'assigned_projects',
-        #                 'created_projects'
-        #             ).first()
-        # return CustomResponse(user)
-       
-        # top_assigned_projects = Project.objects.filter(users=OuterRef('id')).order_by('-created_at')[:5]
-        # top_created_projects = Project.objects.filter(created_by=OuterRef('id'), is_admin_approved=True).order_by('-created_at')[:5]
-
-        # user = User.objects.filter(id=id, user_role=2).annotate(
-        #     # Get company name
-        #     company_name=F('user_company__company__name'),
-            
-        #     # Aggregate top 5 assigned project names and created_at
-        #     assigned_projects=ArrayAgg(
-        #         Func(
-        #             F('assigned_projects__id'),
-        #             F('assigned_projects__project_name'),
-        #             F('assigned_projects__created_at'),
-        #             function='ARRAY',
-        #             template='%(function)s[%(expressions)s]',
-        #             output_field=ArrayAgg('assigned_projects__project_name').output_field
-        #         ),
-        #         filter=Q(id__in=Subquery(top_assigned_projects.values('id')))
-        #     ),
-
-        #     # Aggregate top 5 created project names and created_at for is_admin_approved projects
-        #     created_projects=ArrayAgg(
-        #         Func(
-        #             F('created_by_project__id'),
-        #             F('created_by_project__project_name'),
-        #             F('created_by_project__created_at'),
-        #             function='ARRAY',
-        #             template='%(function)s[%(expressions)s]',
-        #             output_field=ArrayAgg('created_by_project__project_name').output_field
-        #         ),
-        #         filter=Q(id__in=Subquery(top_created_projects.values('id')))
-        #     )
-        # ).values(
-        #     'id',
-        #     'full_name',
-        #     'modules_accessible',
-        #     'email',
-        #     'created_at',
-        #     'user_company',
-        #     'company_name',
-        #     'assigned_projects',
-        #     'created_projects'
-        # ).first()
-
-        # return CustomResponse(user)
-        # assigned_subquery = Project.objects.filter(users=OuterRef('id')).annotate(
-        #         project_json=Cast(
-        #             Concat(
-        #                 Value('{"id": "'),
-        #                 Cast(F('id'), CharField()),
-        #                 Value('", "projectname": "'),
-        #                 F('project_name'),
-        #                 Value('", "created_at": "'),
-        #                 F('created_at'),
-        #                 Value('"}')
-        #             ),
-        #             output_field=CharField()
-        #         )
-        #     ).values('project_json')[:5]
-
-            
-        # created_subquery = Project.objects.filter(created_by=OuterRef('id'), is_admin_approved=True).annotate(
-        #     project_json=Cast(
-        #         Concat(
-        #             Value('{"id": "'),
-        #             Cast(F('id'), CharField()),
-        #             Value('", "projectname": "'),
-        #             F('project_name'),
-        #             Value('", "created_at": "'),
-        #             F('created_at'),
-        #             Value('"}')
-        #         ),
-        #         output_field=CharField()
-        #     )
-        # ).values('project_json')[:5]
-
-        # user_data = User.objects.filter(id=id, user_role=2).annotate(
-            
-        #     company_name=F('user_company__company__name'),
-            
-        #     user_assigned_projects=ArrayAgg(Subquery(assigned_subquery)),
-            
-        #     created_projects=ArrayAgg(Subquery(created_subquery))
-        # ).values(
-        #     'id',
-        #     'full_name',
-        #     'modules_accessible',
-        #     'email',
-        #     'created_at',
-        #     'user_company',
-        #     'company_name',
-        #     'user_assigned_projects',
-        #     'created_projects'
-        # ).first()
-
-        # return CustomResponse(user_data)
-        # assigned_subquery = Project.objects.filter(users=OuterRef('id')).annotate(
-        #     project_json=JSONBuildObject(
-        #         'id', Cast(F('id'), CharField()),
-        #         'projectname', F('project_name'),
-        #         'created_at', F('created_at')
-        #     )
-        # ).values('project_json')[:5]
-
-        
-
-        # # For created projects
-        # created_subquery = Project.objects.filter(created_by=OuterRef('id'), is_admin_approved=True).annotate(
-        #     project_json=JSONBuildObject(
-        #         'id', Cast(F('id'), CharField()),
-        #         'projectname', F('project_name'),
-        #         'created_at', F('created_at')
-        #     )
-        # ).values('project_json')[:5]
-
-        
-
-        # user_data = User.objects.filter(id=id, user_role=2).annotate(
-        #     company_name=F('user_company__company__name'),
-        #     user_assigned_projects=ArrayAgg(Subquery(assigned_subquery)),
-        #     created_projects=ArrayAgg(Subquery(created_subquery))
-        # ).values(
-        #     'id',
-        #     'full_name',
-        #     'modules_accessible',
-        #     'email',
-        #     'created_at',
-        #     'user_company',
-        #     'company_name',
-        #     'user_assigned_projects',
-        #     'created_projects'
-        # ).first()
-
-        
-
-        # return CustomResponse(user_data)
             
     def unapproved_users(self, request):
         """
@@ -1791,51 +1549,7 @@ class EditUserCompanyViewSet(viewsets.ViewSet):
                 user_ids=[user_id], title=title, message=message, data=data)
             return CustomResponse({"message": "User Approved by Admin"}, status=status_code.HTTP_200_OK)
         else:
-            return CustomResponse({"message": "Please give the right value in status value"}, status=status.HTTP_400_BAD_REQUEST)
-        
-
-    # def edit_approve_user(self, request):
-    #     """
-    #     Function to approve the users
-    #     """
-    #     data = request.data
-    #     user_id = data.get("user_id")
-    #     status_value = data.get("status_value")
-    #     new_company = data.get("new_company")
-
-    #     user = User.objects.filter(id=user_id).first()
-    #     if not user:
-    #         return CustomResponse({"message": "User not found."}, status=status.HTTP_400_BAD_REQUEST)
-
-    #     if status_value == 2:
-    #         user.is_edited=False
-    #         user.save()
-    #         return CustomResponse({"message": "User Edit Request Denied"}, status=status_code.HTTP_200_OK)
-    #     elif status_value == 1:
-    #         user.is_edited = False
-    #         user.save()
-            
-    #         c = User.objects.filter(id=user_id).first()
-    #         if c.company_name!=None:
-    #             e = Company.objects.filter(name=c.company_name).exists()
-    #             if e:
-    #                 f = Company.objects.filter(name=c.company_name).first()
-    #                 UserCompany.objects.filter(user_id=user_id).update(company_id=f.id)
-    #             else:
-    #                 d = Company.objects.create(name=c.company_name)
-    #                 if UserCompany.objects.filter(user_id=user_id).exists():
-    #                     UserCompany.objects.filter(user_id=user_id).update(company_id=d.id)
-    #                 else:
-    #                     UserCompany.objects.create(user_id=user_id, company_id=d.id)
-    #                     c.company_name=None
-    #                     c.save()
-    #         if new_company:
-    #             if not Company.objects.filter(name=new_company).exists():
-    #                 created_company = Company.objects.create(name = new_company)
-    #                 UserCompany.objects.filter(user_id=user_id).update(company_id=created_company.id)
-    #             else:
-    #                 c = Company.objects.filter(name=new_company).first()
-    #                 UserCompany.objects.filter(user_id=user_id).update(company_id=c.id)
+            return CustomResponse({"message": "Please give the right value in status value"}, status=status.HTTP_400_BAD_REQUEST)       
 
                 
 class DeactivateCompanyViewSet(viewsets.ViewSet):
@@ -1855,18 +1569,10 @@ class DeactivateCompanyViewSet(viewsets.ViewSet):
             return CustomResponse({"message": "Company dont exist for this ID"}, status=status.HTTP_400_BAD_REQUEST)
         # Get all users associated with the company
         users_to_logout = UserCompany.objects.filter(company=company).all().values_list('user_id', flat=True)
-        print("logout", users_to_logout)
-        print(len(users_to_logout))
         list = []
         for i in range(0,len(users_to_logout)):
-            print("iiii", users_to_logout[i])
-            print(type(users_to_logout[i]))
             user = User.objects.filter(id=users_to_logout[i]).first()
-            print("uuuu", user)
             list.append(user)
-        print("list",list)
-        print("loggg", users_to_logout)
-        # print("id====", users_to_logout.user.id)
         if status_value == 1:
             Company.objects.filter(id=id).update(is_active=True)
             return CustomResponse({"message": "Status Activated successfully"}, status=status.HTTP_200_OK)
@@ -1882,17 +1588,13 @@ class DeactivateCompanyViewSet(viewsets.ViewSet):
                 for i in range(0,len(list)):
                     if list[i]!=None:
                         list1.append(list[i])
-            # list.remove(None)
-            # print("newlist==",list)
             if len(list1)!=0:
                 for user in list1:
-                    print("user",user)
                     Token.objects.filter(user=user).delete()
                     logged_out_users(user.email)
                 return CustomResponse({"message": "Status deactivated successfully. Users associated with this company have been logged out."}, status=status.HTTP_200_OK)
             else:
                 for user in list:
-                    print("user",user)
                     Token.objects.filter(user=user).delete()
                     logged_out_users(user.email)
                 return CustomResponse({"message": "Status deactivated successfully. Users associated with this company have been logged out."}, status=status.HTTP_200_OK)
@@ -1914,139 +1616,8 @@ class UserListingViewSet(viewsets.ViewSet):
             users = User.objects.filter(is_admin_approved=True).all()
         serializer = UserListingSerializer(users, many=True)
         return CustomResponse(serializer.data, status=status_code.HTTP_200_OK)
-    
-
-
-#CR 2 Points
-
-# class FilesListingViewSet(viewsets.ViewSet):
-#     """
-#         FilesListingViewSet to give the listing of files
-#     """
-#     pagination_class = CustomPagination
-
-#     def approved_files_list(self, request):
-#         page_size = self.request.GET.get('page_size', '')
-#         files = Files.objects.filter(is_admin_approved=True, is_marked_deleted=False).order_by('-created_at')
-#         page = None
-
-#         if page_size:
-#             pagination_class = self.pagination_class()
-#             page = pagination_class.paginate_queryset(files, request)
-
-#         if page is not None:
-#             return CustomResponse(pagination_class.get_paginated_response(page).data)
-
-#         return CustomResponse(files)
-    
-#     def disapproved_files_list(self, request):
-#         page_size = self.request.GET.get('page_size', '')
-#         files = Files.objects.filter(is_admin_approved=False, is_marked_deleted=False).order_by('-created_at')
-#         page = None
-
-#         if page_size:
-#             pagination_class = self.pagination_class()
-#             page = pagination_class.paginate_queryset(files, request)
-
-#         if page is not None:
-#             return CustomResponse(pagination_class.get_paginated_response(page).data)
-
-#         return CustomResponse(files)
-    
-#     def marked_for_delete_files_list(self, request):
-#         page_size = self.request.GET.get('page_size', '')
-#         files = Files.objects.filter(is_admin_approved=False, is_marked_deleted=True).order_by('-created_at')
-#         page = None
-
-#         if page_size:print
-#             pagination_class = self.pagination_class()
-#             page = pagination_class.paginate_queryset(files, request)
-
-#         if page is not None:
-#             return CustomResponse(pagination_class.get_paginated_response(page).data)
-
-#         return CustomResponse(files)
-    
-#     def deleted_files_list(self, request):
-#         page_size = self.request.GET.get('page_size', '')
-#         files = Files.objects.filter(is_admin_approved=False, is_marked_deleted=False, is_deleted=True).order_by('-created_at')
-#         page = None
-
-#         if page_size:
-#             pagination_class = self.pagination_class()
-#             page = pagination_class.paginate_queryset(files, request)
-
-#         if page is not None:
-#             return CustomResponse(pagination_class.get_paginated_response(page).data)
-
-#         return CustomResponse(files)
-    
-
-# class ViewFilesViewSet(viewsets.ViewSet):
-#     """
-#         ViewFilesViewSet to view the files
-#     """
-
-#     def approved_files(self, request, id):
-#         files = Files.objects.filter(id=id, is_admin_approved=True).all().values('file_name', 'thumbnail', 'manufacturer_name', 'manufacturer_number', 'location', 'quantity', 'project_details', 'additional_details')
-#         if not files:
-#             return CustomResponse({"Message": "File Not Found"}, status=status_code.HTTP_400_BAD_REQUEST)
-#         return CustomResponse(files)
-    
-#     def disapproved_files(self, request, id):
-#         files = Files.objects.filter(id=id, is_admin_approved=False).all().values('file_name', 'thumbnail', 'manufacturer_name', 'manufacturer_number', 'location', 'quantity', 'project_details', 'additional_details')
-#         if not files:
-#             return CustomResponse({"Message": "File Not Found"}, status=status_code.HTTP_400_BAD_REQUEST)
-#         return CustomResponse(files)
-    
-
-# class ApproveDenyFilesViewSet(viewsets.ViewSet):
-#     """
-#         ApproveDenyFilesViewSet to approve or deny files
-#     """
-
-#     def disapprove_files(self, request, id):
-#         data = request.data
-#         file_id = data.get('file_id')
-#         status_value = data.get('status_value')
-#         file = Files.objects.filter(id=file_id, is_admin_approved=False).first()
-#         if not file:
-#             return CustomResponse({"Message": "File Not Found"}, status=status_code.HTTP_400_BAD_REQUEST)
-        
-#         if status_value==1:
-#             Files.objects.filter(id=file_id).update(is_admin_approved=True)
-#             return CustomResponse({"Message": "File Approved Successfully"}, status=status_code.HTTP_200_OK)
-        
-#         if status_value==2:
-#             Files.objects.filter(id=file_id).update(is_admin_approved=False)
-#             return CustomResponse({"Message": "File Denied Successfully"}, status=status_code.HTTP_200_OK)
-        
-#         else:
-#             return CustomPagination({"Message": "Please Provide valid Status"}, status=status_code.HTTP_400_BAD_REQUEST)
-        
-    
-#     def Marked_for_deleted_files(self, request, id):
-#         data = request.data
-#         file_id = data.get('file_id')
-#         status_value = data.get('status_value')
-#         file = Files.objects.filter(id=file_id, is_marked_deleted=True).first()
-#         if not file:
-#             return CustomResponse({"Message": "File Not Found"}, status=status_code.HTTP_400_BAD_REQUEST)
-        
-#         if status_value==1:
-#             Files.objects.filter(id=file_id).update(is_deleted=True)
-#             return CustomResponse({"Message": "File Deleted Successfully"}, status=status_code.HTTP_200_OK)
-        
-#         if status_value==2:
-#             Files.objects.filter(id=file_id).update(is_marked_deleted=False)
-#             return CustomResponse({"Message": "File Denied Successfully"}, status=status_code.HTTP_200_OK)
-        
-#         else:
-#             return CustomResponse({"Message": "Please Provide Valid Status"}, status=status_code.HTTP_400_BAD_REQUEST)
-        
-
-    
-
+            
+   
 class TotalUserCountViewSet(viewsets.ViewSet):
     def list(self, request):
         total_users = User.all_objects.filter(user_role=User.USER).count()
