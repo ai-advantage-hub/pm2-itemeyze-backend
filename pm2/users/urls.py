@@ -27,8 +27,16 @@ urlpatterns = [
     #Home
     path("create_project", views.ProjectViewSet.as_view(
         {"post": "create", "get": "search"}, name="create_project")),
+    # path("add_files", views.FileDetailsViewSet.as_view(
+    #     {"post": "create"}, name="add_files")),
     path("add_files", views.FileDetailsViewSet.as_view(
         {"post": "create"}, name="add_files")),
+    path("user_saved_list", views.FileDetailsViewSet.as_view(
+        {"get": "user_saved_list"}, name="user_saved_list")),
+    path("submit_to_admin", views.FileDetailsViewSet.as_view(
+        {"post": "submit_to_admin"}, name="submit_to_admin")),
+    path("submitted_to_admin_list", views.FileDetailsViewSet.as_view(
+        {"get": "submitted_to_admin_list"}, name="submitted_to_admin_list")),
     path("list_files/<int:id>", views.FileDetailsViewSet.as_view(
         {"get": "list"}, name="list_files")),
     path("project_details/<int:pk>", views.ProjectDetailsViewSet.as_view(
