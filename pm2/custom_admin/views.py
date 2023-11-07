@@ -1464,7 +1464,7 @@ class DeletedFilesViewSet(viewsets.ViewSet):
             function to give list of deleted files
         """
         page_size = request.GET.get('page_size', '')
-        files = Files.objects.filter(is_marked_deleted=True).values('id', 'file_name', 'deleted_at').order_by("-created_at")
+        files = Files.objects.filter(is_deleted=True).values('id', 'file_name', 'deleted_at').order_by("-created_at")
         page = None
         if page_size:
             pagination_class = self.pagination_class()
@@ -1475,14 +1475,18 @@ class DeletedFilesViewSet(viewsets.ViewSet):
 
         return CustomResponse(files)   
 
-    def restore(self, request, id):
+    def restore(self, request):
         """
             function to restore deleted files
         """
-        files = Files.objects.filter(id=id).first()
-        if not files:
-            return CustomResponse({"Message": "File Not Found"}, status=status_code.HTTP_400_BAD_REQUEST)
-        Files.objects.filter(id=id).update(is_marked_deleted=False)
+        # files = Files.objects.filter(id=id).first()
+        data = request.data
+        file_id = data.get("file_id", [])
+        if not file_id:
+                return CustomResponse({"message": "Please select file"})
+        for i in file_id:
+            print("i",i)        
+        Files.objects.filter(id=i).update(is_deleted=False, is_admin_approved=True , submitted_to_admin=True, is_edited=False)
         return CustomResponse({"Message": "File Restored Successfully"}, status=status_code.HTTP_200_OK)
 
 
@@ -1519,13 +1523,15 @@ class EditUserCompanyViewSet(viewsets.ViewSet):
                     f = Company.objects.filter(name=c.company_name).first()
                     UserCompany.objects.filter(user_id=user_id).update(company_id=f.id)
                 else:
-                    d = Company.objects.create(name=c.company_name)
+                    if new_company==None:
+                        d = Company.objects.create(name=c.company_name)
                     if UserCompany.objects.filter(user_id=user_id).exists():
                         UserCompany.objects.filter(user_id=user_id).update(company_id=d.id)
-                    else:
-                        UserCompany.objects.create(user_id=user_id, company_id=d.id)
-                        c.company_name=None
-                        c.save()
+                    # else:
+                    #     UserCompany.objects.create(user_id=user_id, company_id=d.id)
+                    #     c.company_name=None
+                    #     c.save()
+
             if new_company:
                 if not Company.objects.filter(name=new_company).exists():
                     created_company = Company.objects.create(name = new_company)
@@ -1640,3 +1646,146 @@ class TotalUserCountViewSet(viewsets.ViewSet):
 
         }
         return CustomResponse(data)
+    
+
+#CR 2 Points
+
+class ApprovedFilesListingViewSet(viewsets.ViewSet):
+    """
+        ApprovedFilesListingViewSet to get the listing of approved files
+    """
+    permission_classes = (IsAuthenticated, CheckAdminOrSubAdminRoleStatusPermission,)
+    pagination_class = CustomPagination
+
+    def approved_files_list(self, request):
+        """
+            function to get list of approved files
+        """
+        page_size = request.GET.get('page_size', '')
+        approved_files = Files.objects.filter(is_edited=False, is_deleted=False).all().values('id','file_name', 'thumbnail','created_at','is_file_disapproved')
+        page = None
+        if page_size:
+            pagination_class = self.pagination_class()
+            page = pagination_class.paginate_queryset(approved_files, request)
+
+        if page is not None:
+            return CustomResponse(pagination_class.get_paginated_response(page).data)
+        return CustomResponse(approved_files)
+
+
+
+class DisapproveFileViewSet(viewsets.ViewSet):
+    """
+        DisapproveFileViewSet to disapprove a file
+    """
+    permission_classes = (IsAuthenticated, CheckAdminOrSubAdminRoleStatusPermission,)
+    pagination_class = CustomPagination
+
+    def disapprove_file(self, request):
+        """
+            function to diaspprove a file
+        """
+        data = request.data
+        file_id = data.get("file_id")
+        status_value = data.get("status_value")
+        disapprove_reason = data.get("disapprove_reason")
+        file = Files.objects.filter(id=file_id).first()
+        if not file:
+            return CustomResponse({"message": "File not found."}, status=status.HTTP_400_BAD_REQUEST)
+        if status_value == 1:
+            Files.objects.filter(id=file_id).update(is_file_disapproved=False, disapproved_reason=disapprove_reason)
+            return CustomResponse({"message": "File disapproved successfully"}, status=status_code.HTTP_200_OK)
+        else:
+            return CustomResponse({"message": "Please provide valid status value."}, status=status.HTTP_400_BAD_REQUEST)
+        
+
+    def list_disapproved_file(self, request):
+        """
+            function to give list of disapproved files
+        """
+        page_size = request.GET.get('page_size', '')
+        disapproved_files = Files.objects.filter(is_admin_approved=False,is_file_disapproved=True, submitted_to_admin=True, is_edited=True, is_deleted=False).all().values('id','file_name','thumbnail','deleted_at')
+        page = None
+        if page_size:
+            pagination_class = self.pagination_class()
+            page = pagination_class.paginate_queryset(disapproved_files, request)
+
+        if page is not None:
+            return CustomResponse(pagination_class.get_paginated_response(page).data)
+        return CustomResponse(disapproved_files)
+    
+    def view_disapproved_file(self, request, id):
+        """
+            function to view disapproved files
+        """
+        if not Files.objects.filter(id=id):
+            return CustomResponse({"message":"file not found"}, status=status.HTTP_400_BAD_REQUEST)
+        if Files.objects.filter(id=id, is_file_disapproved=False):
+            return CustomResponse({"message":"this file is not disapproved"}, status=status.HTTP_400_BAD_REQUEST)
+        disapproved_file = Files.objects.filter(id=id,is_admin_approved=False, is_file_disapproved=True, submitted_to_admin=True, is_edited=True, is_deleted=False).all().values('id', 'file_name', 'thumbnail','manufacturer_name','manufacturing_number','quantity','project_details','additional_details','recording', 'location', 'location_points','is_file_disapproved')
+        return CustomResponse(disapproved_file)
+    
+    def approve(self, request):
+        """
+            function to approve to deny disapprovedfiles
+        """
+        data = request.data
+        file_id = data.get("file_id")
+        status_value = data.get("status_value")
+        file = Files.objects.filter(id=file_id).first()
+        if not file:
+            return CustomResponse({"message": "File not found."}, status=status.HTTP_400_BAD_REQUEST)
+        if status_value==1:
+            Files.objects.filter(id=file_id).update(is_admin_approved=True,submitted_to_admin=True,is_edited=False,is_file_disapproved=False)
+            return CustomResponse ({"message": "File Approved Successfully"}, status=status.HTTP_200_OK)
+        if status_value==2:
+            Files.objects.filter(id=file_id).update(is_admin_approved=False,submitted_to_admin=False, is_edited=False) #this will happen only when file is denied for 5 times, if file will be denied for 6th time, then - is_admin_approved = false , submitted_to_admin = false, is_edited = false, is_deleted = True
+            return CustomResponse ({"message": "File Approval Denied Successfully"}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return CustomResponse ({"message": "Please Provide Valid Status Value"}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class MarkedForDeletedFilesViewSet(viewsets.ViewSet):
+    """
+        MarkedForDeletedFilesViewSet to get the list of marked for deleted files
+    """    
+    permission_classes = (IsAuthenticated, CheckAdminOrSubAdminRoleStatusPermission,)
+    pagination_class = CustomPagination
+
+    def list(self, request):
+        """
+            function to give list of mark for deleted files
+        """
+        page_size = request.GET.get('page_size', '')   
+        files = Files.objects.filter(is_marked_deleted=True).all().values('id','file_name','thumbnail','deleted_at')
+        page = None
+        if page_size:
+            pagination_class = self.pagination_class()
+            page = pagination_class.paginate_queryset(files, request)
+
+        if page is not None:
+            return CustomResponse(pagination_class.get_paginated_response(page).data)
+        return CustomResponse(files)
+    
+    def approve(self, request):
+        """
+            function to approve to deny the marked for deleted files
+        """
+        data = request.data
+        # file_id = data.get("file_id")
+        file_id = data.get("file_id", [])
+        status_value = data.get("status_value")
+        if not file_id:
+                return CustomResponse({"message": "Please select file"}, status=status_code.HTTP_400_BAD_REQUEST)
+        # if not file:
+        #     return CustomResponse({"message": "File not found."}, status=status.HTTP_400_BAD_REQUEST)
+        for i in file_id:
+            print("i=",i)
+            if status_value==1:
+                Files.objects.filter(id=i).update(is_marked_deleted=False, is_deleted=True)
+                return CustomResponse ({"message": "File Deleted Request Approved Successfully"}, status=status.HTTP_200_OK)
+            if status_value==2:
+                Files.objects.filter(id=i).update(is_marked_deleted=False)
+                return CustomResponse ({"message": "File Delete Request Denied Successfully"}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return CustomResponse ({"message": "Please Provide Valid Status Value"}, status=status.HTTP_400_BAD_REQUEST)

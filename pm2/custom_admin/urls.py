@@ -81,7 +81,7 @@ urlpatterns = [
     path("list_deleted_projects", views.DeletedProjectsViewSet.as_view({"get": "list"}), name="list_deleted_projects"),
     path("restore_project/<int:id>", views.DeletedProjectsViewSet.as_view({"put": "restore"}), name="restore_project"),
     path("list_deleted_files", views.DeletedFilesViewSet.as_view({"get": "list"}), name="list_deleted_files"),
-    path("restore_files/<int:id>", views.DeletedFilesViewSet.as_view({"put": "restore"}), name="restore_files"),
+    path("restore_files", views.DeletedFilesViewSet.as_view({"put": "restore"}), name="restore_files"),
 
     path("approve_user", views.EditUserCompanyViewSet.as_view({"put": "approve_user"}), name="approve_user"),
 
@@ -90,6 +90,17 @@ urlpatterns = [
 
     path("users_listing", views.UserListingViewSet.as_view({"get": "list"}), name="users_listing"),
 
+
+    #CR2 Points
+    path("approved_files_list", views.ApprovedFilesListingViewSet.as_view({"get": "approved_files_list"}), name="approved_files_list"),
+
+    path("disapprove_file", views.DisapproveFileViewSet.as_view({"put": "disapprove_file"}), name="disapprove_file"),
+    path("list_disapproved_file", views.DisapproveFileViewSet.as_view({"get": "list_disapproved_file"}), name="list_disapproved_file"),
+    path("view_disapproved_file/<int:id>", views.DisapproveFileViewSet.as_view({"get": "view_disapproved_file"}), name="view_disapproved_file"),
+    path("approve", views.DisapproveFileViewSet.as_view({"put": "approve"}), name="approve"),
+
+    path("marked_for_delete_files", views.MarkedForDeletedFilesViewSet.as_view({"get": "list"}), name="marked_for_delete_files"),
+    path("approve_marked_for_deleted_file", views.MarkedForDeletedFilesViewSet.as_view({"put": "approve"}), name="approve_marked_for_deleted_file"),
 
 
     #TotalUsers

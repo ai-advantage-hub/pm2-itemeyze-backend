@@ -358,6 +358,8 @@ class FileDetailsViewSet(viewsets.ModelViewSet):
         """
             function to give list of those files which are created by user and not submitted to admin
         """
+        if not Project.objects.filter(id=id).exists():
+            return CustomResponse({"message": "Project of this id does not exist"}, status=status_code.HTTP_400_BAD_REQUEST)
         files = Files.objects.filter(project_id = id, created_by=request.user, submitted_to_admin=False, is_marked_deleted=False).all().values('id','file_name','thumbnail','manufacturer_name__full_name', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording', 'disapproved_reason')
         return CustomResponse(files)
     
@@ -368,7 +370,9 @@ class FileDetailsViewSet(viewsets.ModelViewSet):
         data = request.data
         file_id = data.get("file_id", [])
         if not file_id:
-                return CustomResponse({"message": "Please select file"})
+                return CustomResponse({"message": "Please select file"}, status=status_code.HTTP_400_BAD_REQUEST)
+        # if not Files.objects.filter(id=file_id).exists():
+        #     return CustomResponse({"message": "File Not Found"}, status=status_code.HTTP_400_BAD_REQUEST)
         for i in file_id:
             print("i",i)
             Files.objects.filter(id=i).update(submitted_to_admin=True)
@@ -378,6 +382,8 @@ class FileDetailsViewSet(viewsets.ModelViewSet):
         """
             function to give list of those files which are submitted to admin
         """
+        if not Project.objects.filter(id=id).exists():
+            return CustomResponse({"message": "Project of this id does not exist"}, status=status_code.HTTP_400_BAD_REQUEST)
         files = Files.objects.filter(project_id=id, created_by=request.user, is_admin_approved=True, submitted_to_admin=True).all().values('id','file_name','thumbnail','manufacturer_name__full_name', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording', 'disapproved_reason')
         return CustomResponse(files)
 
