@@ -175,9 +175,12 @@ class Files(BaseModel):
     location = models.CharField(max_length=255, null = True)
     location_points = models.PointField(blank=True, null=True, verbose_name='User Coordinate')
     is_admin_approved = models.BooleanField(default=False, null=True)
+    is_file_disapproved = models.BooleanField(default=False, null=True)
     disapproved_reason = models.TextField(null=True, blank=True, verbose_name='disapproved_reason')
     submitted_to_admin = models.BooleanField(default=False, null=True)
     is_marked_deleted = models.BooleanField(default = False, null=True)
+    is_deleted = models.BooleanField(default = False, null=True)
+    is_edited = models.BooleanField(default = False, null=True)
     deleted_at = models.DateTimeField(null=True, blank=True, verbose_name="File_Deleted_At")
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_by_file', null=True)
     
