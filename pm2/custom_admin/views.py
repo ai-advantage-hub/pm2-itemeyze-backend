@@ -1743,7 +1743,7 @@ class DisapproveFileViewSet(viewsets.ViewSet):
         if not file:
             return CustomResponse({"message": "File not found."}, status=status.HTTP_400_BAD_REQUEST)
         if status_value==1:
-            Files.objects.filter(id=file_id).update(is_admin_approved=True,submitted_to_admin=True,is_edited=False,is_file_disapproved=False, disapproved_count=0)
+            Files.objects.filter(id=file_id).update(is_admin_approved=True,submitted_to_admin=True,is_edited=False,is_file_disapproved=False, disapproved_count=0, disapproved_reason=None)
             return CustomResponse ({"message": "File Approved Successfully"}, status=status.HTTP_200_OK)
         if status_value==2:
             if file.disapproved_count<=4:
