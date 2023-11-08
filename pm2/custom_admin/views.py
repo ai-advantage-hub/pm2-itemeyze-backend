@@ -1657,12 +1657,12 @@ class ApprovedFilesListingViewSet(viewsets.ViewSet):
     permission_classes = (IsAuthenticated, CheckAdminOrSubAdminRoleStatusPermission,)
     pagination_class = CustomPagination
 
-    def approved_files_list(self, request):
+    def approved_files_list(self, request, id):
         """
             function to get list of approved files
         """
         page_size = request.GET.get('page_size', '')
-        approved_files = Files.objects.filter(is_edited=False, is_deleted=False).all().values('id','file_name', 'thumbnail','created_at','is_file_disapproved')
+        approved_files = Files.objects.filter(project_id=id, is_edited=False, is_deleted=False).all().values('id','file_name', 'thumbnail','created_at','is_file_disapproved')
         page = None
         if page_size:
             pagination_class = self.pagination_class()
