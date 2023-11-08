@@ -1662,7 +1662,7 @@ class ApprovedFilesListingViewSet(viewsets.ViewSet):
             function to get list of approved files
         """
         page_size = request.GET.get('page_size', '')
-        approved_files = Files.objects.filter(project_id=id, is_edited=False, is_deleted=False).all().values('id','file_name', 'thumbnail','created_at','is_file_disapproved')
+        approved_files = Files.objects.filter(project_id=id, is_edited=False, is_deleted=False).all().values('id','file_name', 'thumbnail','created_at','is_file_disapproved').order_by('-created_at')
         page = None
         if page_size:
             pagination_class = self.pagination_class()
