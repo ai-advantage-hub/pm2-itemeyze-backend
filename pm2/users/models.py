@@ -183,6 +183,7 @@ class Files(BaseModel):
     is_edited = models.BooleanField(default = False, null=True)
     deleted_at = models.DateTimeField(null=True, blank=True, verbose_name="File_Deleted_At")
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_by_file', null=True)
+    disapproved_count = models.IntegerField(default=0,blank=True, null=True, verbose_name='diaspproved_count')
     
     # Add other fields as needed
 
