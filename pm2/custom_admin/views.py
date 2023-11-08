@@ -1662,7 +1662,7 @@ class ApprovedFilesListingViewSet(viewsets.ViewSet):
             function to get list of approved files
         """
         page_size = request.GET.get('page_size', '')
-        approved_files = Files.objects.filter(is_edited=False, is_deleted=False).all().values('id','file_name', 'thumbnail','created_at','is_file_disapproved')
+        approved_files = Files.objects.filter(is_admin_approved=True, is_file_disapproved=False, is_edited=False, is_deleted=False).all().values('id','file_name', 'thumbnail','created_at','is_file_disapproved')
         page = None
         if page_size:
             pagination_class = self.pagination_class()
@@ -1690,10 +1690,14 @@ class DisapproveFileViewSet(viewsets.ViewSet):
         status_value = data.get("status_value")
         disapprove_reason = data.get("disapprove_reason")
         file = Files.objects.filter(id=file_id).first()
+        if not disapprove_reason:
+            return CustomResponse({"message": "Please give reason of disapproval."}, status=status.HTTP_400_BAD_REQUEST)
         if not file:
             return CustomResponse({"message": "File not found."}, status=status.HTTP_400_BAD_REQUEST)
         if status_value == 1:
-            Files.objects.filter(id=file_id).update(is_file_disapproved=False, disapproved_reason=disapprove_reason)
+            disapproved_file = Files.objects.filter(id=file_id).update(is_file_disapproved=True,is_admin_approved=False, disapproved_reason=disapprove_reason)
+            # disapproved_file.disapproved_count=disapproved_file.disapproved_count+1
+            # disapproved_file.save() 
             return CustomResponse({"message": "File disapproved successfully"}, status=status_code.HTTP_200_OK)
         else:
             return CustomResponse({"message": "Please provide valid status value."}, status=status.HTTP_400_BAD_REQUEST)
