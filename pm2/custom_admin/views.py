@@ -1803,7 +1803,7 @@ class MarkedForDeletedFilesViewSet(viewsets.ViewSet):
                 return CustomResponse ({"message": "File Deleted Request Approved Successfully"}, status=status.HTTP_200_OK)
             if status_value==2:
                 Files.objects.filter(id=i).update(is_marked_deleted=False)
-                return CustomResponse ({"message": "File Delete Request Denied Successfully"}, status=status.HTTP_400_BAD_REQUEST)
+                return CustomResponse ({"message": "File Delete Request Denied Successfully"}, status=status.HTTP_200_OK)
             else:
                 return CustomResponse ({"message": "Please Provide Valid Status Value"}, status=status.HTTP_400_BAD_REQUEST)
 
