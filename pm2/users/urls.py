@@ -96,6 +96,9 @@ urlpatterns = [
     path("submitted_to_admin_list/<int:id>", views.FileDetailsViewSet.as_view(
         {"get": "submitted_to_admin_list"}, name="submitted_to_admin_list")),
 
+    path("file_list/<int:id>", views.FileDetailsViewSet.as_view(
+        {"get": "file_list"}, name="file_list")),
+
     
     
 

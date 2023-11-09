@@ -167,13 +167,21 @@ class Project(BaseModel):
         verbose_name_plural = "Projects"
 
 
-# class ManufacturerName(BaseModel):
-#     name = models.CharField(max_length=255)
-#     is_active = models.BooleanField(default=True)
-#     # added_by = 
+class ManufacturerName(BaseModel):
+    ADMIN = 1
+    USER = 2
 
-#     def __str__(self):
-#         return self.name
+    AddedBy = (
+        (ADMIN, "Admin"),
+        (USER, "User")
+    )
+
+    name = models.CharField(max_length=255)
+    is_active = models.BooleanField(default=True)
+    added_by = models.IntegerField("User role", choices=AddedBy, default=ADMIN)
+
+    def __str__(self):
+        return self.name
     
 
 class Files(BaseModel):

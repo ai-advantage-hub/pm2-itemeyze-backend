@@ -5,7 +5,7 @@ from rest_framework import status, viewsets, mixins
 from custom_admin.serializers import AdminLoginSerializer,AdminResetPasswordSerializer, CreateFileDetailsSerializer, ForgotPasswordSerializer, ProjectDetailSerializer,FilesSerializer,FilesPointSerializer, UserListAdminSerializer,UserDetailSerializer, UserListingSerializer
 from django.contrib.auth import authenticate
 from rest_framework.authtoken.models import Token
-from users.models import Company, UserCompany, User,Project,Files, UserNotification
+from users.models import Company, UserCompany, User,Project,Files, UserNotification, Site
 from django.contrib.auth.hashers import check_password
 from custom_admin.models import *
 from core.response import CustomResponse
@@ -1990,7 +1990,6 @@ class ProjectViewSet(viewsets.ViewSet):
         project_name = data.get("project_name")
         project_number = data.get("project_number")
         company_id = data.get("company_id")
-        company_name = data.get("company_name")
         assigned_to = data.get("assigned_to", [])  # Default to an empty list if not provided
         site_name = data.get("site_name")
 
@@ -2004,16 +2003,25 @@ class ProjectViewSet(viewsets.ViewSet):
             return CustomResponse({"message": "Project of this name already exists"}, status=status.HTTP_400_BAD_REQUEST)
         if Project.objects.filter(project_number=project_number).exists():
             return CustomResponse({"message": "Project Number already exists"}, status=status.HTTP_400_BAD_REQUEST)
-        # company_created = Company.objects.create(name=company_name)
-        if company_name!=None:
-            company_created = Company.objects.create(name=company_name)
-            company = Company.objects.filter(id=company_created.id).first()
+        company = Company.objects.filter(id=company_id).first()
+
+        if Site.objects.filter(name=site_name.lower()).exists():
+            site = Site.objects.filter(name=site_name.lower()).first()
+            print("site", site)
         else:
-            company = Company.objects.filter(id=company_id).first()
-        users = UserCompany.objects.filter(company_id=company_name).first()
+            site = Site.objects.create(name=site_name.lower())
+            print("site2", site)
+
 
         # Create project without assigning users
-        project = Project.objects.create(project_name=project_name, project_number=project_number, created_by_id=request.user.id,is_admin_approved=True)
+        project = Project.objects.create(site_id_id=site.id, project_name=project_name, project_number=project_number, created_by_id=request.user.id,is_admin_approved=True)
+
+        if site_name.lower()=='pm2':
+            project.is_internal=True
+            project.save()
+        else:
+            project.is_internal=False
+            project.save()
 
         # Assign users to the project
         for email in assigned_to:
@@ -2025,7 +2033,51 @@ class ProjectViewSet(viewsets.ViewSet):
         return CustomResponse({"message": "Project created successfully", "project_id": project.id}, status=status.HTTP_200_OK)
     
 
+    def project_list(self, request):
+        """
+            method to search and list projects
+        """
+        name = request.GET.get('name', None)
+        page_size = request.GET.get('page_size', '')
+        project_type = request.GET.get('project_type', None)
+
+        if project_type =='1':
+            projects = Project.objects.filter(is_admin_approved=True, is_marked_deleted=False, is_internal=True).annotate(
+            num_files=Count('project_files', filter=Q(project_files__is_admin_approved=True))
+        ).values('id', 'project_name', 'created_by__full_name', 'num_files').order_by("-created_at")
+            
+        elif project_type == '2':
+            projects = Project.objects.filter(is_admin_approved=True, is_marked_deleted=False, is_internal=False).annotate(
+            num_files=Count('project_files', filter=Q(project_files__is_admin_approved=True))
+        ).values('id', 'project_name', 'created_by__full_name', 'num_files').order_by("-created_at")
+            
+            
+        else:
+            projects = Project.objects.filter(is_admin_approved=True, is_marked_deleted=False).annotate(
+            num_files=Count('project_files', filter=Q(project_files__is_admin_approved=True))
+        ).values('id', 'project_name', 'created_by__full_name', 'num_files').order_by("-created_at")
+
+        if name:
+            projects = projects.filter(project_name__icontains=name)
+
+        page = None
+
+        if page_size:
+            pagination_class = self.pagination_class()
+            page = pagination_class.paginate_queryset(projects, request)
+
+        if page is not None:
+            return CustomResponse(pagination_class.get_paginated_response(page).data)
+
+        return CustomResponse(projects)   
+    
+
 class AssignToUsersViewSet(viewsets.ViewSet):
+    """
+        AssignToUsersViewSet to give the list of users associated to a particular id
+    """
+
+    permission_classes = (IsAuthenticated, CheckAdminOrSubAdminRoleStatusPermission,)
     def users_list(self, request, id):
-        users = UserCompany.objects.filter(company_id=id).all().values('user_id','user__full_name')
+        users = UserCompany.objects.filter(company_id=id).all().values('user_id','user__full_name', 'user__email').order_by('-created_at')
         return CustomResponse(users)

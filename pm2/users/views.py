@@ -417,6 +417,23 @@ class FileDetailsViewSet(viewsets.ModelViewSet):
             return CustomResponse({"message": "Project of this id does not exist"}, status=status_code.HTTP_400_BAD_REQUEST)
         files = Files.objects.filter(project_id=id, created_by=request.user, is_admin_approved=True, submitted_to_admin=True).all().values('id','file_name','thumbnail','manufacturer_name__full_name', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason')
         return CustomResponse(files)
+    
+    def file_list(self, request, id):
+        """
+        function to give a list of files based on the provided filter
+        """
+        list_type = request.GET.get('list_type', None)
+        if not Project.objects.filter(id=id).exists():
+            return CustomResponse({"message": "Project of this id does not exist"}, status=status_code.HTTP_400_BAD_REQUEST)
+
+        if list_type == '1':
+            files = Files.objects.filter(project_id = id, created_by=request.user, submitted_to_admin=False, is_marked_deleted=False).all().values('id','file_name','thumbnail','manufacturer_name__full_name', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason')
+        elif list_type == '2':
+            files = Files.objects.filter(project_id=id, created_by=request.user, is_admin_approved=True, submitted_to_admin=True).all().values('id','file_name','thumbnail','manufacturer_name__full_name', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason')
+        else:
+            return CustomResponse({"message": "Invalid filter_type"}, status=status_code.HTTP_400_BAD_REQUEST)
+
+        return CustomResponse(files)
 
         
 class ProjectDetailsViewSet(viewsets.ModelViewSet):
