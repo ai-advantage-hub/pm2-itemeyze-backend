@@ -581,7 +581,7 @@ class UserEditProfileViewSet(viewsets.ViewSet):
         if profile_pic:
             update_data["profile_pic"] = profile_pic
         if company_name:
-                User.objects.filter(id=request.user.id).update(company_name=company_name, is_edited=False)
+                User.objects.filter(id=request.user.id).update(company_name=company_name, is_edited=True)
                 return CustomResponse({"message": "Company Updated, Request Sent to Admin for Approval"}, status=status_code.HTTP_200_OK)
          
         # Perform the update in a single query
