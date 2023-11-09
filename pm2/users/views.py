@@ -8,7 +8,8 @@ from .models import (
     Files, 
     Company,
     UserCompany,
-    UserNotification
+    UserNotification,
+    Site
 
 )
 from custom_admin.models import ContentManagement
@@ -223,26 +224,61 @@ class ProjectViewSet(viewsets.ModelViewSet):
     serializer_class = CreateProjectSerializer
     pagination_class = CustomPagination
 
+    # def create(self, request, *args, **kwargs):
+    #     """
+    #         function to create project
+    #     """
+    #     project_name = request.data.get('project_name')
+    #     user = request.user 
+    #     if not project_name:
+    #         return CustomResponse({"message": "Project name cannot be empty."}, status=status_code.HTTP_400_BAD_REQUEST)
+
+    #     # Check if the project name is unique
+    #     if Project.objects.filter(project_name=project_name).exists():
+    #         return CustomResponse({"message": "Project with this name already exists."}, status=status_code.HTTP_400_BAD_REQUEST)
+
+    #     serializer = self.get_serializer(data=request.data)
+    #     serializer.is_valid(raise_exception=True)
+    #     serializer.save(created_by=user)
+    #     project = Project.objects.filter(id=serializer.instance.id).first()
+    #     project.users.add(user)
+
+    #     return CustomResponse(serializer.data, status=status_code.HTTP_201_CREATED)
+
     def create(self, request, *args, **kwargs):
         """
             function to create project
         """
         project_name = request.data.get('project_name')
-        user = request.user 
+        site_name = request.data.get('site_name')
         if not project_name:
             return CustomResponse({"message": "Project name cannot be empty."}, status=status_code.HTTP_400_BAD_REQUEST)
+        
+        if not site_name:
+            return CustomResponse({"message": "Site Name cannot be empty."}, status=status_code.HTTP_400_BAD_REQUEST)
 
         # Check if the project name is unique
         if Project.objects.filter(project_name=project_name).exists():
             return CustomResponse({"message": "Project with this name already exists."}, status=status_code.HTTP_400_BAD_REQUEST)
+        # site = Site.objects.create(name=site_name)
+        if Site.objects.filter(name=site_name.lower()).exists():
+            site = Site.objects.filter(name=site_name.lower()).first()
+            print("site", site)
+        else:
+            site = Site.objects.create(name=site_name.lower())
+            print("site2", site)
 
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save(created_by=user)
-        project = Project.objects.filter(id=serializer.instance.id).first()
-        project.users.add(user)
 
-        return CustomResponse(serializer.data, status=status_code.HTTP_201_CREATED)
+        project = Project.objects.create(created_by = request.user, project_name=project_name, site_id_id=site.id)
+        return CustomResponse({"message": "Project Created Successfully.","project_id":project.id,"project_name":project_name}, status=status_code.HTTP_200_OK)
+
+        # serializer = self.get_serializer(data=request.data)
+        # serializer.is_valid(raise_exception=True)
+        # serializer.save(created_by=user)
+        # project = Project.objects.filter(id=serializer.instance.id).first()
+        # project.users.add(user)
+
+        # return CustomResponse(serializer.data, status=status_code.HTTP_201_CREATED)
 
     def search(self, request):
         """
@@ -412,7 +448,7 @@ class ProjectDetailsViewSet(viewsets.ModelViewSet):
         file_obj = Files.objects.filter(Q(location__icontains=location) |
                                         Q(manufacturer_name__full_name__icontains=location) |
                                         Q(manufacturing_number__icontains=location),
-                                        project_id=pk, is_admin_approved=True, is_marked_deleted=False).order_by('-created_at')
+                                        project_id=pk, is_admin_approved=True, is_marked_deleted=False, is_deleted=False).order_by('-created_at')
 
         # Apply pagination        
         if page_size:
