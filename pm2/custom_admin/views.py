@@ -1848,58 +1848,35 @@ class UnapprovedUsersViewSet(viewsets.ViewSet):
         Function to get the list of unapproved users
         """
         page_size = request.GET.get('page_size', '')
-        request_type = request.GET.get('edit_request', None)
-
-        # if request_type == '1':
-        #     users = (
-        #         User.objects
-        #         .filter(is_admin_approved=False, is_email_verified=True, user_role=2)
-        #         .exclude(email=None)
-        #         .order_by('-id', '-created_at')
-        #         .distinct('id')
-        #         .values('id', 'full_name', 'profile_pic', 'email', 'user_company', 'user_company__company__name', 'company_name')
-        #     )
-        # elif request_type == '2':
-        #     users = (
-        #         User.objects
-        #         .filter(user_role=2, is_edited=True)
-        #         .exclude(email=None)
-        #         .order_by('-id', '-created_at')
-        #         .distinct('id')
-        #         .values('id', 'full_name', 'profile_pic', 'email', 'user_company', 'user_company__company__name', 'company_name')
-        #     )
-        # else:
-        #     users = (
-        #         User.objects
-        #         .filter(is_admin_approved=False, is_email_verified=True, user_role=2)
-        #         .exclude(email=None)
-        #         .order_by('-id', '-created_at')
-        #         .distinct('id')
-        #         .values('id', 'full_name', 'profile_pic', 'email', 'user_company', 'user_company__company__name', 'company_name')
-        #     )
-
-        # page = None
-        # if page_size:
-        #     pagination_class = self.pagination_class()
-        #     page = pagination_class.paginate_queryset(users, request)
-        # if page is not None:
-        #     return CustomResponse(pagination_class.get_paginated_response(page).data)
-        # return CustomResponse(users, status=status_code.HTTP_200_OK)
-
-        base_query = (
-            User.objects
-            .filter(is_email_verified=True, user_role=2)
-            .exclude(email=None)
-            .order_by('-id', '-created_at')
-            .values('id', 'full_name', 'profile_pic', 'email', 'user_company', 'user_company__company__name', 'company_name', 'is_admin_approved', 'is_edited')
-        )
+        request_type = request.GET.get('request_type', None)
 
         if request_type == '1':
-            users = base_query.filter(is_admin_approved=False)
+            users = (
+                User.objects
+                .filter(is_admin_approved=False, is_email_verified=True, user_role=2)
+                .exclude(email=None)
+                .order_by('-id', '-created_at')
+                .distinct('id')
+                .values('id', 'full_name', 'profile_pic', 'email', 'user_company', 'user_company__company__name', 'company_name')
+            )
         elif request_type == '2':
-            users = base_query.filter(is_edited=True)
+            users = (
+                User.objects
+                .filter(user_role=2, is_edited=True)
+                .exclude(email=None)
+                .order_by('-id', '-created_at')
+                .distinct('id')
+                .values('id', 'full_name', 'profile_pic', 'email', 'user_company', 'user_company__company__name', 'company_name')
+            )
         else:
-            users = base_query.filter(is_admin_approved=False)
+            users = (
+                User.objects
+                .filter(is_admin_approved=False, is_email_verified=True, user_role=2)
+                .exclude(email=None)
+                .order_by('-id', '-created_at')
+                .distinct('id')
+                .values('id', 'full_name', 'profile_pic', 'email', 'user_company', 'user_company__company__name', 'company_name')
+            )
 
         page = None
         if page_size:
@@ -1908,6 +1885,29 @@ class UnapprovedUsersViewSet(viewsets.ViewSet):
         if page is not None:
             return CustomResponse(pagination_class.get_paginated_response(page).data)
         return CustomResponse(users, status=status_code.HTTP_200_OK)
+
+        # base_query = (
+        #     User.objects
+        #     .filter(is_email_verified=True, user_role=2)
+        #     .exclude(email=None)
+        #     .order_by('-id', '-created_at')
+        #     .values('id', 'full_name', 'profile_pic', 'email', 'user_company', 'user_company__company__name', 'company_name', 'is_admin_approved', 'is_edited')
+        # )
+
+        # if request_type == '1':
+        #     users = base_query.filter(is_admin_approved=False)
+        # elif request_type == '2':
+        #     users = base_query.filter(is_edited=True)
+        # else:
+        #     users = base_query.filter(is_admin_approved=False)
+
+        # page = None
+        # if page_size:
+        #     pagination_class = self.pagination_class()
+        #     page = pagination_class.paginate_queryset(users, request)
+        # if page is not None:
+        #     return CustomResponse(pagination_class.get_paginated_response(page).data)
+        # return CustomResponse(users, status=status_code.HTTP_200_OK)
     
 
     def approve_requested_user(self, request):
@@ -1949,7 +1949,10 @@ class UnapprovedUsersViewSet(viewsets.ViewSet):
                     if not Company.objects.filter(name=new_company).exists():
                         # If the company doesn't exist, create a new one
                         created_company = Company.objects.create(name=new_company)
-                        UserCompany.objects.filter(user_id=user_id).update(company_id=created_company.id)
+                        if UserCompany.objects.filter(user_id=user_id).exists():
+                            UserCompany.objects.filter(user_id=user_id).update(company_id=created_company.id)
+                        else:
+                            UserCompany.objects.create(user_id=user_id, company_id=created_company.id)
                     else:
                         # If the company exists, update user's company
                         c = Company.objects.filter(name=new_company).first()
@@ -1957,8 +1960,11 @@ class UnapprovedUsersViewSet(viewsets.ViewSet):
                 else:
                     # If new_company is not provided, use the existing company_name
                     if user.company_name:
-                        existing_company = Company.objects.filter(name=user.company_name).first()
-                        UserCompany.objects.filter(user_id=user_id).update(company_id=existing_company.id)
+                        existing_company = Company.objects.create(name=user.company_name)
+                        if UserCompany.objects.filter(user_id=user_id).exists():
+                            UserCompany.objects.filter(user_id=user_id).update(company_id=existing_company.id)
+                        else:
+                            UserCompany.objects.create(user_id=user_id, company_id=existing_company.id)
 
                 # Clear the user's company_name
                 user.company_name = None
@@ -1967,3 +1973,59 @@ class UnapprovedUsersViewSet(viewsets.ViewSet):
                 return CustomResponse({"message": "User Approved by Admin"}, status=status_code.HTTP_200_OK)
             else:
                 return CustomResponse({"message": "Please give the right value in status value"}, status=status.HTTP_400_BAD_REQUEST)
+            
+
+class ProjectViewSet(viewsets.ViewSet):
+    """
+        ProjectViewSet to see the details and create project
+    """
+    permission_classes = (IsAuthenticated, CheckAdminOrSubAdminRoleStatusPermission,)
+    pagination_class = CustomPagination
+
+    def create(self, request):
+        """
+            method to create project
+        """
+        data = request.data
+        project_name = data.get("project_name")
+        project_number = data.get("project_number")
+        company_id = data.get("company_id")
+        company_name = data.get("company_name")
+        assigned_to = data.get("assigned_to", [])  # Default to an empty list if not provided
+        site_name = data.get("site_name")
+
+        # Validations
+        if not project_name:
+            return CustomResponse({"message": "Please provide project_name"}, status=status.HTTP_400_BAD_REQUEST)
+        if not project_number:
+            return CustomResponse({"message": "Please provide project_number"}, status=status.HTTP_400_BAD_REQUEST)
+       
+        if Project.objects.filter(project_name=project_name).exists():
+            return CustomResponse({"message": "Project of this name already exists"}, status=status.HTTP_400_BAD_REQUEST)
+        if Project.objects.filter(project_number=project_number).exists():
+            return CustomResponse({"message": "Project Number already exists"}, status=status.HTTP_400_BAD_REQUEST)
+        # company_created = Company.objects.create(name=company_name)
+        if company_name!=None:
+            company_created = Company.objects.create(name=company_name)
+            company = Company.objects.filter(id=company_created.id).first()
+        else:
+            company = Company.objects.filter(id=company_id).first()
+        users = UserCompany.objects.filter(company_id=company_name).first()
+
+        # Create project without assigning users
+        project = Project.objects.create(project_name=project_name, project_number=project_number, created_by_id=request.user.id,is_admin_approved=True)
+
+        # Assign users to the project
+        for email in assigned_to:
+            user = User.objects.filter(email=email).first()
+            if user:
+                project.users.add(user)  
+            print(email)
+
+        return CustomResponse({"message": "Project created successfully", "project_id": project.id}, status=status.HTTP_200_OK)
+    
+
+class AssignToUsersViewSet(viewsets.ViewSet):
+    def users_list(self, request, id):
+        users = UserCompany.objects.filter(company_id=id).all().values('user_id','user__full_name')
+        return CustomResponse(users)

@@ -6,7 +6,8 @@ from .models import (
     OTP, 
     Project, 
     Files,
-    UserNotification
+    UserNotification,
+    Site
 
 )
 from custom_admin.models import ContentManagement
@@ -190,15 +191,24 @@ class ResetPasswordSerializer(serializers.Serializer):
     
 
 #Home
+class SiteSerializer(serializers.ModelSerializer):
+    """
+    Serializer for Site model
+    """
+
+    class Meta:
+        model = Site
+        fields = ('id', 'name')
+
 
 class CreateProjectSerializer(serializers.ModelSerializer):
     """
         CreateProjectSerializer for project creating project
     """
-
+    site_id = serializers.PrimaryKeyRelatedField(queryset=Site.objects.all(), required=True)
     class Meta:
         model = Project
-        fields = ("id", "project_name", "created_by")
+        fields = ("id", "project_name", "created_by", "site_id")
 
 
 class CreateFileDetailsSerializer(serializers.ModelSerializer):

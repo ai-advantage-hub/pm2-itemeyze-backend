@@ -130,7 +130,14 @@ class UserCompany(BaseModel):
 
     def __str__(self):
         return f"{self.user.email} - {self.company.name}"
-    
+
+
+class Site(BaseModel): 
+    name = models.CharField(max_length=255)
+
+    def __str__(self):
+        return self.name
+
 
 class Project(BaseModel):
     """
@@ -144,6 +151,8 @@ class Project(BaseModel):
     project_number = models.TextField(verbose_name="project number", null=True)
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_by_project', null=True)
     deleted_at = models.DateTimeField(null=True, blank=True, verbose_name="Project_Deleted_At")
+    site_id = models.ForeignKey(Site,blank=True,on_delete=models.CASCADE, related_name='site_id', null=True)
+    is_internal = models.BooleanField(default=False, null=True)
 
     def __str__(self):
         return self.project_name
@@ -157,6 +166,15 @@ class Project(BaseModel):
         verbose_name = "Project"
         verbose_name_plural = "Projects"
 
+
+# class ManufacturerName(BaseModel):
+#     name = models.CharField(max_length=255)
+#     is_active = models.BooleanField(default=True)
+#     # added_by = 
+
+#     def __str__(self):
+#         return self.name
+    
 
 class Files(BaseModel):
     """

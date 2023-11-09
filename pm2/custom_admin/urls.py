@@ -107,6 +107,8 @@ urlpatterns = [
     path("unapproved_users_list", views.UnapprovedUsersViewSet.as_view({"get": "unapproved_users_list"}), name="unapproved_users_list"),
     path("approve_requested_user", views.UnapprovedUsersViewSet.as_view({"put": "approve_requested_user"}), name="approve_requested_user"),
 
+    path("users_list_of_company/<int:id>", views.AssignToUsersViewSet.as_view({"get": "users_list"}), name="users_list_of_company"),
+
 
     #TotalUsers
     path("total_users", views.TotalUserCountViewSet.as_view({"get": "list"}), name="total_users"),
