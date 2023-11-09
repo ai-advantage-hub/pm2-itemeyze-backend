@@ -102,6 +102,11 @@ urlpatterns = [
     path("marked_for_delete_files", views.MarkedForDeletedFilesViewSet.as_view({"get": "list"}), name="marked_for_delete_files"),
     path("approve_marked_for_deleted_file", views.MarkedForDeletedFilesViewSet.as_view({"put": "approve"}), name="approve_marked_for_deleted_file"),
 
+    path("edit_user_details/<int:id>", views.EditUserDetailsViewSet.as_view({"put": "update"}), name="edit_user_details"),
+
+    path("unapproved_users_list", views.UnapprovedUsersViewSet.as_view({"get": "unapproved_users_list"}), name="unapproved_users_list"),
+    path("approve_requested_user", views.UnapprovedUsersViewSet.as_view({"put": "approve_requested_user"}), name="approve_requested_user"),
+
 
     #TotalUsers
     path("total_users", views.TotalUserCountViewSet.as_view({"get": "list"}), name="total_users"),

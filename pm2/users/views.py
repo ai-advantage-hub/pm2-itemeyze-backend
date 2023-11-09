@@ -313,18 +313,13 @@ class FileDetailsViewSet(viewsets.ModelViewSet):
     #         b = Files.objects.filter(id=file.id).update(file_name=c)
     #         return CustomResponse({"message": "File Created with existing user Successfully", "file_id": file.id}, status=status_code.HTTP_201_CREATED)
     
-    
-    
-    
-    # def list(self, request, id, *args, **kwargs):
-    #     """
-    #         function to give list of file
-    #     """
-    #     location = request.GET.get('location', None)
-    #     manufacturer_name = request.GET.get('manufacturer_name', None)
-    #     manufacturing_number = request.GET.get('manufacturing_number', None)
-    #     user = Files.objects.filter(id=id).all().values('file_name','thumbnail','manufacturer_name__full_name', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording')
-    #     return CustomResponse(user)
+        
+    def list(self, request, id, *args, **kwargs):
+        """
+            function to give list of file
+        """
+        user = Files.objects.filter(id=id).all().values('file_name','thumbnail','manufacturer_name__full_name', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording')
+        return CustomResponse(user)
 
     def create(self, request, *args, **kwargs):
         """
@@ -586,7 +581,7 @@ class UserEditProfileViewSet(viewsets.ViewSet):
         if profile_pic:
             update_data["profile_pic"] = profile_pic
         if company_name:
-                User.objects.filter(id=request.user.id).update(company_name=company_name, is_admin_approved=False)
+                User.objects.filter(id=request.user.id).update(company_name=company_name, is_edited=False)
                 return CustomResponse({"message": "Company Updated, Request Sent to Admin for Approval"}, status=status_code.HTTP_200_OK)
          
         # Perform the update in a single query
