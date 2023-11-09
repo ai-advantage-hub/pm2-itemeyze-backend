@@ -1806,3 +1806,164 @@ class MarkedForDeletedFilesViewSet(viewsets.ViewSet):
                 return CustomResponse ({"message": "File Delete Request Denied Successfully"}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 return CustomResponse ({"message": "Please Provide Valid Status Value"}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class EditUserDetailsViewSet(viewsets.ViewSet):
+    """
+        EditUserDetailsViewSet to edit the details of userss
+    """
+    permission_classes = (IsAuthenticated, CheckAdminOrSubAdminRoleStatusPermission,)
+
+    def update(self, request, id):
+        """
+            function to update the details of users
+        """
+        data = request.data
+        company = data.get("company")
+        if not company:
+            return CustomResponse({"message": "Please Enter New Company Name."}, status=status_code.HTTP_400_BAD_REQUEST)
+        user = User.objects.filter(id=id, user_role=2).first()
+        if not user:
+            return CustomResponse({"message": "User Not Found."}, status=status_code.HTTP_400_BAD_REQUEST)
+        
+        if not Company.objects.filter(name=company).exists():
+            created_company = Company.objects.create(name = company)
+            UserCompany.objects.filter(user_id=id).update(company_id=created_company.id)
+        else:
+            c = Company.objects.filter(name=company).first()
+            UserCompany.objects.filter(user_id=id).update(company_id=c.id)
+
+        return CustomResponse({"message": "Company Edited Successfully."}, status=status_code.HTTP_200_OK)
+
+
+class UnapprovedUsersViewSet(viewsets.ViewSet):
+    """
+        UnapprovedUsersViewSet to give list of unapproved users
+    """
+    permission_classes = (IsAuthenticated, CheckAdminOrSubAdminRoleStatusPermission,)
+    pagination_class = CustomPagination
+
+    def unapproved_users_list(self, request):
+        """
+        Function to get the list of unapproved users
+        """
+        page_size = request.GET.get('page_size', '')
+        request_type = request.GET.get('edit_request', None)
+
+        # if request_type == '1':
+        #     users = (
+        #         User.objects
+        #         .filter(is_admin_approved=False, is_email_verified=True, user_role=2)
+        #         .exclude(email=None)
+        #         .order_by('-id', '-created_at')
+        #         .distinct('id')
+        #         .values('id', 'full_name', 'profile_pic', 'email', 'user_company', 'user_company__company__name', 'company_name')
+        #     )
+        # elif request_type == '2':
+        #     users = (
+        #         User.objects
+        #         .filter(user_role=2, is_edited=True)
+        #         .exclude(email=None)
+        #         .order_by('-id', '-created_at')
+        #         .distinct('id')
+        #         .values('id', 'full_name', 'profile_pic', 'email', 'user_company', 'user_company__company__name', 'company_name')
+        #     )
+        # else:
+        #     users = (
+        #         User.objects
+        #         .filter(is_admin_approved=False, is_email_verified=True, user_role=2)
+        #         .exclude(email=None)
+        #         .order_by('-id', '-created_at')
+        #         .distinct('id')
+        #         .values('id', 'full_name', 'profile_pic', 'email', 'user_company', 'user_company__company__name', 'company_name')
+        #     )
+
+        # page = None
+        # if page_size:
+        #     pagination_class = self.pagination_class()
+        #     page = pagination_class.paginate_queryset(users, request)
+        # if page is not None:
+        #     return CustomResponse(pagination_class.get_paginated_response(page).data)
+        # return CustomResponse(users, status=status_code.HTTP_200_OK)
+
+        base_query = (
+            User.objects
+            .filter(is_email_verified=True, user_role=2)
+            .exclude(email=None)
+            .order_by('-id', '-created_at')
+            .values('id', 'full_name', 'profile_pic', 'email', 'user_company', 'user_company__company__name', 'company_name', 'is_admin_approved', 'is_edited')
+        )
+
+        if request_type == '1':
+            users = base_query.filter(is_admin_approved=False)
+        elif request_type == '2':
+            users = base_query.filter(is_edited=True)
+        else:
+            users = base_query.filter(is_admin_approved=False)
+
+        page = None
+        if page_size:
+            pagination_class = self.pagination_class()
+            page = pagination_class.paginate_queryset(users, request)
+        if page is not None:
+            return CustomResponse(pagination_class.get_paginated_response(page).data)
+        return CustomResponse(users, status=status_code.HTTP_200_OK)
+    
+
+    def approve_requested_user(self, request):
+        """
+            Function to approve the users
+        """
+        data = request.data
+        user_id = data.get("user_id")
+        status_value = data.get("status_value")
+        new_company = data.get("new_company")
+
+        user = User.objects.filter(id=user_id).first()
+
+        if not user:
+            return CustomResponse({"message": "User not found."}, status=status.HTTP_400_BAD_REQUEST)
+
+        with transaction.atomic():
+            if status_value == 2:
+                # Deny request
+                if user.is_edited:
+                    # If the user is edited, reset the company to the previous one
+                    if user.company_name:
+                        existing_company = Company.objects.filter(name=user.company_name).first()
+                        UserCompany.objects.filter(user_id=user_id).update(company_id=existing_company.id)
+                    user.is_edited = False  # Reset the is_edited flag
+                else:
+                    # If the user is new, just delete the user
+                    user.delete()
+
+                return CustomResponse({"message": "User Denied Successfully"}, status=status_code.HTTP_200_OK)
+            elif status_value == 1:
+                # Approve request
+                user.is_admin_approved = True
+                user.is_edited = False  # Reset the is_edited flag
+                user.save()
+
+                if new_company:
+                    # If new_company is provided, update the user's company
+                    if not Company.objects.filter(name=new_company).exists():
+                        # If the company doesn't exist, create a new one
+                        created_company = Company.objects.create(name=new_company)
+                        UserCompany.objects.filter(user_id=user_id).update(company_id=created_company.id)
+                    else:
+                        # If the company exists, update user's company
+                        c = Company.objects.filter(name=new_company).first()
+                        UserCompany.objects.filter(user_id=user_id).update(company_id=c.id)
+                else:
+                    # If new_company is not provided, use the existing company_name
+                    if user.company_name:
+                        existing_company = Company.objects.filter(name=user.company_name).first()
+                        UserCompany.objects.filter(user_id=user_id).update(company_id=existing_company.id)
+
+                # Clear the user's company_name
+                user.company_name = None
+                user.save()
+
+                return CustomResponse({"message": "User Approved by Admin"}, status=status_code.HTTP_200_OK)
+            else:
+                return CustomResponse({"message": "Please give the right value in status value"}, status=status.HTTP_400_BAD_REQUEST)
