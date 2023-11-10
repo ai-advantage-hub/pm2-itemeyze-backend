@@ -109,6 +109,9 @@ urlpatterns = [
 
     path("project_create", views.ProjectViewSet.as_view({"post": "create"}), name="project_create"),
     path("project_list", views.ProjectViewSet.as_view({"get": "project_list"}), name="project_list"),
+    path("project_details/<int:pk>", views.ProjectViewSet.as_view({"get": "project_details"}), name="project_details"),
+    path("project_approve", views.ProjectViewSet.as_view({"put": "project_approve"}), name="project_approve"),
+
     path("users_list_of_company/<int:id>", views.AssignToUsersViewSet.as_view({"get": "users_list"}), name="users_list_of_company"),
 
 

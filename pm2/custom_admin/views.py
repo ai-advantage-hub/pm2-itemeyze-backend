@@ -2024,11 +2024,11 @@ class ProjectViewSet(viewsets.ViewSet):
             project.save()
 
         # Assign users to the project
-        for email in assigned_to:
-            user = User.objects.filter(email=email).first()
+        for id in assigned_to:
+            user = User.objects.filter(id=id).first()
             if user:
                 project.users.add(user)  
-            print(email)
+            print(id)
 
         return CustomResponse({"message": "Project created successfully", "project_id": project.id}, status=status.HTTP_200_OK)
     
@@ -2044,18 +2044,18 @@ class ProjectViewSet(viewsets.ViewSet):
         if project_type =='1':
             projects = Project.objects.filter(is_admin_approved=True, is_marked_deleted=False, is_internal=True).annotate(
             num_files=Count('project_files', filter=Q(project_files__is_admin_approved=True))
-        ).values('id', 'project_name', 'created_by__full_name', 'num_files').order_by("-created_at")
+        ).values('id', 'project_name', 'created_by__full_name', 'num_files','site_id_id','site_id__name').order_by("-created_at")
             
         elif project_type == '2':
             projects = Project.objects.filter(is_admin_approved=True, is_marked_deleted=False, is_internal=False).annotate(
             num_files=Count('project_files', filter=Q(project_files__is_admin_approved=True))
-        ).values('id', 'project_name', 'created_by__full_name', 'num_files').order_by("-created_at")
+        ).values('id', 'project_name', 'created_by__full_name', 'num_files','site_id_id','site_id__name').order_by("-created_at")
             
             
         else:
             projects = Project.objects.filter(is_admin_approved=True, is_marked_deleted=False).annotate(
             num_files=Count('project_files', filter=Q(project_files__is_admin_approved=True))
-        ).values('id', 'project_name', 'created_by__full_name', 'num_files').order_by("-created_at")
+        ).values('id', 'project_name', 'created_by__full_name', 'num_files', 'site_id_id','site_id__name').order_by("-created_at")
 
         if name:
             projects = projects.filter(project_name__icontains=name)
@@ -2071,6 +2071,179 @@ class ProjectViewSet(viewsets.ViewSet):
 
         return CustomResponse(projects)   
     
+    queryset = Project.objects.all()
+
+    def project_details(self, request, pk=None):  
+        """
+            method to retrieve project
+        """
+        project = get_object_or_404(self.queryset, pk=pk)
+        serializer = ProjectDetailSerializer(project)
+
+        return CustomResponse(serializer.data)
+    
+    def project_approve(self, request):
+        """
+            method to approve projects
+        """
+        data = request.data
+        project_id = data.get("project_id")
+        project_name = data.get("project_name")
+        project_number = data.get("project_number")
+        company_id = data.get("company_id")
+        assigned_to = data.get("assigned_to", [])
+        site_name = data.get("site_name")
+        status_value = data.get("status_value")
+
+        if not Project.objects.filter(id=project_id).first():
+            return CustomResponse({"message": "Project of this id does not exist"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if status_value == 2:
+            Project.objects.filter(id=project_id).delete()
+            return CustomResponse({"message": "Project Request Denied Successfully"}, status=status_code.HTTP_200_OK)
+
+        if not project_name:
+            return CustomResponse({"message": "Please provide project_name"}, status=status.HTTP_400_BAD_REQUEST)
+        if not project_number:
+            return CustomResponse({"message": "Please provide project_number"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if company_id:
+            c = Company.objects.filter(id=company_id).first()
+
+        if site_name:
+            if Site.objects.filter(name=site_name.lower()).exists():
+                site = Site.objects.filter(name=site_name.lower()).first()
+                print("site", site)
+            else:
+                site = Site.objects.create(name=site_name.lower())
+                print("site2", site)
+
+            if site_name.lower()=='pm2':
+                Project.objects.filter(id=project_id).update(is_internal=True)
+            else:
+                Project.objects.filter(id=project_id).update(is_internal=False)
+
+            Project.objects.filter(id=project_id).update(site_id_id=site.id)
+
+        if status_value == 1:
+            if Project.objects.filter(id=project_id, project_name=project_name, project_number=project_number).exists():
+                if assigned_to:
+                    project = Project.objects.filter(id=project_id, project_name=project_name, project_number=project_number).first()
+                    for id in assigned_to:
+                        print("id",id)
+                        user = User.objects.filter(id=id).first()
+                        if user:
+                            print("user",user)
+                            project.users.add(user)
+                            project.is_admin_approved = True
+                            project.save()
+
+                            # Push Notification to users who created the project
+                            title = f"Project Approved by Admin"
+                            message = f"Hello!! Your project '{project_name}' has been approved by Admin."
+                            data = {
+                                "title": title,
+                                "message": message,
+                            }
+
+                            notifyer = user
+                            if notifyer.is_notification_enabled == True:
+                                notification = UserNotification.objects.create(user=user, title=title, message=message)
+                                notification.save()
+                                data.update({"notification_id": str(notification.id)})
+
+                                send_notification_bulk(
+                                    user_ids=[user.id], title=title, message=message, data=data)
+
+                    return CustomResponse({"message": "Project approved successfully"})
+                else:
+                    project = Project.objects.filter(id=project_id).first()
+                    project.is_admin_approved = True
+                    project.save()
+
+                    # Push Notification to users who created the project
+                    title = f"Project Approved by Admin"
+                    message = f"Hello!! Your project '{project_name}' has been approved by Admin."
+                    data = {
+                        "title": title,
+                        "message": message,
+                    }
+
+                    notifyer = project.created_by
+                    if notifyer.is_notification_enabled == True:
+                        notification = UserNotification.objects.create(user=notifyer, title=title, message=message)
+                        notification.save()
+                        data.update({"notification_id": str(notification.id)})
+
+                        send_notification_bulk(
+                            user_ids=[notifyer.id], title=title, message=message, data=data)
+
+                    return CustomResponse({"message": "Project approved successfully"})
+            else:
+                if Project.objects.filter(project_name=project_name).exclude(id=project_id).exists():
+                    return CustomResponse({"message": "Project of this name already exists"}, status=status.HTTP_400_BAD_REQUEST)
+                elif Project.objects.filter(project_number=project_number).exclude(id=project_id).exists():
+                    return CustomResponse({"message": "Project Number of this name already exists"}, status=status.HTTP_400_BAD_REQUEST)
+                else:
+                    if assigned_to:
+                        project = Project.objects.filter(id=project_id).update(project_name=project_name, project_number=project_number)
+                        project = Project.objects.filter(id=project_id).first()
+                        for id in assigned_to:
+                            user = User.objects.filter(id=id).first()
+                            if user:
+                                project.users.add(user)
+                                project.is_admin_approved = True
+                                project.save()
+                                # Push Notification to users who created the project
+                                title = f"Admin Assigned you a Project"
+                                message = f"Hello!! Admin Assigned you a project named '{project_name}'."
+                                data = {
+                                    "title": title,
+                                    "message": message,
+                                }
+
+                                # notifyer = user
+                                # if notifyer.is_notification_enabled == True:
+                                notification = UserNotification.objects.create(user=user, title=title, message=message)
+                                notification.save()
+                                data.update({"notification_id": str(notification.id)})
+
+                                send_notification_bulk(
+                                    user_ids=[user.id], title=title, message=message, data=data)
+                        return CustomResponse({"message": "Project approved successfully"})
+                    else:
+                        log.info("comes")
+                        project=Project.objects.filter(id=project_id).update(project_name=project_name, project_number=project_number)
+                        project=Project.objects.filter(id=project_id).first()
+                        project.is_admin_approved = True
+                        created_by_id = project.created_by
+                        project.save()
+                        # Push Notification to users who created the project
+                        title = f"Project Approved by Admin"
+                        message = f"Hello!! Your project '{project_name}' has been approved by Admin."
+                        data = {
+                            "title": title,
+                            "message": message,
+                        }
+
+                        # notifyer = user
+                        # if notifyer.is_notification_enabled == True:
+                        c = Project.objects.filter(id=project_id).first()
+                        print("c===", c.created_by.id)
+                        notifyer = User.objects.filter(id=c.created_by.id).first()
+                        notification = UserNotification.objects.create(user=created_by_id, title=title, message=message)
+                        log.info("notification")
+                        log.info(notification)
+                        notification.save()
+                        data.update({"notification_id": str(notification.id)})
+                        log.info("Data")
+                        log.info(data)
+                        print("aaaaaaaa", notifyer.is_notification_enabled)
+                        if notifyer.is_notification_enabled == True:
+                            send_notification_bulk(
+                                user_ids=[created_by_id.id], title=title, message=message, data=data)
+                        return CustomResponse({"message": "Project approved successfully"})
+    
 
 class AssignToUsersViewSet(viewsets.ViewSet):
     """
@@ -2078,6 +2251,10 @@ class AssignToUsersViewSet(viewsets.ViewSet):
     """
 
     permission_classes = (IsAuthenticated, CheckAdminOrSubAdminRoleStatusPermission,)
+
     def users_list(self, request, id):
+        """
+            function to give list of users of a particular company
+        """
         users = UserCompany.objects.filter(company_id=id).all().values('user_id','user__full_name', 'user__email').order_by('-created_at')
         return CustomResponse(users)
