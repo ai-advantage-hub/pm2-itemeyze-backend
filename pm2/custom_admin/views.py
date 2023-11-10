@@ -1929,10 +1929,13 @@ class UnapprovedUsersViewSet(viewsets.ViewSet):
                 # Deny request
                 if user.is_edited:
                     # If the user is edited, reset the company to the previous one
-                    if user.company_name:
-                        existing_company = Company.objects.filter(name=user.company_name).first()
-                        UserCompany.objects.filter(user_id=user_id).update(company_id=existing_company.id)
+                    if user.company_name!=None:
+                        print("userrr", user.company_name)
+                        # existing_company = Company.objects.filter(name=user.company_name).first()
+                        # UserCompany.objects.filter(user_id=user_id).update(company_id=existing_company.id)
                     user.is_edited = False  # Reset the is_edited flag
+                    user.company_name=None
+                    user.save()
                 else:
                     # If the user is new, just delete the user
                     user.delete()
