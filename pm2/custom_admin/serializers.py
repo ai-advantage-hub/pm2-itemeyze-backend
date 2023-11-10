@@ -96,7 +96,7 @@ class ForgotPasswordSerializer(serializers.Serializer):
 class FileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Files
-        fields = ['id', 'file_name', 'thumbnail', 'manufacturing_number', 'quantity', 'project_details', 'additional_details', 'recording', 'location', 'location_points','created_at']
+        fields = ['id', 'file_name', 'thumbnail', 'manufacturing_number', 'quantity', 'project_details', 'additional_details', 'recording', 'location', 'location_points','created_at', 'is_file_disapproved', 'disapproved_reason']
 
 
 class ProjectDetailSerializer(serializers.ModelSerializer):
@@ -105,7 +105,7 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Project
-        fields = ['id','project_name', 'project_number','created_by','created_at', 'files']
+        fields = ['id','project_name', 'project_number','created_by','created_at','site_id_id', 'files']
 
     def get_created_by(self, obj):
         try:
@@ -114,7 +114,7 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
             return None
     
     def get_files(self, obj):
-        approved_files = obj.project_files.filter(is_admin_approved=True, is_marked_deleted=False)
+        approved_files = obj.project_files.filter(is_marked_deleted=False)
         return FileSerializer(approved_files, many=True).data
 
 

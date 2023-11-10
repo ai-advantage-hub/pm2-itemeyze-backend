@@ -268,8 +268,13 @@ class ProjectViewSet(viewsets.ModelViewSet):
             site = Site.objects.create(name=site_name.lower())
             print("site2", site)
 
-
         project = Project.objects.create(created_by = request.user, project_name=project_name, site_id_id=site.id)
+        if site_name.lower()=='pm2':
+            project.is_internal=True
+            project.save()
+        else:
+            project.is_internal=False
+            project.save()
         return CustomResponse({"message": "Project Created Successfully.","project_id":project.id,"project_name":project_name}, status=status_code.HTTP_200_OK)
 
         # serializer = self.get_serializer(data=request.data)
