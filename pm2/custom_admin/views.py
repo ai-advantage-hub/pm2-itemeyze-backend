@@ -5,7 +5,7 @@ from rest_framework import status, viewsets, mixins
 from custom_admin.serializers import AdminLoginSerializer,AdminResetPasswordSerializer, CreateFileDetailsSerializer, ForgotPasswordSerializer, ProjectDetailSerializer,FilesSerializer,FilesPointSerializer, UserListAdminSerializer,UserDetailSerializer, UserListingSerializer
 from django.contrib.auth import authenticate
 from rest_framework.authtoken.models import Token
-from users.models import Company, UserCompany, User,Project,Files, UserNotification, Site
+from users.models import Company, UserCompany, User,Project,Files, UserNotification, Site, ManufacturerName
 from django.contrib.auth.hashers import check_password
 from custom_admin.models import *
 from core.response import CustomResponse
@@ -2261,3 +2261,79 @@ class AssignToUsersViewSet(viewsets.ViewSet):
         """
         users = UserCompany.objects.filter(company_id=id).all().values('user_id','user__full_name', 'user__email').order_by('-created_at')
         return CustomResponse(users)
+    
+
+class ManageManufacturerNameViewSet(viewsets.ViewSet):
+    """
+        ManageManufacturerNameViewSet to manage Manufacturer Name
+    """
+    permission_classes = (IsAuthenticated, CheckAdminOrSubAdminRoleStatusPermission,)
+    pagination_class = CustomPagination
+
+    def create(self, request):
+        """
+            function to create Manufacturer
+        """
+        data = request.data
+        manufacturer_name = data.get("manufacturer_name")
+
+        if not manufacturer_name:
+            return CustomResponse({"message": "Please Enter Manufacturer Name"}, status=status_code.HTTP_400_BAD_REQUEST)
+        
+        if ManufacturerName.objects.filter(name=manufacturer_name).exists():
+            return CustomResponse({"message": "This Manufacturer Name already exists"}, status=status_code.HTTP_400_BAD_REQUEST)
+        else:
+            manufacturer = ManufacturerName.objects.create(name=manufacturer_name, added_by=1)
+            return CustomResponse({"message": "Manufacturer Name added successfully","manufacturer_name_id":manufacturer.id}, status=status_code.HTTP_200_OK)
+        
+    
+    def update(self, request):
+        """
+            function to update manufacturer name
+        """
+        data = request.data
+        id = data.get("id")
+        new_manufacturer_name = data.get("new_manufacturer_name")
+        manufacturer = ManufacturerName.objects.filter(id=id).first()
+        if not manufacturer:
+            return CustomResponse({"message": "This Manufacturer Name Does Not Exist"}, status=status_code.HTTP_400_BAD_REQUEST)
+        
+        if not new_manufacturer_name:
+            return CustomResponse({"message": "Please Enter New Manufacturer Name"}, status=status_code.HTTP_400_BAD_REQUEST)
+        
+        new_manufacturer = ManufacturerName.objects.filter(id=id).update(name = new_manufacturer_name)
+        return CustomResponse({"message": "Manufacturer Name updated successfully"}, status=status_code.HTTP_200_OK)
+    
+
+    def retrieve(self, request, id):
+        """
+            function to retrieve details of Manufacturer
+        """
+        manufacturer = ManufacturerName.objects.filter(id=id).all().values('id','name','is_active', 'added_by')
+
+
+
+class UploadexcelViewSet(viewsets.ViewSet):
+     def create(self, request):
+        try:
+            print("tryy")
+            # print(request.__dir__())
+            request_file = request.FILES.get("test")
+            excel_data = pd.read_excel(request_file,engine='openpyxl')
+            print(excel_data.columns)
+            for index,val in excel_data.iterrows():
+                print("index",index, val)
+                mit,_=ManufacturerName.objects.get_or_create(name=val.get("MFGName"))
+                mit.save()
+                print(mit)
+            # for val in excel_data.iterrows():
+            #     print(val)
+
+               # print(index,val["name"],val["speciality"])
+            # for i in x:
+            #     print(i)
+        
+        except Exception as e:
+            print("error:", e)
+        return CustomResponse({"message": "excel upload successful"})
+

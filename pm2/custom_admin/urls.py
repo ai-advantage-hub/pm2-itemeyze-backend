@@ -112,8 +112,13 @@ urlpatterns = [
     path("project_details/<int:pk>", views.ProjectViewSet.as_view({"get": "project_details"}), name="project_details"),
     path("project_approve", views.ProjectViewSet.as_view({"put": "project_approve"}), name="project_approve"),
 
+    path("create_manufacturer", views.ManageManufacturerNameViewSet.as_view({"post": "create"}), name="create_manufacturer"),
+    path("edit_manufacturer", views.ManageManufacturerNameViewSet.as_view({"put": "update"}), name="edit_manufacturer"),
+
     path("users_list_of_company/<int:id>", views.AssignToUsersViewSet.as_view({"get": "users_list"}), name="users_list_of_company"),
 
+
+    path("upload_excel_data", views.UploadexcelViewSet.as_view({"post": "create"}), name="upload_excel_data"),
 
     #TotalUsers
     path("total_users", views.TotalUserCountViewSet.as_view({"get": "list"}), name="total_users"),
