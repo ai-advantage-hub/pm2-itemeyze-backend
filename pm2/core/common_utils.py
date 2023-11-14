@@ -4,7 +4,9 @@ import random
 import sendgrid
 from django.template.loader import render_to_string
 from sendgrid.helpers.mail import Content, Email, Mail, To, From
-from config.local import FROM_NAME, FROM_EMAIL, SEND_GRID_API_KEY
+# from config.local import FROM_NAME, FROM_EMAIL, SEND_GRID_API_KEY
+from config.local import FROM_NAME, FROM_EMAIL
+
 from sendgrid.helpers.mail import Content, Email, Mail, To
 from users.templates import *
 from fcm_django.models import FCMDevice
@@ -16,6 +18,7 @@ from config.local import *
 import logging
 log = logging.getLogger(__name__)
 from fcm_django.models import FCMDevice
+import boto3
 
 from firebase_admin.messaging import Message, Notification
 
@@ -33,28 +36,74 @@ def generate_otp():
     return otp
 
 
+# def send_html_mail_to_single_user(subject, email, html_template, ctx_dict):
+#     """
+#         method used to send the email.
+#         :param subject:
+#         :param email:
+#         :param html_template:
+#         :param ctxt_dict:
+#         :return:
+#         """
+#     email_body = render_to_string(html_template, ctx_dict)
+#     send_grid = sendgrid.SendGridAPIClient(api_key=SEND_GRID_API_KEY)
+#     from_email = Email(FROM_EMAIL)
+#     to_email = To(email)
+#     mail_subject = subject
+#     content = Content("text/html", email_body)
+#     mail = Mail(from_email, to_email, mail_subject, content)
+#     try:
+#         send_grid.client.mail.send.post(request_body=mail.get())
+#         print("success")
+#     except Exception as e:
+#         print(e)
+#         print("ERROR_IN_SENDING_MAIL")
+#     return True
+
 def send_html_mail_to_single_user(subject, email, html_template, ctx_dict):
     """
-        method used to send the email.
-        :param subject:
-        :param email:
-        :param html_template:
-        :param ctxt_dict:
-        :return:
-        """
+    Method used to send the email.
+    :param subject:
+    :param email:
+    :param html_template:
+    :param ctx_dict:
+    """
+    logging.info("send email to user")
     email_body = render_to_string(html_template, ctx_dict)
-    send_grid = sendgrid.SendGridAPIClient(api_key=SEND_GRID_API_KEY)
-    from_email = Email(FROM_EMAIL)
-    to_email = To(email)
-    mail_subject = subject
-    content = Content("text/html", email_body)
-    mail = Mail(from_email, to_email, mail_subject, content)
+    # SES Configuration
+    AWS_REGION = "us-east-1" # change this to the appropriate region
+    CHARSET = "UTF-8"
+    client = boto3.client('ses', region_name=AWS_REGION, 
+                          aws_access_key_id=AWS_S3_ACCESS_KEY_ID, 
+                          aws_secret_access_key=AWS_S3_SECRET_ACCESS_KEY)
+    SENDER = f"{FROM_NAME} <{FROM_EMAIL}>"
     try:
-        send_grid.client.mail.send.post(request_body=mail.get())
-        print("success")
+        print("in try")
+        response = client.send_email(
+            Destination={
+                'ToAddresses': [email], # Recipient email address
+            },
+            Message={
+                'Body': {
+                    'Html': {
+                        'Charset': CHARSET,
+                        'Data': email_body,
+                    },
+                },
+                'Subject': {
+                    'Charset': CHARSET,
+                    'Data': subject,
+                },
+            },
+            Source=SENDER, # Sender's email address
+        )
+        logging.info("Email sent! Message ID:"),
+        print("email sent")
+        logging.info(response['MessageId'])
     except Exception as e:
-        print(e)
-        print("ERROR_IN_SENDING_MAIL")
+        print("in except")
+        logging.info("exception:", e)
+        logging.info("ERROR_IN_SENDING_MAIL")
     return True
 
 
