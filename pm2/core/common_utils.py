@@ -191,6 +191,7 @@ def update_or_create_fcm_detail(user, registration_id, device_type):
     :param user:
     :param device_type:
     :param registration_id:
+    
     """
     device = FCMDevice.objects.filter(
         type=device_type, registration_id=registration_id).first()
