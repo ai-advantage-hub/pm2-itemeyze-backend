@@ -1,8 +1,9 @@
 #!/bin/bash
 
 CUSTOM_NAME="pm2"
-SCRIPT_PATH="/home/ubuntu/pm2-backend-prod/scripts/crimpit.sh"
+SCRIPT_PATH="/home/ubuntu/pm2-backend-prod/scripts/pm2-backend-prod.sh"
 WORKSPACE="/home/ubuntu/pm2-backend-prod"
+sudo chown -R ubuntu:ubuntu /home/ubuntu/pm2-backend-prod
 
 # Navigate to your project directory
 cd /home/ubuntu/pm2-backend-prod  # Replace with the actual path to your Django project
