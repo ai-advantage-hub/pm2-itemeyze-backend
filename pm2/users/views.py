@@ -428,17 +428,54 @@ class FileDetailsViewSet(viewsets.ModelViewSet):
         function to give a list of files based on the provided filter
         """
         list_type = request.GET.get('list_type', None)
+        name = request.GET.get('name', None)
+        page_size = request.GET.get('page_size', '')
         if not Project.objects.filter(id=id).exists():
             return CustomResponse({"message": "Project of this id does not exist"}, status=status_code.HTTP_400_BAD_REQUEST)
 
         if list_type == '1':
-            files = Files.objects.filter(project_id = id, created_by=request.user, submitted_to_admin=False, is_marked_deleted=False).all().values('id','file_name','thumbnail','manufacturer_name__full_name', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason')
+            # files = Files.objects.filter(project_id = id, created_by=request.user, submitted_to_admin=False, is_marked_deleted=False).all().values('id','file_name','thumbnail','manufacturer_name__full_name', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason')
+            if name == None:
+                files = Files.objects.filter(project_id=id, created_by=request.user,submitted_to_admin=False, is_marked_deleted=False).all().values('id','file_name','thumbnail','manufacturer_name__full_name', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason').order_by('-created_at')
+            else:
+                files = Files.objects.filter(Q(location__icontains=name) |
+                                        Q(manufacturer_name__full_name__icontains=name) |
+                                        Q(manufacturing_number__icontains=name),
+                                        project_id=id, created_by=request.user,submitted_to_admin=False, is_marked_deleted=False).all().values('id','file_name','thumbnail','manufacturer_name__full_name', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason').order_by('-created_at')
         elif list_type == '2':
-            files = Files.objects.filter(project_id=id, created_by=request.user, is_admin_approved=True, submitted_to_admin=True).all().values('id','file_name','thumbnail','manufacturer_name__full_name', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason')
-        else:
-            return CustomResponse({"message": "Invalid filter_type"}, status=status_code.HTTP_400_BAD_REQUEST)
+            # files = Files.objects.filter(project_id=id, created_by=request.user, is_admin_approved=True, submitted_to_admin=True).all().values('id','file_name','thumbnail','manufacturer_name__full_name', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason')
+            if name == None:
+                files = Files.objects.filter(project_id=id, created_by=request.user,is_admin_approved=True, submitted_to_admin=True, is_marked_deleted=False).all().values('id','file_name','thumbnail','manufacturer_name__full_name', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason').order_by('-created_at')
 
-        return CustomResponse(files)
+            else:
+                files = Files.objects.filter(Q(location__icontains=name) |
+                                        Q(manufacturer_name__full_name__icontains=name) |
+                                        Q(manufacturing_number__icontains=name),
+                                        project_id=id, created_by=request.user,is_admin_approved=True, submitted_to_admin=True, is_marked_deleted=False).all().values('id','file_name','thumbnail','manufacturer_name__full_name', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason').order_by('-created_at')
+
+        else:
+            return CustomResponse({"message": "Invalid filter type"}, status=status_code.HTTP_400_BAD_REQUEST)
+        
+        # file_obj = Files.objects.filter(Q(location__icontains=name) |
+        #                                 Q(manufacturer_name__full_name__icontains=name) |
+        #                                 Q(manufacturing_number__icontains=name),
+        #                                 project_id=id, is_admin_approved=True, is_marked_deleted=False, is_deleted=False).order_by('-created_at')
+
+        # if name:
+        #     files = files.filter(files_name__icontains=name)
+
+        page = None
+
+        if page_size:
+            pagination_class = self.pagination_class()
+            page = pagination_class.paginate_queryset(files, request)
+
+        if page is not None:
+            return CustomResponse(pagination_class.get_paginated_response(page).data)
+
+        return CustomResponse(files) 
+
+        # return CustomResponse(files)
 
         
 class ProjectDetailsViewSet(viewsets.ModelViewSet):
