@@ -1459,12 +1459,12 @@ class DeletedFilesViewSet(viewsets.ViewSet):
     permission_classes = (IsAuthenticated, CheckAdminOrSubAdminRoleStatusPermission,)
     pagination_class = CustomPagination
 
-    def list(self, request):
+    def list(self, request, id):
         """
             function to give list of deleted files
         """
         page_size = request.GET.get('page_size', '')
-        files = Files.objects.filter(is_deleted=True).values('id', 'file_name', 'deleted_at').order_by("-created_at")
+        files = Files.objects.filter(project_id=id, is_deleted=True).values('id', 'file_name', 'deleted_at').order_by("-created_at")
         page = None
         if page_size:
             pagination_class = self.pagination_class()
@@ -1705,12 +1705,12 @@ class DisapproveFileViewSet(viewsets.ViewSet):
             return CustomResponse({"message": "Please provide valid status value."}, status=status.HTTP_400_BAD_REQUEST)
         
 
-    def list_disapproved_file(self, request):
+    def list_disapproved_file(self, request, id):
         """
             function to give list of disapproved files
         """
         page_size = request.GET.get('page_size', '')
-        disapproved_files = Files.objects.filter(is_admin_approved=False,is_file_disapproved=True, submitted_to_admin=True, is_edited=True, is_deleted=False).all().values('id','file_name','thumbnail','deleted_at')
+        disapproved_files = Files.objects.filter(project_id=id, is_admin_approved=False,is_file_disapproved=True, submitted_to_admin=True, is_edited=True, is_deleted=False).all().values('id','file_name','thumbnail','deleted_at')
         page = None
         if page_size:
             pagination_class = self.pagination_class()
@@ -1769,12 +1769,12 @@ class MarkedForDeletedFilesViewSet(viewsets.ViewSet):
     permission_classes = (IsAuthenticated, CheckAdminOrSubAdminRoleStatusPermission,)
     pagination_class = CustomPagination
 
-    def list(self, request):
+    def list(self, request, id):
         """
             function to give list of mark for deleted files
         """
         page_size = request.GET.get('page_size', '')   
-        files = Files.objects.filter(is_marked_deleted=True).all().values('id','file_name','thumbnail','deleted_at')
+        files = Files.objects.filter(project_id=id, is_marked_deleted=True).all().values('id','file_name','thumbnail','deleted_at')
         page = None
         if page_size:
             pagination_class = self.pagination_class()
