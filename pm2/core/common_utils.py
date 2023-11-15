@@ -62,11 +62,11 @@ def generate_otp():
 
 def send_html_mail_to_single_user(subject, email, html_template, ctx_dict):
     """
-    Method used to send the email.
-    :param subject:
-    :param email:
-    :param html_template:
-    :param ctx_dict:
+        Method used to send the email.
+        :param subject:
+        :param email:
+        :param html_template:
+        :param ctx_dict:
     """
     logging.info("send email to user")
     email_body = render_to_string(html_template, ctx_dict)

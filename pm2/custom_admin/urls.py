@@ -114,6 +114,9 @@ urlpatterns = [
 
     path("create_manufacturer", views.ManageManufacturerNameViewSet.as_view({"post": "create"}), name="create_manufacturer"),
     path("edit_manufacturer", views.ManageManufacturerNameViewSet.as_view({"put": "update"}), name="edit_manufacturer"),
+    path("view_manufacturer/<int:id>", views.ManageManufacturerNameViewSet.as_view({"get": "retrieve"}), name="view_manufacturer"),
+    path("manufacturer_list", views.ManageManufacturerNameViewSet.as_view({"get": "manufacturer_list"}), name="manufacturer_list"),
+    path("delete_manufacturer", views.ManageManufacturerNameViewSet.as_view({"delete": "delete_manufacturer"}), name="delete_manufacturer"),
 
     path("users_list_of_company/<int:id>", views.AssignToUsersViewSet.as_view({"get": "users_list"}), name="users_list_of_company"),
 

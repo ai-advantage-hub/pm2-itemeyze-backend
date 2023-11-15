@@ -2310,6 +2310,51 @@ class ManageManufacturerNameViewSet(viewsets.ViewSet):
             function to retrieve details of Manufacturer
         """
         manufacturer = ManufacturerName.objects.filter(id=id).all().values('id','name','is_active', 'added_by')
+        return CustomResponse(manufacturer)
+    
+    def manufacturer_list(self, request):
+        """
+            function to search and give list of manufacturer names
+        """
+        page_size = request.GET.get('page_size', '')
+        name = request.GET.get('name', '')
+        manufacturer_type = request.GET.get('manufacturer_type', None)
+
+        if manufacturer_type == '1':
+            manufacturer = ManufacturerName.objects.filter(added_by=1).all().values('id','name','added_by')
+
+        if manufacturer_type == '2':
+            manufacturer = ManufacturerName.objects.filter(added_by=2).all().values('id','name','added_by')
+        
+        else:
+            manufacturer = ManufacturerName.objects.all().values('id','name','added_by')
+
+        if name:
+            manufacturer = manufacturer.filter(name__icontains=name)
+
+        page = None
+        if page_size:
+            pagination_class = self.pagination_class()
+            page = pagination_class.paginate_queryset(manufacturer, request)
+        if page is not None:
+            return CustomResponse(pagination_class.get_paginated_response(page).data)
+        return CustomResponse(manufacturer, status=status_code.HTTP_200_OK)
+    
+    def delete_manufacturer(self, request):
+        """
+            function to delete manufacturer name
+        """
+        data = request.data
+        id = data.get("id")
+        if not id:
+            return CustomResponse({"message": "Please Select Manufacturer"}, status=status_code.HTTP_400_BAD_REQUEST)
+        manufacturer = ManufacturerName.objects.filter(id=id).first()
+        if not manufacturer:
+            return CustomResponse({"message": "Manufacturer Not Found"}, status=status_code.HTTP_400_BAD_REQUEST)
+        
+        manufacturer.delete()
+        return CustomResponse({"message": "Manufacturer Deleted Successfully"}, status=status_code.HTTP_200_OK)
+
 
 
 
