@@ -1754,7 +1754,7 @@ class DisapproveFileViewSet(viewsets.ViewSet):
                 disapproved_file.save()
                 print("disss2", disapproved_file.disapproved_count)
                 Files.objects.filter(id=file_id).update(is_admin_approved=False,submitted_to_admin=False, is_edited=False) #this will happen only when file is denied for 5 times, if file will be denied for 6th time, then - is_admin_approved = false , submitted_to_admin = false, is_edited = false, is_deleted = True
-                return CustomResponse ({"message": "File Approval Denied Successfully"}, status=status.HTTP_400_BAD_REQUEST)
+                return CustomResponse ({"message": "File Approval Denied Successfully"}, status=status.HTTP_200_OK)
             else:
                 file.is_deleted=True
                 file.save()
