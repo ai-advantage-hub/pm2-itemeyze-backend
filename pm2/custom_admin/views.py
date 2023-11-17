@@ -2361,7 +2361,7 @@ class ManageManufacturerNameViewSet(viewsets.ViewSet):
         return CustomResponse({"message": "Manufacturer Deleted Successfully"}, status=status_code.HTTP_200_OK)
 
 
-
+# For reading data of manufacturer names and storing in the database
 
 class UploadexcelViewSet(viewsets.ViewSet):
      def create(self, request):
@@ -2369,21 +2369,14 @@ class UploadexcelViewSet(viewsets.ViewSet):
             print("tryy")
             # print(request.__dir__())
             request_file = request.FILES.get("test")
-            excel_data = pd.read_excel(request_file,engine='openpyxl')
+            excel_data = pd.read_excel(request_file,engine='openpyxl', na_filter=False)
             print(excel_data.columns)
             for index,val in excel_data.iterrows():
                 print("index",index, val)
                 mit,_=ManufacturerName.objects.get_or_create(name=val.get("MFGName"))
                 mit.save()
                 print(mit)
-            # for val in excel_data.iterrows():
-            #     print(val)
 
-               # print(index,val["name"],val["speciality"])
-            # for i in x:
-            #     print(i)
-        
         except Exception as e:
             print("error:", e)
-        return CustomResponse({"message": "excel upload successful"})
-
+        return CustomResponse({"message": "Excel file uploaded Successfully"})
