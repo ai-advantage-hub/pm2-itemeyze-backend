@@ -104,6 +104,9 @@ urlpatterns = [
 
     path("create_file", views.FileDetailsViewSet.as_view(
         {"post": "create_file"}, name="create_file")),
+    
+    path("update_file/<int:id>", views.EditFileViewSet.as_view(
+        {"put": "update_file"}, name="update_file")),
 
     
     
