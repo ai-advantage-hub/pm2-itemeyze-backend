@@ -9,7 +9,8 @@ from .models import (
     Company,
     UserCompany,
     UserNotification,
-    Site
+    Site,
+    ManufacturerName
 
 )
 from custom_admin.models import ContentManagement
@@ -381,6 +382,41 @@ class FileDetailsViewSet(viewsets.ModelViewSet):
         if manual_manufacturer_name:
             new_user = User.objects.create(full_name=manual_manufacturer_name)
             file = Files.objects.create(created_by=request.user, manufacturer_name_id=new_user.id, manual_manufacturer_name=manual_manufacturer_name, project_id=project_id, thumbnail=thumbnail, manufacturing_number=manufacturing_number, quantity=quantity, project_details=project_details, additional_details=additional_details, recording=recording, location=location, location_points=location_points, is_admin_approved=True, submitted_to_admin=False)
+            c = str(project_id)+'_'+str(file.id)+'_'+'filename'
+            b = Files.objects.filter(id=file.id).update(file_name=c)
+            return CustomResponse({"message": "File Created with new user Successfully", "file_id": file.id}, status=status_code.HTTP_201_CREATED)
+        else:
+            file = Files.objects.create(created_by=request.user, manufacturer_name_id=manufacturer_name, project_id=project_id, thumbnail=thumbnail, manufacturing_number=manufacturing_number, quantity=quantity, project_details=project_details, additional_details=additional_details, recording=recording, location=location, location_points=location_points, is_admin_approved=True, submitted_to_admin=False)
+            c = str(project_id)+'_'+str(file.id)+'_'+'filename'
+            b = Files.objects.filter(id=file.id).update(file_name=c)
+            return CustomResponse({"message": "File Created with existing user Successfully", "file_id": file.id}, status=status_code.HTTP_201_CREATED)
+        
+    
+    def manufacturer_list(self, request):
+        
+        manufacturer = ManufacturerName.objects.all().values('id','name')
+        return CustomResponse(manufacturer)
+        
+    
+    def create_file(self, request, *args, **kwargs):
+        """
+            function to create file
+        """
+        data = request.data
+        manufacturer_name = data.get('manufacturer_name')
+        manual_manufacturer_name = data.get('manual_manufacturer_name')
+        project_id = data.get('project_id')
+        thumbnail = data.get('thumbnail')
+        manufacturing_number = data.get('manufacturing_number')
+        quantity = data.get('quantity')
+        project_details = data.get('project_details')
+        additional_details = data.get('additional_details')
+        recording = data.get('recording')
+        location = data.get('location')
+        location_points = data.get('location_points')
+        if manual_manufacturer_name:
+            new_manufacturer = ManufacturerName.objects.create(name=manual_manufacturer_name)
+            file = Files.objects.create(created_by=request.user, manufacturer_name_id=new_manufacturer.id, manual_manufacturer_name=manual_manufacturer_name, project_id=project_id, thumbnail=thumbnail, manufacturing_number=manufacturing_number, quantity=quantity, project_details=project_details, additional_details=additional_details, recording=recording, location=location, location_points=location_points, is_admin_approved=True, submitted_to_admin=False)
             c = str(project_id)+'_'+str(file.id)+'_'+'filename'
             b = Files.objects.filter(id=file.id).update(file_name=c)
             return CustomResponse({"message": "File Created with new user Successfully", "file_id": file.id}, status=status_code.HTTP_201_CREATED)
