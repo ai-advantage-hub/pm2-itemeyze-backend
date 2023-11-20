@@ -360,7 +360,7 @@ class FileDetailsViewSet(viewsets.ModelViewSet):
         """
             function to give list of file
         """
-        user = Files.objects.filter(id=id).all().values('file_name','thumbnail','manufacturer_name__full_name', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording')
+        user = Files.objects.filter(id=id).all().values('file_name','thumbnail','manufacturer_name__name', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording')
         return CustomResponse(user)
 
     def create(self, request, *args, **kwargs):
@@ -472,22 +472,22 @@ class FileDetailsViewSet(viewsets.ModelViewSet):
         if list_type == '1':
             # files = Files.objects.filter(project_id = id, created_by=request.user, submitted_to_admin=False, is_marked_deleted=False).all().values('id','file_name','thumbnail','manufacturer_name__full_name', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason')
             if name == None:
-                files = Files.objects.filter(project_id=id, created_by=request.user,submitted_to_admin=False, is_marked_deleted=False).all().values('id','file_name','thumbnail','manufacturer_name__full_name', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason').order_by('-created_at')
+                files = Files.objects.filter(project_id=id, created_by=request.user,submitted_to_admin=False, is_marked_deleted=False).all().values('id','file_name','thumbnail','manufacturer_name__name', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason').order_by('-created_at')
             else:
                 files = Files.objects.filter(Q(location__icontains=name) |
-                                        Q(manufacturer_name__full_name__icontains=name) |
+                                        Q(manufacturer_name__name__icontains=name) |
                                         Q(manufacturing_number__icontains=name),
-                                        project_id=id, created_by=request.user,submitted_to_admin=False, is_marked_deleted=False).all().values('id','file_name','thumbnail','manufacturer_name__full_name', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason').order_by('-created_at')
+                                        project_id=id, created_by=request.user,submitted_to_admin=False, is_marked_deleted=False).all().values('id','file_name','thumbnail','manufacturer_name__name', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason').order_by('-created_at')
         elif list_type == '2':
             # files = Files.objects.filter(project_id=id, created_by=request.user, is_admin_approved=True, submitted_to_admin=True).all().values('id','file_name','thumbnail','manufacturer_name__full_name', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason')
             if name == None:
-                files = Files.objects.filter(project_id=id, created_by=request.user,is_admin_approved=True, submitted_to_admin=True, is_marked_deleted=False).all().values('id','file_name','thumbnail','manufacturer_name__full_name', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason').order_by('-created_at')
+                files = Files.objects.filter(project_id=id, created_by=request.user,is_admin_approved=True, submitted_to_admin=True, is_marked_deleted=False).all().values('id','file_name','thumbnail','manufacturer_name__name', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason').order_by('-created_at')
 
             else:
                 files = Files.objects.filter(Q(location__icontains=name) |
-                                        Q(manufacturer_name__full_name__icontains=name) |
+                                        Q(manufacturer_name__name__icontains=name) |
                                         Q(manufacturing_number__icontains=name),
-                                        project_id=id, created_by=request.user,is_admin_approved=True, submitted_to_admin=True, is_marked_deleted=False).all().values('id','file_name','thumbnail','manufacturer_name__full_name', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason').order_by('-created_at')
+                                        project_id=id, created_by=request.user,is_admin_approved=True, submitted_to_admin=True, is_marked_deleted=False).all().values('id','file_name','thumbnail','manufacturer_name__name', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason').order_by('-created_at')
 
         else:
             return CustomResponse({"message": "Invalid filter type"}, status=status_code.HTTP_400_BAD_REQUEST)
@@ -541,7 +541,7 @@ class ProjectDetailsViewSet(viewsets.ModelViewSet):
         location = self.request.GET.get('location', '')
         # Filtering for Files based on the search criteria
         file_obj = Files.objects.filter(Q(location__icontains=location) |
-                                        Q(manufacturer_name__full_name__icontains=location) |
+                                        Q(manufacturer_name__name__icontains=location) |
                                         Q(manufacturing_number__icontains=location),
                                         project_id=pk, is_admin_approved=True, is_marked_deleted=False, is_deleted=False).order_by('-created_at')
 
@@ -789,7 +789,7 @@ class GlobalSearchViewSet(viewsets.ViewSet):
         search = self.request.GET.get('search', '')
         print("user====",request.user.id)
         file_obj = Files.objects.filter(Q(location__icontains=search) |
-                                        Q(manufacturer_name__full_name__icontains=search) |
+                                        Q(manufacturer_name__name__icontains=search) |
                                         Q(manufacturing_number__icontains=search)).filter(Q(project__created_by_id=request.user.id) | Q(manufacturer_name=request.user) | Q(project__users__id=request.user.id)).filter(
                                            is_admin_approved=True, is_marked_deleted=False).order_by("-created_at")
         if page_size:
