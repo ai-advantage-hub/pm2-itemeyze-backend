@@ -1,35 +1,61 @@
-# import csv
-# from users.models import ManufacturerName 
-
-# def read_csv_and_save_to_model(csv_file_path):
-#     with open(csv_file_path, 'r') as file:
-#         reader = csv.reader(file)
-#         next(reader) 
-
-#         for row in reader:
-#             name = row[0]
-#             person = ManufacturerName(name=name)
-#             person.save()
-
-# if __name__ == "__main__":
-#     csv_file_path = "/home/tushar/projects/PM2/pm2-backend/pm2/ManufacturerList 10-2023.xlsx"  # Replace with the actual path to your CSV file
-#     read_csv_and_save_to_model(csv_file_path)
-
+from users.models import ManufacturerName
+import logging
+log = logging.getLogger(__name__)
 import pandas as pd
-from users.models import ManufacturerName 
+from core.response import CustomResponse
+from rest_framework import viewsets
+import os
+import django
+import sys
+sys.path.append('../')
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
+django.setup()
 
-def read_csv_and_save_to_model(csv_file_path):
-    # Read the CSV file into a pandas DataFrame
-    df = pd.read_csv(csv_file_path)
+# class UploadexcelViewSet(viewsets.ViewSet):
+    # def create(self, request):
+    #         try:
+    #             print("tryy")
+    #             # print(request.__dir__())
+    #             request_file = request.FILES.get("test")
+    #             excel_data = pd.read_excel(request_file,engine='openpyxl', na_filter=False)
+    #             print(excel_data.columns)
+    #             for index,val in excel_data.iterrows():
+    #                 print("index",index, val)
+    #                 mit,_=ManufacturerName.objects.get_or_create(name=val.get("MFGName"))
+    #                 mit.save()
+    #                 print(mit)
 
-    # Assuming the column containing names is named 'name'
-    names = df['name']
+    #         except Exception as e:
+    #             log.info("error")
+    #             log.info(e)
+    #             # return CustomResponse({"message": e})
+    #             print("error:", e)
+    #         return CustomResponse({"message": "Excel file uploaded Successfully"})
+def create(self, request):
+    try:
+        print("tryy")
+            # Specify the path to your Excel file
+        file_path = "/home/tushar/projects/PM2/pm2-backend/pm2/ManufacturerList 10-2023.xlsx"
+            
+            # Check if the file exists
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(f"File not found: {file_path}")
 
-    # Iterate over the names and save to the model
-    for name in names:
-        person = ManufacturerName(name=name)
-        person.save()
+        excel_data = pd.read_excel(file_path, engine='openpyxl', na_filter=False)
+        print(excel_data.columns)
 
-if __name__ == "__main__":
-    csv_file_path = "/home/tushar/projects/PM2/pm2-backend/pm2/ManufacturerList 10-2023.xlsx"  # Replace with the actual path to your CSV file
-    read_csv_and_save_to_model(csv_file_path)
+        for index, val in excel_data.iterrows():
+            print("index", index, val)
+            mit, _ = ManufacturerName.objects.get_or_create(name=val.get("MFGName"))
+            mit.save()
+            print(mit)
+
+    except Exception as e:
+        log.info("Error")
+        log.info(e)
+            # You might want to raise the exception again or handle it accordingly
+        raise
+
+    return CustomResponse({"message": "Excel file uploaded Successfully"})
+
+create()

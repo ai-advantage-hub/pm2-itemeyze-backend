@@ -99,6 +99,12 @@ urlpatterns = [
     path("file_list/<int:id>", views.FileDetailsViewSet.as_view(
         {"get": "file_list"}, name="file_list")),
 
+    path("manufacturer_list", views.FileDetailsViewSet.as_view(
+        {"get": "manufacturer_list"}, name="manufacturer_list")),
+
+    path("create_file", views.FileDetailsViewSet.as_view(
+        {"post": "create_file"}, name="create_file")),
+
     
     
 
