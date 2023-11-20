@@ -119,7 +119,7 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
 
 
 class FilesSerializer(serializers.ModelSerializer):
-    manufacturer_name = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
+    manufacturer_name = serializers.PrimaryKeyRelatedField(queryset=ManufacturerName.objects.all())
     #project = serializers.PrimaryKeyRelatedField(queryset=Project.objects.all())
 
     class Meta:

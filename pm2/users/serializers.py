@@ -7,7 +7,8 @@ from .models import (
     Project, 
     Files,
     UserNotification,
-    Site
+    Site,
+    ManufacturerName
 
 )
 from custom_admin.models import ContentManagement
@@ -252,12 +253,20 @@ class ProjectUserSerializer(serializers.ModelSerializer):
         model = User
         fields = ("id", "full_name")
 
+class ProjectManufacturerSerializer(serializers.ModelSerializer):
+    """
+        ProjectUserSerializer serializer to serialize through user model
+    """
+    class Meta:
+        model = ManufacturerName
+        fields = ("id", "name")
+
 
 class FilesSerializer(serializers.ModelSerializer):
     """
         FilesSerializer serializer to serialize through files model
     """
-    manufacturer_name = ProjectUserSerializer()
+    manufacturer_name = ProjectManufacturerSerializer()
 
     class Meta:
         model = Files
