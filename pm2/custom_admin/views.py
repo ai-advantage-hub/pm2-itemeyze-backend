@@ -2378,5 +2378,6 @@ class UploadexcelViewSet(viewsets.ViewSet):
                 print(mit)
 
         except Exception as e:
+            return CustomResponse({"message": "Error in uploading"})
             print("error:", e)
         return CustomResponse({"message": "Excel file uploaded Successfully"})
