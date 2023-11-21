@@ -2361,6 +2361,47 @@ class ManageManufacturerNameViewSet(viewsets.ViewSet):
         return CustomResponse({"message": "Manufacturer Deleted Successfully"}, status=status_code.HTTP_200_OK)
 
 
+class FilesViewSet(viewsets.ViewSet):
+    """
+        FilesViewSet to create and update files from admin side
+    """
+
+    def list_manufacturer(self, request):
+        
+        manufacturer = ManufacturerName.objects.all().values('id','name')
+        return CustomResponse(manufacturer)
+    
+    def create_file_admin(self, request):
+        """
+            method to create file
+        """
+        data = request.data
+        thumbnail = data.get("thumbnail")
+        file_name = data.get("file_name")
+        manual_manufacturer_name = data.get('manual_manufacturer_name')
+        manufacturer_name = data.get("manufacturer_name")
+        manufacturing_number = data.get("manufacturing_number")
+        project_id = data.get("project_id")
+        location = data.get("location")
+        quantity = data.get("quantity")
+        project_details = data.get("project_details")
+        recording = data.get('recording')
+        additional_details = data.get("additional_details")
+        location_points = data.get('location_points')
+
+        if Files.objects.filter(manufacturing_number=manufacturing_number).exists():
+             return CustomResponse({"message": "This manufacturing number already exists"}, status=status.HTTP_400_BAD_REQUEST)
+        if manual_manufacturer_name:
+            new_manufacturer = ManufacturerName.objects.create(name=manual_manufacturer_name)
+            print("newwwwww", new_manufacturer.id)
+            file = Files.objects.create(manufacturer_name_id=new_manufacturer.id, manual_manufacturer_name=manual_manufacturer_name, project_id=project_id, manufacturing_number=manufacturing_number, quantity=quantity, project_details=project_details, additional_details=additional_details,location=location,file_name=file_name, recording=recording, location_points=location_points,is_admin_approved=True)
+            return CustomResponse({"message": "File Created with new Manufacturer Successfully", "file_id": file.id}, status=status_code.HTTP_200_OK)
+        else:
+            file = Files.objects.create(file_name=file_name, thumbnail=thumbnail, manufacturing_number=manufacturing_number, project_id=project_id, location=location, manufacturer_name_id=manufacturer_name, quantity=quantity, project_details=project_details, additional_details=additional_details, recording=recording, location_points=location_points, is_admin_approved=True)
+            return CustomResponse({"message": "File created with existing Manufacturer Successfully", "file_id": file.id}, status=status_code.HTTP_200_OK)
+
+
+
 # For reading data of manufacturer names and storing in the database
 
 class UploadexcelViewSet(viewsets.ViewSet):
@@ -2383,3 +2424,5 @@ class UploadexcelViewSet(viewsets.ViewSet):
             # return CustomResponse({"message": e})
             print("error:", e)
         return CustomResponse({"message": "Excel file uploaded Successfully"})
+
+
