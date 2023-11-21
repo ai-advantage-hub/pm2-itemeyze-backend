@@ -419,12 +419,12 @@ class FileDetailsViewSet(viewsets.ModelViewSet):
             file = Files.objects.create(created_by=request.user, manufacturer_name_id=new_manufacturer.id, manual_manufacturer_name=manual_manufacturer_name, project_id=project_id, thumbnail=thumbnail, manufacturing_number=manufacturing_number, quantity=quantity, project_details=project_details, additional_details=additional_details, recording=recording, location=location, location_points=location_points, is_admin_approved=True, submitted_to_admin=False)
             c = str(project_id)+'_'+str(file.id)+'_'+'filename'
             b = Files.objects.filter(id=file.id).update(file_name=c)
-            return CustomResponse({"message": "File Created with new user Successfully", "file_id": file.id}, status=status_code.HTTP_201_CREATED)
+            return CustomResponse({"message": "File Created with new Manufacturer Successfully", "file_id": file.id}, status=status_code.HTTP_200_OK)
         else:
             file = Files.objects.create(created_by=request.user, manufacturer_name_id=manufacturer_name, project_id=project_id, thumbnail=thumbnail, manufacturing_number=manufacturing_number, quantity=quantity, project_details=project_details, additional_details=additional_details, recording=recording, location=location, location_points=location_points, is_admin_approved=True, submitted_to_admin=False)
             c = str(project_id)+'_'+str(file.id)+'_'+'filename'
             b = Files.objects.filter(id=file.id).update(file_name=c)
-            return CustomResponse({"message": "File Created with existing user Successfully", "file_id": file.id}, status=status_code.HTTP_201_CREATED)
+            return CustomResponse({"message": "File Created with existing Manufacturer Successfully", "file_id": file.id}, status=status_code.HTTP_200_OK)
 
     def user_saved_list(self, request, id):
         """
