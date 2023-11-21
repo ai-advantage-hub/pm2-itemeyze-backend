@@ -2259,12 +2259,25 @@ class AssignToUsersViewSet(viewsets.ViewSet):
     """
 
     permission_classes = (IsAuthenticated, CheckAdminOrSubAdminRoleStatusPermission,)
+    pagination_class = CustomPagination
 
     def users_list(self, request, id):
         """
             function to give list of users of a particular company
         """
+        name = request.GET.get('name', None)
+        page_size = request.GET.get('page_size', '')
         users = UserCompany.objects.filter(company_id=id).all().values('user_id','user__full_name', 'user__email').order_by('-created_at')
+        if name:
+            users = users.filter(user__full_name__icontains=name)
+        page = None
+
+        if page_size:
+            pagination_class = self.pagination_class()
+            page = pagination_class.paginate_queryset(users, request)
+
+        if page is not None:
+            return CustomResponse(pagination_class.get_paginated_response(page).data)
         return CustomResponse(users)
     
 
