@@ -2367,9 +2367,16 @@ class FilesViewSet(viewsets.ViewSet):
     """
 
     def list_manufacturer(self, request):
-        
-        manufacturer = ManufacturerName.objects.all().values('id','name')
-        return CustomResponse(manufacturer)
+        """
+            function to give list of manufacturers
+        """
+        name = request.GET.get('name', None)
+        manufacturers = ManufacturerName.objects.all().values('id','name')
+        if name:
+            manufacturers = manufacturers.filter(name__icontains=name)
+        return CustomResponse(manufacturers)
+        # manufacturer = ManufacturerName.objects.all().values('id','name')
+        # return CustomResponse(manufacturer)
     
     def create_file_admin(self, request):
         """

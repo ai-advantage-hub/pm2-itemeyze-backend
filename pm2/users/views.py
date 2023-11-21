@@ -393,9 +393,14 @@ class FileDetailsViewSet(viewsets.ModelViewSet):
         
     
     def manufacturer_list(self, request):
-        
-        manufacturer = ManufacturerName.objects.all().values('id','name')
-        return CustomResponse(manufacturer)
+        """
+            function to give list of manufacturers
+        """
+        name = request.GET.get('name', None)
+        manufacturers = ManufacturerName.objects.all().values('id','name')
+        if name:
+            manufacturers = manufacturers.filter(name__icontains=name)
+        return CustomResponse(manufacturers)
         
     
     def create_file(self, request, *args, **kwargs):
