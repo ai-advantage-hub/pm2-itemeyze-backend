@@ -2328,6 +2328,7 @@ class ManageManufacturerNameViewSet(viewsets.ViewSet):
             function to retrieve details of Manufacturer
         """
         manufacturer = ManufacturerName.objects.filter(id=id).all().values('id','name','is_active', 'added_by','created_at','users__id','users__full_name','users__email')
+        manufacturer.update(is_read=True)
         return CustomResponse(manufacturer)
     
     def manufacturer_list(self, request):
@@ -2339,13 +2340,13 @@ class ManageManufacturerNameViewSet(viewsets.ViewSet):
         manufacturer_type = request.GET.get('manufacturer_type', None)
 
         if manufacturer_type == '1':
-            manufacturer = ManufacturerName.objects.filter(added_by=1).all().values('id','name','added_by')
+            manufacturer = ManufacturerName.objects.filter(added_by=1).all().values('id','name','added_by','is_read')
 
         if manufacturer_type == '2':
-            manufacturer = ManufacturerName.objects.filter(added_by=2).all().values('id','name','added_by')
+            manufacturer = ManufacturerName.objects.filter(added_by=2).all().values('id','name','added_by','is_read')
         
         else:
-            manufacturer = ManufacturerName.objects.all().values('id','name','added_by')
+            manufacturer = ManufacturerName.objects.all().values('id','name','added_by','is_read')
 
         if name:
             manufacturer = manufacturer.filter(name__icontains=name)
@@ -2413,7 +2414,7 @@ class FilesViewSet(viewsets.ViewSet):
         if Files.objects.filter(manufacturing_number=manufacturing_number).exists():
              return CustomResponse({"message": "This manufacturing number already exists"}, status=status.HTTP_400_BAD_REQUEST)
         if manual_manufacturer_name:
-            new_manufacturer = ManufacturerName.objects.create(name=manual_manufacturer_name)
+            new_manufacturer = ManufacturerName.objects.create(name=manual_manufacturer_name, is_read=True)
             print("newwwwww", new_manufacturer.id)
             file = Files.objects.create(manufacturer_name_id=new_manufacturer.id, manual_manufacturer_name=manual_manufacturer_name, project_id=project_id, manufacturing_number=manufacturing_number, quantity=quantity, project_details=project_details, additional_details=additional_details,location=location,file_name=file_name, recording=recording, location_points=location_points,is_admin_approved=True)
             return CustomResponse({"message": "File Created with new Manufacturer Successfully", "file_id": file.id}, status=status_code.HTTP_200_OK)

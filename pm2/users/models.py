@@ -180,6 +180,7 @@ class ManufacturerName(BaseModel):
     is_active = models.BooleanField(default=True)
     added_by = models.IntegerField("User role", choices=AddedBy, default=ADMIN)
     users = models.ForeignKey(User, on_delete=models.CASCADE, related_name='added_by_users', null=True)
+    is_read = models.BooleanField(default=False, verbose_name='is_admin_read')
 
     def __str__(self):
         return self.name
