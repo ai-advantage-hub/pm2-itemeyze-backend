@@ -2362,8 +2362,9 @@ class ManageManufacturerNameViewSet(viewsets.ViewSet):
         """
             function to delete manufacturer name
         """
-        data = request.data
-        id = data.get("id")
+        id = request.GET.get('id')
+        # data = request.data
+        # id = data.get("id")
         if not id:
             return CustomResponse({"message": "Please Select Manufacturer"}, status=status_code.HTTP_400_BAD_REQUEST)
         manufacturer = ManufacturerName.objects.filter(id=id).first()
