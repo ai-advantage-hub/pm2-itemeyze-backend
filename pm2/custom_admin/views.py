@@ -2301,7 +2301,7 @@ class ManageManufacturerNameViewSet(viewsets.ViewSet):
         if ManufacturerName.objects.filter(name=manufacturer_name).exists():
             return CustomResponse({"message": "This Manufacturer Name already exists"}, status=status_code.HTTP_400_BAD_REQUEST)
         else:
-            manufacturer = ManufacturerName.objects.create(name=manufacturer_name, added_by=1)
+            manufacturer = ManufacturerName.objects.create(name=manufacturer_name, added_by=1, users=request.user)
             return CustomResponse({"message": "Manufacturer Name added successfully","manufacturer_name_id":manufacturer.id}, status=status_code.HTTP_200_OK)
         
     
@@ -2327,7 +2327,7 @@ class ManageManufacturerNameViewSet(viewsets.ViewSet):
         """
             function to retrieve details of Manufacturer
         """
-        manufacturer = ManufacturerName.objects.filter(id=id).all().values('id','name','is_active', 'added_by','created_at')
+        manufacturer = ManufacturerName.objects.filter(id=id).all().values('id','name','is_active', 'added_by','created_at','users__id','users__full_name','users__email')
         return CustomResponse(manufacturer)
     
     def manufacturer_list(self, request):
