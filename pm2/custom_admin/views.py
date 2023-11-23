@@ -2340,12 +2340,15 @@ class ManageManufacturerNameViewSet(viewsets.ViewSet):
         manufacturer_type = request.GET.get('manufacturer_type', None)
 
         if manufacturer_type == '1':
-            manufacturer = ManufacturerName.objects.filter(added_by=1).all().values('id','name','added_by','is_read')
+            print("type1",type(manufacturer_type))
+            manufacturer = ManufacturerName.objects.filter(added_by=1).values('id','name','added_by','is_read')
 
-        if manufacturer_type == '2':
-            manufacturer = ManufacturerName.objects.filter(added_by=2).all().values('id','name','added_by','is_read')
+        elif manufacturer_type == '2':
+            print("type2",type(manufacturer_type))
+            manufacturer = ManufacturerName.objects.filter(added_by=2).values('id','name','added_by','is_read')
         
         else:
+            print("elsee")
             manufacturer = ManufacturerName.objects.all().values('id','name','added_by','is_read')
 
         if name:
