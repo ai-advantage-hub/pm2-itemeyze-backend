@@ -2327,7 +2327,7 @@ class ManageManufacturerNameViewSet(viewsets.ViewSet):
         """
             function to retrieve details of Manufacturer
         """
-        manufacturer = ManufacturerName.objects.filter(id=id).all().values('id','name','is_active', 'added_by')
+        manufacturer = ManufacturerName.objects.filter(id=id).all().values('id','name','is_active', 'added_by','created_at')
         return CustomResponse(manufacturer)
     
     def manufacturer_list(self, request):
