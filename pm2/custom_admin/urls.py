@@ -74,7 +74,7 @@ urlpatterns = [
     path("delete_file_user/<int:id>", views.ManageUserAdminViewSet.as_view({"delete": "delete_file_user"}), name="delete_file_user"),
     path("admin_user_csv/<int:pk>/download_csv/", views.ManageUserAdminViewSet.as_view({"get": "admin_user_csv"}), name="admin_user_csv"),
     path("project/remove-user/", views.ManageUserAdminViewSet.as_view({"delete": "remove_user_from_project"}), name="remove_user_from_project"),
-    path("update_file_admin/<int:pk>", views.ManageUserAdminViewSet.as_view({"put": "update_file_admin"}), name="update_file_admin"),
+    # path("update_file_admin/<int:pk>", views.ManageUserAdminViewSet.as_view({"put": "update_file_admin"}), name="update_file_admin"),
     path("project_graph/<int:id>", views.ManageUserAdminViewSet.as_view({"get": "project_graph"}), name="project_graph"),
 
     #CR Points
@@ -122,6 +122,7 @@ urlpatterns = [
 
     path("list_manufacturer", views.FilesViewSet.as_view({"get": "list_manufacturer"}), name="list_manufacturer"),
     path("create_file_admin", views.FilesViewSet.as_view({"post": "create_file_admin"}), name="create_file_admin"),
+    path("update_file_admin/<int:id>", views.FilesViewSet.as_view({"put": "update_file_admin"}), name="update_file_admin"),
 
 
     path("upload_excel_data", views.UploadexcelViewSet.as_view({"post": "create"}), name="upload_excel_data"),
