@@ -2442,6 +2442,9 @@ class FilesViewSet(viewsets.ViewSet):
         additional_details = data.get("additional_details")
         location_points = data.get('location_points')
 
+        if not Files.objects.filter(id=id).exists():
+            return CustomResponse({"message": "File not found"}, status=status_code.HTTP_400_BAD_REQUEST)
+
         if Files.objects.filter(manufacturing_number=manufacturing_number).exclude(id=id).exists():
             return CustomResponse({"message": "This manufacturing number already exists"}, status=status_code.HTTP_400_BAD_REQUEST)
         if manual_manufacturer_name:
