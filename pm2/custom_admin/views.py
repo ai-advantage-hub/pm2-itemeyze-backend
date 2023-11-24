@@ -2427,7 +2427,7 @@ class FilesViewSet(viewsets.ViewSet):
             return CustomResponse({"message": "File created with existing Manufacturer Successfully", "file_id": file.id}, status=status_code.HTTP_200_OK)
         
 
-    def update_file_admin(self, request, id):
+    def update_file(self, request, id):
         """
             function to update file
         """
