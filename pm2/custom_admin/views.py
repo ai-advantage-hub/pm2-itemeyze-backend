@@ -1219,7 +1219,7 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
         user = User.all_objects.filter(id=id).first()
         if not user:
             return CustomResponse({"message": "User not found"}, status=status.HTTP_400_BAD_REQUEST)
-        projects = Project.objects.filter(users__id=id, is_admin_approved=True, is_marked_deleted=False).values("id","project_name", "created_at")
+        projects = Project.objects.filter(users__id=id, is_admin_approved=True, is_marked_deleted=False).values("id","project_name", "created_at",'site_id','site_id__name')
         page = None
         if page_size:
             pagination_class = self.pagination_class()
