@@ -100,12 +100,13 @@ class FileSerializer(serializers.ModelSerializer):
 
 
 class ProjectDetailSerializer(serializers.ModelSerializer):
+    site_name = serializers.CharField(source='site_id.name', read_only=True)
     created_by = serializers.SerializerMethodField()
     files = serializers.SerializerMethodField()
 
     class Meta:
         model = Project
-        fields = ['id','project_name', 'project_number','created_by','created_at','site_id_id', 'files']
+        fields = ['id','project_name', 'project_number','created_by','created_at','site_id_id','site_name', 'files']
 
     def get_created_by(self, obj):
         try:
@@ -215,11 +216,17 @@ class CreateFileDetailsSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
 
+class SiteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Site
+        fields = ['id','name']
+
+
 class ProjectSerializer(serializers.ModelSerializer):
-    
+    site_name = serializers.CharField(source='site_id.name', read_only=True)
     class Meta:
         model = Project
-        fields = ['id', 'project_name', 'created_at']
+        fields = ['id', 'project_name', 'created_at','site_id','site_name']
 
 class UserDetailSerializer(serializers.ModelSerializer):
     company_names = serializers.SerializerMethodField()
