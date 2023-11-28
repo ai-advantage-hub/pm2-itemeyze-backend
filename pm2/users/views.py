@@ -294,11 +294,12 @@ class ProjectViewSet(viewsets.ModelViewSet):
         page_size = request.GET.get('page_size', '')
         print("user====",request.user.id)
         projects = Project.objects.filter(
-            users=request.user,
+            created_by=request.user,
             is_admin_approved=True, is_marked_deleted=False
             ).values(
             'id', 'created_at', 'updated_at', 'project_name', 'project_description',
-            'is_admin_approved', 'is_marked_deleted', 'project_number', 'created_by_id'
+            'is_admin_approved', 'is_marked_deleted', 'project_number', 'created_by_id',
+            'site_id_id', 'site_id__name'
             ).order_by('-created_at')
         if project_name:
             projects = projects.filter(project_name__icontains=project_name)
