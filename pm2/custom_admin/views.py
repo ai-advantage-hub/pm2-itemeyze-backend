@@ -2341,15 +2341,15 @@ class ManageManufacturerNameViewSet(viewsets.ViewSet):
 
         if manufacturer_type == '1':
             print("type1",type(manufacturer_type))
-            manufacturer = ManufacturerName.objects.filter(added_by=1).values('id','name','added_by','is_read')
+            manufacturer = ManufacturerName.objects.filter(added_by=1).values('id','name','added_by','is_read').order_by('-created_at')
 
         elif manufacturer_type == '2':
             print("type2",type(manufacturer_type))
-            manufacturer = ManufacturerName.objects.filter(added_by=2).values('id','name','added_by','is_read')
+            manufacturer = ManufacturerName.objects.filter(added_by=2).values('id','name','added_by','is_read').order_by('-created_at')
         
         else:
             print("elsee")
-            manufacturer = ManufacturerName.objects.all().values('id','name','added_by','is_read')
+            manufacturer = ManufacturerName.objects.all().values('id','name','added_by','is_read').order_by('-created_at')
 
         if name:
             manufacturer = manufacturer.filter(name__icontains=name)
