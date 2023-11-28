@@ -658,7 +658,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
             methof to get list of unapproved projects
         """
         page_size = request.GET.get('page_size', '')
-        projects = Project.objects.filter(is_admin_approved=False).annotate(num_files=Count('project_files')).values('id', 'project_name', 'created_by__full_name', 'num_files','created_at').order_by('-created_at')
+        projects = Project.objects.filter(is_admin_approved=False).annotate(num_files=Count('project_files')).values('id', 'project_name', 'created_by__full_name', 'num_files','created_at','site_id','site_id__name').order_by('-created_at')
         page = None
         if page_size:
             pagination_class = self.pagination_class()
