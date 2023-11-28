@@ -421,7 +421,7 @@ class FileDetailsViewSet(viewsets.ModelViewSet):
         location = data.get('location')
         location_points = data.get('location_points')
         if manual_manufacturer_name:
-            new_manufacturer = ManufacturerName.objects.create(name=manual_manufacturer_name, added_by=2, is_read=False)
+            new_manufacturer = ManufacturerName.objects.create(users = request.user,name=manual_manufacturer_name, added_by=2, is_read=False)
             file = Files.objects.create(created_by=request.user, manufacturer_name_id=new_manufacturer.id, manual_manufacturer_name=manual_manufacturer_name, project_id=project_id, thumbnail=thumbnail, manufacturing_number=manufacturing_number, quantity=quantity, project_details=project_details, additional_details=additional_details, recording=recording, location=location, location_points=location_points, is_admin_approved=True, submitted_to_admin=False)
             c = str(project_id)+'_'+str(file.id)+'_'+'filename'
             b = Files.objects.filter(id=file.id).update(file_name=c)
@@ -615,7 +615,7 @@ class EditFileViewSet(viewsets.ModelViewSet):
         if Files.objects.filter(manufacturing_number=manufacturing_number).exclude(id=id).exists():
             return CustomResponse({"message": "This manufacturing number already exists"}, status=status_code.HTTP_400_BAD_REQUEST)
         if manual_manufacturer_name:
-            manufacturer = ManufacturerName.objects.create(name=manual_manufacturer_name, added_by=2, is_read=False)
+            manufacturer = ManufacturerName.objects.create(users = request.user, name=manual_manufacturer_name, added_by=2, is_read=False)
             file = Files.objects.filter(id=id).update(manufacturer_name_id=manufacturer.id,thumbnail=thumbnail, manual_manufacturer_name=manual_manufacturer_name, manufacturing_number=manufacturing_number, quantity=quantity, project_details=project_details, additional_details=additional_details,location=location, location_points=location_points,is_edited=True)
             return CustomResponse({"message": "File updated Successfully"}, status=status_code.HTTP_200_OK)
         else:
