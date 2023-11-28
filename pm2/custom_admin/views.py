@@ -1873,10 +1873,19 @@ class UnapprovedUsersViewSet(viewsets.ViewSet):
                 .distinct('id')
                 .values('id', 'full_name', 'profile_pic', 'email', 'user_company', 'user_company__company__name', 'company_name')
             )
+        # else:
+        #     users = (
+        #         User.objects
+        #         .filter(is_admin_approved=False, is_email_verified=True, user_role=2, is_edited=True)
+        #         .exclude(email=None)
+        #         .order_by('-id', '-created_at')
+        #         .distinct('id')
+        #         .values('id', 'full_name', 'profile_pic', 'email', 'user_company', 'user_company__company__name', 'company_name')
+        #     )
         else:
             users = (
                 User.objects
-                .filter(is_admin_approved=False, is_email_verified=True, user_role=2)
+                .filter(Q(is_admin_approved=False, is_email_verified=True) | Q(is_edited=True), user_role=2)
                 .exclude(email=None)
                 .order_by('-id', '-created_at')
                 .distinct('id')
