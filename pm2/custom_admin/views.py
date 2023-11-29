@@ -1175,7 +1175,7 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
         """
             function to give count og unapproved users
         """
-        user = User.objects.filter(is_admin_approved=False,user_role=2, is_email_verified=True).count()
+        user = User.objects.filter(Q(is_admin_approved=False, is_email_verified=True) | Q(is_edited=True), user_role=2).count()
         return CustomResponse(user)
     
     def approve_users(self, request):
