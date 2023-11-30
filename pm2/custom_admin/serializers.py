@@ -231,13 +231,15 @@ class ProjectSerializer(serializers.ModelSerializer):
 class UserDetailSerializer(serializers.ModelSerializer):
     company_names = serializers.SerializerMethodField()
     assigned_projects = ProjectSerializer(many=True)
+    created_by_project = ProjectSerializer(many=True)
 
     class Meta:
         model = User
-        fields = ['id','full_name', 'email','profile_pic','modules_accessible','created_at','company_names', 'assigned_projects']
+        fields = ['id','full_name', 'email','profile_pic','modules_accessible','created_at','company_names', 'assigned_projects','created_by_project']
 
     def get_company_names(self, obj):
         return [uc.company.name for uc in obj.user_company.all()]
+    
     
 
 class UserListingSerializer(serializers.ModelSerializer):
