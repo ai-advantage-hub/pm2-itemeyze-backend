@@ -1219,7 +1219,7 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
         user = User.all_objects.filter(id=id).first()
         if not user:
             return CustomResponse({"message": "User not found"}, status=status.HTTP_400_BAD_REQUEST)
-        projects = Project.objects.filter(users__id=id, is_admin_approved=True, is_marked_deleted=False).values("id","project_name", "created_at",'site_id','site_id__name')
+        projects = Project.objects.filter(created_by__id=id, is_admin_approved=True, is_marked_deleted=False).values("id","project_name", "created_at",'site_id','site_id__name')
         page = None
         if page_size:
             pagination_class = self.pagination_class()
@@ -2310,7 +2310,7 @@ class ManageManufacturerNameViewSet(viewsets.ViewSet):
         if ManufacturerName.objects.filter(name=manufacturer_name).exists():
             return CustomResponse({"message": "This Manufacturer Name already exists"}, status=status_code.HTTP_400_BAD_REQUEST)
         else:
-            manufacturer = ManufacturerName.objects.create(name=manufacturer_name, added_by=1, users=request.user)
+            manufacturer = ManufacturerName.objects.create(name=manufacturer_name, added_by=1, users=request.user, is_read=True)
             return CustomResponse({"message": "Manufacturer Name added successfully","manufacturer_name_id":manufacturer.id}, status=status_code.HTTP_200_OK)
         
     

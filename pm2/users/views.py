@@ -1034,3 +1034,334 @@ class ClearAllNotificationViewset(viewsets.ViewSet):
         """
         UserNotification.objects.filter(user=request.user).delete()
         return CustomResponse({"message":"All Notifications Cleared"}, status=status_code.HTTP_200_OK)
+    
+
+from django.shortcuts import render
+from rest_framework import views
+from rest_framework.parsers import MultiPartParser
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework import status as status_code
+import boto3
+import uuid
+import os
+from PIL import Image
+from io import BytesIO
+import io 
+from pydub import AudioSegment
+from core.common_utils import check_file_size
+from config.local import AWS_S3_ACCESS_KEY_ID, AWS_S3_SECRET_ACCESS_KEY, AWS_STORAGE_BUCKET_NAME, AWS_S3_REGION_NAME
+from botocore.exceptions import NoCredentialsError
+from urllib.parse import urlparse
+
+
+class createfile(viewsets.ViewSet):
+    
+    def generate_signed_url(self, object_key):
+        try:
+            # Create an S3 client
+            s3 = boto3.client('s3', aws_access_key_id=AWS_S3_ACCESS_KEY_ID, aws_secret_access_key=AWS_S3_SECRET_ACCESS_KEY, region_name=AWS_S3_REGION_NAME)
+            
+            # Generate a pre-signed URL
+            url = s3.generate_presigned_url(
+                ClientMethod='get_object',
+                Params={'Bucket': AWS_STORAGE_BUCKET_NAME, 'Key': object_key},
+                ExpiresIn=3600000  # URL will expire in 1 hour (3600 seconds) - adjust as needed
+            )
+
+            return url
+        except NoCredentialsError:
+            return None
+
+    def post(self, request):
+        """
+        POST method used to upload files into an S3 bucket.
+        :param request:
+        :return: response
+        """
+        images = []
+        result = []
+        if not request.data.get("file"):
+            return CustomResponse({"message": "No file data found"}, status=status_code.HTTP_400_BAD_REQUEST)
+        result = request.data.getlist("file")
+        for upload in result:
+            s3 = boto3.resource('s3', aws_access_key_id=AWS_S3_ACCESS_KEY_ID, aws_secret_access_key=AWS_S3_SECRET_ACCESS_KEY)
+            # Extract and convert the file extension to lowercase
+            file_extension = os.path.splitext(upload.name)[1].lower()
+            file_full_name = upload.name
+            updated_filename = file_full_name.replace(' ', '_')
+            if file_extension in [".jpg", ".jpeg", ".png"]:
+                path_key = "image/{}_{}".format(uuid.uuid4(), updated_filename)
+                # Compress the image
+                compressed_image = self.compress_image(upload)
+                if not compressed_image:
+                    return CustomResponse({"message": "Failed to compress image"}, status=status_code.HTTP_400_BAD_REQUEST)
+                upload = compressed_image
+            elif file_extension in [".mp3"]:
+                path_key = "audio/{}_{}".format(uuid.uuid4(), updated_filename)
+                # Compress the audio (if needed)
+                compressed_audio = self.compress_audio(upload)
+                if not compressed_audio:
+                    return CustomResponse({"message": "Failed to compress audio"}, status=status_code.HTTP_400_BAD_REQUEST)
+                upload = compressed_audio
+            else:
+                return CustomResponse({"message": "Please provide a valid file."},
+                                    status=status_code.HTTP_400_BAD_REQUEST)
+
+            try:
+                s3.Bucket(AWS_STORAGE_BUCKET_NAME).upload_fileobj(upload, path_key)
+            except Exception:
+                return CustomResponse({"message": "Something went wrong during file uploading."},
+                                    status=status_code.HTTP_400_BAD_REQUEST)
+
+            created_url = 'https://' + AWS_STORAGE_BUCKET_NAME + '.s3.amazonaws.com/' + path_key
+
+            # Generate a pre-signed URL for the uploaded file
+            print("path_key===", path_key)
+            pre_signed_url = self.generate_signed_url(path_key)
+
+            # Include the pre-signed URL in the response
+            data = {'name': path_key, 'url': pre_signed_url}
+            images.append(data)
+        return CustomResponse(images)
+
+    def compress_image(self, image):
+        """
+           compress_image method to compress the images 
+        """
+        try:
+            print("Compressing image...")
+            img = Image.open(image)
+            print("Compressing image 2...")
+            img.thumbnail((800, 800))
+            print("Compressing image 3...")
+            output_buffer = BytesIO()
+            print("Compressing image 4...")
+            img.save(output_buffer, format="png")
+            output_buffer.seek(0)
+            print("Compressed image...")
+            return output_buffer
+        except Exception:
+            return None
+
+    def compress_audio(self, audio):
+        """
+            compress_audio method to compress the audio
+        """
+        try:
+            sound = AudioSegment.from_file(audio)
+            compressed_audio = sound.set_frame_rate(22050)
+            output_buffer = BytesIO()
+            compressed_audio.export(output_buffer, format="mp3")
+            return output_buffer
+        except Exception:
+            return None
+        
+    def create_file(self, request, *args, **kwargs):
+        """
+            function to create file
+        """
+        data = request.data
+        manufacturer_name = data.get('manufacturer_name')
+        manual_manufacturer_name = data.get('manual_manufacturer_name')
+        project_id = data.get('project_id')
+        thumbnail = data.get('thumbnail')
+        manufacturing_number = data.get('manufacturing_number')
+        quantity = data.get('quantity')
+        project_details = data.get('project_details')
+        additional_details = data.get('additional_details')
+        recording = data.get('recording')
+        location = data.get('location')
+        location_points = data.get('location_points')
+        if manual_manufacturer_name:
+            new_manufacturer = ManufacturerName.objects.create(users = request.user,name=manual_manufacturer_name, added_by=2, is_read=False)
+            file = Files.objects.create(created_by=request.user, manufacturer_name_id=new_manufacturer.id, manual_manufacturer_name=manual_manufacturer_name, project_id=project_id, thumbnail=thumbnail, manufacturing_number=manufacturing_number, quantity=quantity, project_details=project_details, additional_details=additional_details, recording=recording, location=location, location_points=location_points, is_admin_approved=True, submitted_to_admin=False)
+            c = str(project_id)+'_'+str(file.id)+'_'+'filename'
+            b = Files.objects.filter(id=file.id).update(file_name=c)
+            return CustomResponse({"message": "File Created with new Manufacturer Successfully", "file_id": file.id}, status=status_code.HTTP_200_OK)
+        else:
+            file = Files.objects.create(created_by=request.user, manufacturer_name_id=manufacturer_name, project_id=project_id, thumbnail=thumbnail, manufacturing_number=manufacturing_number, quantity=quantity, project_details=project_details, additional_details=additional_details, recording=recording, location=location, location_points=location_points, is_admin_approved=True, submitted_to_admin=False)
+            c = str(project_id)+'_'+str(file.id)+'_'+'filename'
+            b = Files.objects.filter(id=file.id).update(file_name=c)
+            return CustomResponse({"message": "File Created with existing Manufacturer Successfully", "file_id": file.id}, status=status_code.HTTP_200_OK)
+        
+
+
+# class CreateFileWithImage(viewsets.ViewSet):
+#     """
+#         CreateFileWithImage viewset to upload image and create file
+#     """
+
+#     permission_classes = (IsAuthenticated, CheckUserRoleStatusPermission)
+
+#     def generate_signed_url(self, object_key):
+#         """
+#             function to generate signed url
+#         """
+#         try:
+#             # Create an S3 client
+#             s3 = boto3.client('s3', aws_access_key_id=AWS_S3_ACCESS_KEY_ID, aws_secret_access_key=AWS_S3_SECRET_ACCESS_KEY, region_name=AWS_S3_REGION_NAME)
+            
+#             # Generate a pre-signed URL
+#             url = s3.generate_presigned_url(
+#                 ClientMethod='get_object',
+#                 Params={'Bucket': AWS_STORAGE_BUCKET_NAME, 'Key': object_key},
+#                 ExpiresIn=3600000  # URL will expire in 1 hour (3600 seconds) - adjust as needed
+#             )
+
+#             return url
+#         except NoCredentialsError:
+#             return None
+
+#     def compress_image(self, image):
+#         """
+#            compress_image method to compress the images 
+#         """
+#         try:
+#             print("Compressing image...")
+#             img = Image.open(image)
+#             print("Compressing image 2...")
+#             img.thumbnail((800, 800))
+#             print("Compressing image 3...")
+#             output_buffer = BytesIO()
+#             print("Compressing image 4...")
+#             img.save(output_buffer, format="png")
+#             output_buffer.seek(0)
+#             print("image compressed...")
+#             return output_buffer
+#         except Exception:
+#             return None
+ 
+#     def create_and_upload_file(self, request):
+#         """
+#             function to upload image and create file
+#         """
+#         upload = request.data.get('file')
+#         # if not upload:
+#         #     return CustomResponse({"message": "No file data found"}, status=status_code.HTTP_400_BAD_REQUEST)
+#         if upload:
+ 
+#             compressed_image = self.compress_image(upload)
+    
+#             path_key = "image/{}_{}".format(uuid.uuid4(), upload.name.replace(' ', '_'))
+#             s3 = boto3.resource('s3', aws_access_key_id=AWS_S3_ACCESS_KEY_ID, aws_secret_access_key=AWS_S3_SECRET_ACCESS_KEY)
+#             s3.Bucket(AWS_STORAGE_BUCKET_NAME).upload_fileobj(compressed_image, path_key)
+#             print("generating signed url...")
+#             thumbnail_url = self.generate_signed_url(path_key)
+#             print("signed url generated...")
+
+#         else:
+#             thumbnail_url = None
+ 
+#         manufacturer_name = request.data.get('manufacturer_name')
+#         manual_manufacturer_name = request.data.get('manual_manufacturer_name')
+#         project_id = request.data.get('project_id')
+#         manufacturing_number = request.data.get('manufacturing_number')
+#         quantity = request.data.get('quantity')
+#         project_details = request.data.get('project_details')
+#         additional_details = request.data.get('additional_details')
+#         recording = request.data.get('recording')
+#         location = request.data.get('location')
+#         location_points = request.data.get('location_points')
+
+#         print("creating file...")
+
+#         if manual_manufacturer_name:
+#             new_manufacturer = ManufacturerName.objects.create(users = request.user,name=manual_manufacturer_name, added_by=2, is_read=False)
+#             file = Files.objects.create(created_by=request.user, manufacturer_name_id=new_manufacturer.id, manual_manufacturer_name=manual_manufacturer_name, project_id=project_id, thumbnail=thumbnail_url, manufacturing_number=manufacturing_number, quantity=quantity, project_details=project_details, additional_details=additional_details, recording=recording, location=location, location_points=location_points, is_admin_approved=True, submitted_to_admin=False)
+#             c = str(project_id)+'_'+str(file.id)+'_'+'filename'
+#             b = Files.objects.filter(id=file.id).update(file_name=c)
+#             return CustomResponse({"message": "File Created with new Manufacturer Successfully", "file_id": file.id, "thumbnail_url": thumbnail_url}, status=status_code.HTTP_200_OK)
+
+
+#         file = Files.objects.create(created_by=request.user, manufacturer_name_id=manufacturer_name, manual_manufacturer_name=manual_manufacturer_name, project_id=project_id, thumbnail=thumbnail_url, manufacturing_number=manufacturing_number, quantity=quantity, project_details=project_details, additional_details=additional_details, recording=recording, location=location, location_points=location_points, is_admin_approved=True, submitted_to_admin=False)
+#         c = str(project_id)+'_'+str(file.id)+'_'+'filename'
+#         b = Files.objects.filter(id=file.id).update(file_name=c)
+#         return CustomResponse({"message": "File created successfully", "file_id": file.id, "thumbnail_url": thumbnail_url}, status=status_code.HTTP_200_OK)
+
+
+class CreateFileWithImage(viewsets.ViewSet):
+    permission_classes = (IsAuthenticated, CheckUserRoleStatusPermission)
+
+    def generate_signed_url(self, object_key):
+        try:
+            s3 = boto3.client('s3', aws_access_key_id=AWS_S3_ACCESS_KEY_ID, aws_secret_access_key=AWS_S3_SECRET_ACCESS_KEY, region_name=AWS_S3_REGION_NAME)
+            url = s3.generate_presigned_url(
+                ClientMethod='get_object',
+                Params={'Bucket': AWS_STORAGE_BUCKET_NAME, 'Key': object_key},
+                ExpiresIn=3600000  # URL will expire in 1 hour (3600 seconds) - adjust as needed
+            )
+            return url
+        except NoCredentialsError:
+            return None
+
+    def compress_image(self, image):
+        try:
+            print("compressing image")
+            img = Image.open(image)
+            img.thumbnail((800, 800))
+            output_buffer = BytesIO()
+            img.save(output_buffer, format="png")
+            output_buffer.seek(0)
+            print("image compressed")
+            return output_buffer
+        except Exception:
+            return None
+
+    def create_and_upload_file(self, request, file_data):
+        upload = file_data.get('file')
+        if upload:
+            compressed_image = self.compress_image(upload)
+            path_key = "image/{}_{}".format(uuid.uuid4(), upload.name.replace(' ', '_'))
+            s3 = boto3.resource('s3', aws_access_key_id=AWS_S3_ACCESS_KEY_ID, aws_secret_access_key=AWS_S3_SECRET_ACCESS_KEY)
+            s3.Bucket(AWS_STORAGE_BUCKET_NAME).upload_fileobj(compressed_image, path_key)
+            thumbnail_url = self.generate_signed_url(path_key)
+        else:
+            thumbnail_url = None
+
+        # Extract other necessary fields from file_data
+        manufacturer_name = file_data.get('manufacturer_name')
+        manual_manufacturer_name = file_data.get('manual_manufacturer_name')
+        project_id = file_data.get('project_id')
+        manufacturing_number = file_data.get('manufacturing_number')
+        quantity = file_data.get('quantity')
+        project_details = file_data.get('project_details')
+        additional_details = file_data.get('additional_details')
+        recording = file_data.get('recording')
+        location = file_data.get('location')
+        location_points = file_data.get('location_points')
+
+        print("creating file")
+
+        if manual_manufacturer_name:
+            new_manufacturer = ManufacturerName.objects.create(users=request.user, name=manual_manufacturer_name, added_by=2, is_read=False)
+            file = Files.objects.create(created_by=request.user, manufacturer_name_id=new_manufacturer.id, manual_manufacturer_name=manual_manufacturer_name, project_id=project_id, thumbnail=thumbnail_url, manufacturing_number=manufacturing_number, quantity=quantity, project_details=project_details, additional_details=additional_details, recording=recording, location=location, location_points=location_points, is_admin_approved=True, submitted_to_admin=False)
+            c = str(project_id)+'_'+str(file.id)+'_'+'filename'
+            b = Files.objects.filter(id=file.id).update(file_name=c)
+            return {"message": "File Created with new Manufacturer Successfully", "file_id": file.id, "thumbnail_url": thumbnail_url}
+
+        file = Files.objects.create(created_by=request.user, manufacturer_name_id=manufacturer_name, manual_manufacturer_name=manual_manufacturer_name, project_id=project_id, thumbnail=thumbnail_url, manufacturing_number=manufacturing_number, quantity=quantity, project_details=project_details, additional_details=additional_details, recording=recording, location=location, location_points=location_points, is_admin_approved=True, submitted_to_admin=False)
+        c = str(project_id)+'_'+str(file.id)+'_'+'filename'
+        b = Files.objects.filter(id=file.id).update(file_name=c)
+        return {"message": "File created successfully", "file_id": file.id, "thumbnail_url": thumbnail_url}
+
+    def create(self, request, *args, **kwargs):
+        try:
+            files_data = request.data.get('files', [])
+            response_data = []
+            print("Received files_data:", files_data)
+
+            for file_data in files_data:
+                print("Processing file_data:", file_data)
+                print("calling upload function")
+                result = self.create_and_upload_file(request, file_data)
+                print("upload function called")
+                print("response data",response_data)
+                response_data.append(result)
+                print("result", result)
+
+            return CustomResponse({"message": "Files uploaded successfully", "data": response_data}, status=status_code.HTTP_200_OK)
+
+        except Exception as e:
+            return CustomResponse({"error": str(e)}, status=status_code.HTTP_500_INTERNAL_SERVER_ERROR)
+ 
