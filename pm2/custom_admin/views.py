@@ -1073,7 +1073,7 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
                     F('approved_project_count') + F('assigned_project_count'),
                     output_field=IntegerField()
                 )
-            ).values('id','full_name','email', 'assigned_project_count', 'user_company', 'user_company__company__name', 'is_active').order_by("-created_at")
+            ).values('id','full_name','email', 'assigned_project_count', 'user_company', 'user_company__company__name', 'is_active','approved_project_count','total_project_count').order_by("-created_at")
         )
 
         if is_active:
