@@ -124,6 +124,10 @@ urlpatterns = [
     path("create_file_admin", views.FilesViewSet.as_view({"post": "create_file_admin"}), name="create_file_admin"),
     path("update_file/<int:id>", views.FilesViewSet.as_view({"put": "update_file"}), name="update_file"),
 
+    path("company_list", views.CompanyManufacturerListViewSet.as_view({"get": "company_list"}), name="company_list"),
+    path("manufacturer_listing", views.CompanyManufacturerListViewSet.as_view({"get": "manufacturer_listing"}), name="manufacturer_listing"),
+
+
 
     path("upload_excel_data", views.UploadexcelViewSet.as_view({"post": "create"}), name="upload_excel_data"),
 
