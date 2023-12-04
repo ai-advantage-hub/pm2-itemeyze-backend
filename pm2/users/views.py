@@ -361,7 +361,7 @@ class FileDetailsViewSet(viewsets.ModelViewSet):
         """
             function to give list of file
         """
-        user = Files.objects.filter(id=id).all().values('file_name','thumbnail','manufacturer_name__name', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording')
+        user = Files.objects.filter(id=id).all().values('file_name','thumbnail','manufacturer_name__name', 'manufacturer_name__id','manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording')
         return CustomResponse(user)
 
     def create(self, request, *args, **kwargs):
