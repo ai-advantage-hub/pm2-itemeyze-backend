@@ -2465,6 +2465,26 @@ class FilesViewSet(viewsets.ViewSet):
             return CustomResponse({"message": "File updated Successfully with existing Manufacturer"}, status=status_code.HTTP_200_OK)
 
 
+class CompanyManufacturerListViewSet(viewsets.ViewSet):
+    """
+        CompanyManufacturerListViewSet to give list of comapny and manufacturer names
+    """
+    permission_classes = (IsAuthenticated, CheckAdminOrSubAdminRoleStatusPermission,)
+
+    def company_list(self, request):
+        """
+            function to give list of companies
+        """
+        company = Company.objects.all().values('id','name','is_active').order_by('-created_at')
+        return CustomResponse(company)
+    
+    def manufacturer_listing(self, request):
+        """
+            function to give list of manufacturer names
+        """
+        manufacturer = ManufacturerName.objects.all().values('id', 'name','added_by').order_by('-created_at')
+        return CustomResponse(manufacturer)
+
 
 # For reading data of manufacturer names and storing in the database
 
