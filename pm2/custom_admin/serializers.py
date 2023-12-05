@@ -125,7 +125,8 @@ class FilesSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Files
-        fields = '__all__'
+        # fields = '__all__'
+        fields = ['id', 'file_name', 'manufacturer_name','manual_manufacturer_name','name_manufacturer','thumbnail', 'manufacturing_number', 'quantity', 'project_details', 'additional_details', 'recording', 'location', 'location_points','created_at', 'is_file_disapproved', 'disapproved_reason']
     
     def update(self, instance, validated_data):
         validated_data['is_admin_approved'] = True
