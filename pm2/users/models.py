@@ -190,7 +190,9 @@ class Files(BaseModel):
     """
         ProjecDetails model to see the details of the projects
     """
-    manufacturer_name = models.ForeignKey(ManufacturerName, on_delete=models.CASCADE, related_name='name_manufacture', null=True)
+    # manufacturer_name = models.ForeignKey(ManufacturerName, on_delete=models.CASCADE, related_name='name_manufacture', null=True)
+    manufacturer_name = models.ForeignKey(ManufacturerName,on_delete=models.SET_NULL,related_name='name_manufacture',null=True)
+    name_manufacturer = models.CharField(blank=True, null=True, max_length=254, verbose_name='nae_manufacturer')
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='project_files')
     manual_manufacturer_name = models.CharField(blank=True, null=True, max_length=254, verbose_name='manual_name')
     file_name = models.CharField(blank=True, null=True, max_length=254)

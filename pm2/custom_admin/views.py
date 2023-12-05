@@ -2430,9 +2430,15 @@ class FilesViewSet(viewsets.ViewSet):
             new_manufacturer = ManufacturerName.objects.create(name=manual_manufacturer_name, is_read=True)
             print("newwwwww", new_manufacturer.id)
             file = Files.objects.create(manufacturer_name_id=new_manufacturer.id, manual_manufacturer_name=manual_manufacturer_name, project_id=project_id, manufacturing_number=manufacturing_number, quantity=quantity, project_details=project_details, additional_details=additional_details,location=location,file_name=file_name, recording=recording, location_points=location_points,is_admin_approved=True)
+            e = ManufacturerName.objects.filter(id=new_manufacturer.id).first()
+            print("eee",e.name)
+            f = Files.objects.filter(id=file.id).update(name_manufacturer= e.name)
             return CustomResponse({"message": "File Created with new Manufacturer Successfully", "file_id": file.id}, status=status_code.HTTP_200_OK)
         else:
             file = Files.objects.create(file_name=file_name, thumbnail=thumbnail, manufacturing_number=manufacturing_number, project_id=project_id, location=location, manufacturer_name_id=manufacturer_name, quantity=quantity, project_details=project_details, additional_details=additional_details, recording=recording, location_points=location_points, is_admin_approved=True)
+            e = ManufacturerName.objects.filter(id=new_manufacturer.id).first()
+            print("eee",e.name)
+            f = Files.objects.filter(id=file.id).update(name_manufacturer= e.name)
             return CustomResponse({"message": "File created with existing Manufacturer Successfully", "file_id": file.id}, status=status_code.HTTP_200_OK)
         
 
