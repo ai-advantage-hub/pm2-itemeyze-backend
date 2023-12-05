@@ -1403,10 +1403,14 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
         
         else:
             # Original code for when neither year nor month is specified
+            # monthly_files_count = (file_query
+            #                     .annotate(month=TruncMonth('created_at'))
+            #                     .values('month')
+            #                     .annotate(files_count=Count('id')))
             monthly_files_count = (file_query
                                 .annotate(month=TruncMonth('created_at'))
                                 .values('month')
-                                .annotate(files_count=Count('id')))
+                                .annotate(files_count=Count('created_by')))
             
             return CustomResponse(monthly_files_count)
 
