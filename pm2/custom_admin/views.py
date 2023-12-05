@@ -1356,8 +1356,8 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
 
         file_query = Files.objects.filter(project__users__id=id)
         if selected_project_id:
-            # file_query = file_query.filter(project_id=selected_project_id)
-            file_query = Files.objects.filter(project_id=selected_project_id)
+            file_query = file_query.filter(project_id=selected_project_id)
+            # file_query = Files.objects.filter(project_id=selected_project_id)
 
         if year and not month:
             # If a year is given but no month, show counts for each month of the year
