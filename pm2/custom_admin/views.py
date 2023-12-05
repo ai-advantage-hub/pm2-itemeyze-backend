@@ -1348,7 +1348,7 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
         """
         year = request.GET.get('year')
         month = request.GET.get('month')
-        selected_project_id = request.GET.get('project_id', None)
+        selected_project_id = request.GET.get('selected_project_id', None)
         
         user = User.all_objects.filter(id=id).first()
         if not user:
