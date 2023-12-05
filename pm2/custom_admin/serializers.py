@@ -115,7 +115,7 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
             return None
     
     def get_files(self, obj):
-        approved_files = obj.project_files.filter(is_marked_deleted=False)
+        approved_files = obj.project_files.filter(is_marked_deleted=False, is_deleted=False, is_admin_approved=True)
         return FileSerializer(approved_files, many=True).data
 
 
