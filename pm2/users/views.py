@@ -216,6 +216,9 @@ class UserNameViewSet(viewsets.ViewSet):
 
 #Home
 
+from django.http import JsonResponse
+
+
 class ProjectViewSet(viewsets.ModelViewSet):
     """
         CreateProjectViewSet to create project
@@ -428,15 +431,32 @@ class FileDetailsViewSet(viewsets.ModelViewSet):
             e = ManufacturerName.objects.filter(id=new_manufacturer.id).first()
             print("eee",e.name)
             b = Files.objects.filter(id=file.id).update(file_name=c, name_manufacturer= e.name)
-            
-            return CustomResponse({"message": "File Created with new Manufacturer Successfully", "file_id": file.id}, status=status_code.HTTP_200_OK)
+            file_created = Files.objects.filter(id=file.id).all().values().first()
+            file_details = {
+                "message" : "File Created with new Manufacturer Successfully",
+                "file_id": file.id,
+                "file_details": file_created,
+                "status" : status_code.HTTP_200_OK,
+                
+            }
+            return JsonResponse(file_details)
+            # return CustomResponse({"message": "File Created with new Manufacturer Successfully", "file_id": file.id}, status=status_code.HTTP_200_OK)
         else:
             file = Files.objects.create(created_by=request.user, manufacturer_name_id=manufacturer_name, project_id=project_id, thumbnail=thumbnail, manufacturing_number=manufacturing_number, quantity=quantity, project_details=project_details, additional_details=additional_details, recording=recording, location=location, location_points=location_points, is_admin_approved=True, submitted_to_admin=False)
             c = str(project_id)+'_'+str(file.id)+'_'+'filename'
             e = ManufacturerName.objects.filter(id=manufacturer_name).first()
             print("eee",e.name)
             b = Files.objects.filter(id=file.id).update(file_name=c, name_manufacturer= e.name)
-            return CustomResponse({"message": "File Created with existing Manufacturer Successfully", "file_id": file.id}, status=status_code.HTTP_200_OK)
+            file_created = Files.objects.filter(id=file.id).all().values().first()
+            file_details = {
+                "message" : "File Created with existing Manufacturer Successfully",
+                "file_id": file.id,
+                "file_details": file_created,
+                "status" : status_code.HTTP_200_OK,
+                
+            }
+            return JsonResponse(file_details)
+            # return CustomResponse({"message": "File Created with existing Manufacturer Successfully", "file_id": file.id}, status=status_code.HTTP_200_OK)
 
     def user_saved_list(self, request, id):
         """
@@ -482,6 +502,7 @@ class FileDetailsViewSet(viewsets.ModelViewSet):
             return CustomResponse({"message": "Project of this id does not exist"}, status=status_code.HTTP_400_BAD_REQUEST)
 
         if list_type == '1':
+            # type one for only created files that are not submitted to admin
             # files = Files.objects.filter(project_id = id, created_by=request.user, submitted_to_admin=False, is_marked_deleted=False).all().values('id','file_name','thumbnail','manufacturer_name__full_name', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason')
             if name == None:
                 files = Files.objects.filter(project_id=id, created_by=request.user,submitted_to_admin=False, is_marked_deleted=False).all().values('id','file_name','thumbnail','name_manufacturer','manufacturer_name__name','manufacturer_name__id', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason').order_by('-created_at')
@@ -491,6 +512,7 @@ class FileDetailsViewSet(viewsets.ModelViewSet):
                                         Q(manufacturing_number__icontains=name),
                                         project_id=id, created_by=request.user,submitted_to_admin=False, is_marked_deleted=False).all().values('id','file_name','thumbnail','name_manufacturer','manufacturer_name__name','manufacturer_name__id', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason').order_by('-created_at')
         elif list_type == '2':
+            # type 2 for those files which are submitted to admin
             # files = Files.objects.filter(project_id=id, created_by=request.user, is_admin_approved=True, submitted_to_admin=True).all().values('id','file_name','thumbnail','manufacturer_name__full_name', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason')
             if name == None:
                 files = Files.objects.filter(project_id=id, created_by=request.user,is_admin_approved=True, submitted_to_admin=True, is_marked_deleted=False).all().values('id','file_name','thumbnail','name_manufacturer','manufacturer_name__name','manufacturer_name__id', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason').order_by('-created_at')
@@ -623,10 +645,28 @@ class EditFileViewSet(viewsets.ModelViewSet):
         if manual_manufacturer_name:
             manufacturer = ManufacturerName.objects.create(users = request.user, name=manual_manufacturer_name, added_by=2, is_read=False)
             file = Files.objects.filter(id=id).update(manufacturer_name_id=manufacturer.id,thumbnail=thumbnail, manual_manufacturer_name=manual_manufacturer_name, manufacturing_number=manufacturing_number, quantity=quantity, project_details=project_details, additional_details=additional_details,location=location, location_points=location_points,is_edited=True)
-            return CustomResponse({"message": "File updated Successfully"}, status=status_code.HTTP_200_OK)
+            file_created = Files.objects.filter(id=id).all().values().first()
+            file_details = {
+                "message" : "File Created with new Manufacturer Successfully",
+                "file_id": id,
+                "file_details": file_created,
+                "status" : status_code.HTTP_200_OK,
+                
+            }
+            return JsonResponse(file_details)
+            # return CustomResponse({"message": "File updated Successfully"}, status=status_code.HTTP_200_OK)
         else:
             file = Files.objects.filter(id=id).update(thumbnail=thumbnail, manufacturing_number=manufacturing_number, location=location, manufacturer_name_id=manufacturer_name, quantity=quantity, project_details=project_details, additional_details=additional_details, location_points=location_points, is_edited=True)
-            return CustomResponse({"message": "File updated Successfully"}, status=status_code.HTTP_200_OK)
+            file_created = Files.objects.filter(id=id).all().values().first()
+            file_details = {
+                "message" : "File Created with existing Manufacturer Successfully",
+                "file_id": id,
+                "file_details": file_created,
+                "status" : status_code.HTTP_200_OK,
+                
+            }
+            return JsonResponse(file_details)
+            # return CustomResponse({"message": "File updated Successfully"}, status=status_code.HTTP_200_OK)
         
     def destroy(self, request, id):
         """

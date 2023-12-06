@@ -1863,6 +1863,7 @@ class UnapprovedUsersViewSet(viewsets.ViewSet):
         request_type = request.GET.get('request_type', None)
 
         if request_type == '1':
+            # type 1 for newly created users
             users = (
                 User.objects
                 .filter(is_admin_approved=False, is_email_verified=True, user_role=2)
@@ -1872,6 +1873,7 @@ class UnapprovedUsersViewSet(viewsets.ViewSet):
                 .values('id', 'full_name', 'profile_pic', 'email', 'user_company', 'user_company__company__name', 'company_name')
             )
         elif request_type == '2':
+            # type 2 for edited users
             users = (
                 User.objects
                 .filter(user_role=2, is_edited=True)
