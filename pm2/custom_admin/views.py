@@ -1357,64 +1357,64 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
         file_query = Files.objects.filter(project__users__id=id)
         if selected_project_id:
             file_query = file_query.filter(project_id=selected_project_id)
-        c= file_query.count()
-        return CustomResponse(c)
+        # c= file_query.count()
+        # return CustomResponse(c)
             # file_query = Files.objects.filter(project_id=selected_project_id)
 
-        # if year and not month:
-        #     # If a year is given but no month, show counts for each month of the year
-        #     start_date = date(int(year), 1, 1)
-        #     end_date = date(int(year), 12, 31)
+        if year and not month:
+            # If a year is given but no month, show counts for each month of the year
+            start_date = date(int(year), 1, 1)
+            end_date = date(int(year), 12, 31)
             
-        #     monthly_files_count = (file_query.filter(created_at__range=[start_date, end_date])
-        #                         .annotate(month=TruncMonth('created_at'))
-        #                         .values('month')
-        #                         .annotate(files_count=Count('id'))
-        #                         .order_by('month'))
+            monthly_files_count = (file_query.filter(created_at__range=[start_date, end_date])
+                                .annotate(month=TruncMonth('created_at'))
+                                .values('month')
+                                .annotate(files_count=Count('id'))
+                                .order_by('month'))
             
-        #     # Fill in months with zero count
-        #     result = []
-        #     for m in range(1, 13):
-        #         dt = date(int(year), m, 1)
-        #         count = next((item for item in monthly_files_count if item['month'].month == m), None)
-        #         result.append({'month': dt, 'files_count': count['files_count'] if count else 0})
+            # Fill in months with zero count
+            result = []
+            for m in range(1, 13):
+                dt = date(int(year), m, 1)
+                count = next((item for item in monthly_files_count if item['month'].month == m), None)
+                result.append({'month': dt, 'files_count': count['files_count'] if count else 0})
             
-        #     return CustomResponse(result)
+            return CustomResponse(result)
         
-        # elif month and year:
-        #     # If both year and month are given, show counts for each day of the month
-        #     last_day = monthrange(int(year), int(month))[1]
-        #     start_date = date(int(year), int(month), 1)
-        #     end_date = date(int(year), int(month), last_day)
+        elif month and year:
+            # If both year and month are given, show counts for each day of the month
+            last_day = monthrange(int(year), int(month))[1]
+            start_date = date(int(year), int(month), 1)
+            end_date = date(int(year), int(month), last_day)
             
-        #     daily_files_count = (file_query.filter(created_at__range=[start_date, end_date])
-        #                         .annotate(day=TruncDate('created_at'))
-        #                         .values('day')
-        #                         .annotate(files_count=Count('id'))
-        #                         .order_by('day'))
+            daily_files_count = (file_query.filter(created_at__range=[start_date, end_date])
+                                .annotate(day=TruncDate('created_at'))
+                                .values('day')
+                                .annotate(files_count=Count('id'))
+                                .order_by('day'))
             
-        #     # Fill in days with zero count
-        #     result = []
-        #     current_day = start_date
-        #     while current_day <= end_date:
-        #         count = next((item for item in daily_files_count if item['day'] == current_day), None)
-        #         result.append({'day': current_day, 'files_count': count['files_count'] if count else 0})
-        #         current_day += timedelta(days=1)
+            # Fill in days with zero count
+            result = []
+            current_day = start_date
+            while current_day <= end_date:
+                count = next((item for item in daily_files_count if item['day'] == current_day), None)
+                result.append({'day': current_day, 'files_count': count['files_count'] if count else 0})
+                current_day += timedelta(days=1)
             
-        #     return CustomResponse(result)
+            return CustomResponse(result)
         
-        # else:
-        #     # Original code for when neither year nor month is specified
-        #     # monthly_files_count = (file_query
-        #     #                     .annotate(month=TruncMonth('created_at'))
-        #     #                     .values('month')
-        #     #                     .annotate(files_count=Count('id')))
-        #     monthly_files_count = (file_query
-        #                         .annotate(month=TruncMonth('created_at'))
-        #                         .values('month')
-        #                         .annotate(files_count=Count('created_by')))
+        else:
+            # Original code for when neither year nor month is specified
+            monthly_files_count = (file_query
+                                .annotate(month=TruncMonth('created_at'))
+                                .values('month')
+                                .annotate(files_count=Count('id')))
+            # monthly_files_count = (file_query
+            #                     .annotate(month=TruncMonth('created_at'))
+            #                     .values('month')
+            #                     .annotate(files_count=Count('created_by')))
             
-        #     return CustomResponse(monthly_files_count)
+            return CustomResponse(monthly_files_count)
 
                 
 
