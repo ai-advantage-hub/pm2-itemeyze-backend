@@ -484,22 +484,22 @@ class FileDetailsViewSet(viewsets.ModelViewSet):
         if list_type == '1':
             # files = Files.objects.filter(project_id = id, created_by=request.user, submitted_to_admin=False, is_marked_deleted=False).all().values('id','file_name','thumbnail','manufacturer_name__full_name', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason')
             if name == None:
-                files = Files.objects.filter(project_id=id, created_by=request.user,submitted_to_admin=False, is_marked_deleted=False).all().values('id','file_name','thumbnail','manufacturer_name__name', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason').order_by('-created_at')
+                files = Files.objects.filter(project_id=id, created_by=request.user,submitted_to_admin=False, is_marked_deleted=False).all().values('id','file_name','thumbnail','manufacturer_name__name','manufacturer_name__id', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason').order_by('-created_at')
             else:
                 files = Files.objects.filter(Q(location__icontains=name) |
                                         Q(manufacturer_name__name__icontains=name) |
                                         Q(manufacturing_number__icontains=name),
-                                        project_id=id, created_by=request.user,submitted_to_admin=False, is_marked_deleted=False).all().values('id','file_name','thumbnail','manufacturer_name__name', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason').order_by('-created_at')
+                                        project_id=id, created_by=request.user,submitted_to_admin=False, is_marked_deleted=False).all().values('id','file_name','thumbnail','manufacturer_name__name','manufacturer_name__id', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason').order_by('-created_at')
         elif list_type == '2':
             # files = Files.objects.filter(project_id=id, created_by=request.user, is_admin_approved=True, submitted_to_admin=True).all().values('id','file_name','thumbnail','manufacturer_name__full_name', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason')
             if name == None:
-                files = Files.objects.filter(project_id=id, created_by=request.user,is_admin_approved=True, submitted_to_admin=True, is_marked_deleted=False).all().values('id','file_name','thumbnail','manufacturer_name__name', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason').order_by('-created_at')
+                files = Files.objects.filter(project_id=id, created_by=request.user,is_admin_approved=True, submitted_to_admin=True, is_marked_deleted=False).all().values('id','file_name','thumbnail','manufacturer_name__name','manufacturer_name__id', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason').order_by('-created_at')
 
             else:
                 files = Files.objects.filter(Q(location__icontains=name) |
                                         Q(manufacturer_name__name__icontains=name) |
                                         Q(manufacturing_number__icontains=name),
-                                        project_id=id, created_by=request.user,is_admin_approved=True, submitted_to_admin=True, is_marked_deleted=False).all().values('id','file_name','thumbnail','manufacturer_name__name', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason').order_by('-created_at')
+                                        project_id=id, created_by=request.user,is_admin_approved=True, submitted_to_admin=True, is_marked_deleted=False).all().values('id','file_name','thumbnail','manufacturer_name__name','manufacturer_name__id', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason').order_by('-created_at')
 
         else:
             return CustomResponse({"message": "Invalid filter type"}, status=status_code.HTTP_400_BAD_REQUEST)
