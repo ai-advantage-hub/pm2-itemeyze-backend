@@ -1820,6 +1820,7 @@ class CreateFileWithImage2(viewsets.ViewSet):
         print("taking input")
         print("temp file id", temp_file_id)
         # Extract other necessary fields from file_data
+        file_id = request.data.get(f'file_id_{temp_file_id}') 
         manufacturer_name = request.data.get(f'manufacturer_name_{temp_file_id}')     
         manual_manufacturer_name = request.data.get(f'manual_manufacturer_name_{temp_file_id}')     
         project_id = request.data.get(f'project_id_{temp_file_id}')     
@@ -1830,6 +1831,148 @@ class CreateFileWithImage2(viewsets.ViewSet):
         recording = request.data.get(f'recording_{temp_file_id}')     
         location = request.data.get(f'location_{temp_file_id}')     
         location_points = request.data.get(f'location_points_{temp_file_id}')
+
+        # b = Files.objects.filter(id=file_id)
+        # print("file_id",file_id)
+        # if b.exists():
+        #     print("editing")
+        #     if thumbnail_url:
+        #         b.update(created_by=request.user, manufacturer_name=manufacturer_name, manual_manufacturer_name=manual_manufacturer_name, project_id=project_id, thumbnail=thumbnail_url, manufacturing_number=manufacturing_number, quantity=quantity, project_details=project_details, additional_details=additional_details, recording=recording, location=location, location_points=location_points, is_admin_approved=True, submitted_to_admin=False)
+            
+        #         return {"message": "File updated succesfully with thumbnail", "file_id": file_id, "thumbnail_url": thumbnail_url}
+
+
+        print("creating file")
+
+        if manual_manufacturer_name:
+            new_manufacturer = ManufacturerName.objects.create(users=request.user, name=manual_manufacturer_name, added_by=2, is_read=False)
+            file = Files.objects.create(created_by=request.user, manufacturer_name_id=new_manufacturer.id, manual_manufacturer_name=manual_manufacturer_name, project_id=project_id, thumbnail=thumbnail_url, manufacturing_number=manufacturing_number, quantity=quantity, project_details=project_details, additional_details=additional_details, recording=recording, location=location, location_points=location_points, is_admin_approved=True, submitted_to_admin=False)
+            c = f"{project_id}_{file.id}_filename"
+            e = ManufacturerName.objects.filter(id=new_manufacturer.id).first()
+            print("eee",e.name)
+            b = Files.objects.filter(id=file.id).update(file_name=c, name_manufacturer= e.name)
+            # b = Files.objects.filter(id=file.id).update(file_name=c)
+            return {"message": "File Created with new Manufacturer Successfully", "file_id": file.id, "thumbnail_url": thumbnail_url}
+
+        file = Files.objects.create(created_by=request.user, manufacturer_name_id=manufacturer_name, manual_manufacturer_name=manual_manufacturer_name, project_id=project_id, thumbnail=thumbnail_url, manufacturing_number=manufacturing_number, quantity=quantity, project_details=project_details, additional_details=additional_details, recording=recording, location=location, location_points=location_points, is_admin_approved=True, submitted_to_admin=False)
+        c = f"{project_id}_{file.id}_filename"
+        e = ManufacturerName.objects.filter(id=manufacturer_name).first()
+        print("eee",e.name)
+        b = Files.objects.filter(id=file.id).update(file_name=c, name_manufacturer= e.name)
+        # b = Files.objects.filter(id=file.id).update(file_name=c)
+        return {"message": "File created successfully", "file_id": file.id, "thumbnail_url": thumbnail_url}
+
+    def create(self, request, *args, **kwargs):
+        try:
+            files_data = request.data.getlist('file')
+            response_data = []
+            print("Received files_data:", files_data)
+
+            for file_data in files_data:
+                print("Processing file_data:", file_data)
+                print("calling upload function")
+                result = self.create_and_upload_file(request, file_data)
+                print("upload function called")
+                print("response data", response_data)
+                response_data.append(result)
+                print("result", result)
+
+            return CustomResponse({"message": "Files uploaded successfully", "data": response_data}, status=status_code.HTTP_200_OK)
+
+        except Exception as e:
+            return CustomResponse({"error": str(e)}, status=status_code.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+
+class CreateFileWithImage3(viewsets.ViewSet):
+    permission_classes = (IsAuthenticated, CheckUserRoleStatusPermission)
+
+    def generate_signed_url(self, object_key):
+        try:
+            s3 = boto3.client('s3', aws_access_key_id=AWS_S3_ACCESS_KEY_ID, aws_secret_access_key=AWS_S3_SECRET_ACCESS_KEY, region_name=AWS_S3_REGION_NAME)
+            url = s3.generate_presigned_url(
+                ClientMethod='put_object',
+                Params={'Bucket': AWS_STORAGE_BUCKET_NAME, 'Key': object_key},
+                ExpiresIn=3600  # URL will expire in 1 hour (adjust as needed)
+            )
+            return url
+        except NoCredentialsError:
+            return None
+        
+    def compress_image(self, image):
+        try:
+            print("Compressing image...")
+            img = Image.open(image)
+            img.thumbnail((800, 800))
+            print("Compressing image 2...")
+            output_buffer = BytesIO()
+            print("Compressing image 3...")
+            img.save(output_buffer, format="png")
+            output_buffer.seek(0)
+            print("Image compressed...")
+            return output_buffer
+        except Exception:
+            return None
+
+    def create_and_upload_file(self, request, file_data):
+        print("in upload function")
+        print("file data==", file_data)
+
+        # upload = file_data['file']
+        upload = file_data.file
+        temp_file_id = request.data.get('temp_file_id')
+
+        # temp_file_id = file_data.temp_file_id
+        print("upload ====", upload)
+        # temp_file_id = file_data['temp_file_id']
+
+        if upload:
+            print("in if upload")
+            compressed_image = self.compress_image(upload)
+            print("compressed", compressed_image)
+            # print("upload name", upload.name)
+            # original_file_name = upload.name
+            # print("originsl", original_file_name)
+            original_file_name = f"your_custom_prefix_{uuid.uuid4().hex}.png"
+            print("original", original_file_name)
+            # path_key = "image/{}_{}".format(uuid.uuid4(), upload.name.replace(' ', '_'))
+            path_key = "image/{}_{}".format(uuid.uuid4(), original_file_name.replace(' ', '_'))
+            print("path key", path_key)
+
+            # Upload compressed image to S3
+            s3 = boto3.resource('s3', aws_access_key_id=AWS_S3_ACCESS_KEY_ID, aws_secret_access_key=AWS_S3_SECRET_ACCESS_KEY)
+            print("s3", s3)
+            s3.Bucket(AWS_STORAGE_BUCKET_NAME).upload_fileobj(compressed_image, path_key)
+
+            # Generate signed URL for the uploaded image
+            thumbnail_url = self.generate_signed_url(path_key)
+            print("thumbnail", thumbnail_url)
+        else:
+            print("in else upload")
+            thumbnail_url = None
+
+        print("taking input")
+        print("temp file id", temp_file_id)
+        # Extract other necessary fields from file_data
+        file_id = request.data.get(f'file_id_{temp_file_id}') 
+        manufacturer_name = request.data.get(f'manufacturer_name_{temp_file_id}')     
+        manual_manufacturer_name = request.data.get(f'manual_manufacturer_name_{temp_file_id}')     
+        project_id = request.data.get(f'project_id_{temp_file_id}')     
+        manufacturing_number = request.data.get(f'manufacturing_number_{temp_file_id}')     
+        quantity = request.data.get(f'quantity_{temp_file_id}')     
+        project_details = request.data.get(f'project_details_{temp_file_id}')     
+        additional_details = request.data.get(f'additional_details_{temp_file_id}')     
+        recording = request.data.get(f'recording_{temp_file_id}')     
+        location = request.data.get(f'location_{temp_file_id}')     
+        location_points = request.data.get(f'location_points_{temp_file_id}')
+
+        b = Files.objects.filter(id=file_id)
+        print("file_id",file_id)
+        if b.exists():
+            print("editing")
+            if thumbnail_url:
+                b.update(created_by=request.user, manufacturer_name=manufacturer_name, manual_manufacturer_name=manual_manufacturer_name, project_id=project_id, thumbnail=thumbnail_url, manufacturing_number=manufacturing_number, quantity=quantity, project_details=project_details, additional_details=additional_details, recording=recording, location=location, location_points=location_points, is_admin_approved=True, submitted_to_admin=False)
+            
+                return {"message": "File updated succesfully with thumbnail", "file_id": file_id, "thumbnail_url": thumbnail_url}
 
 
         print("creating file")
