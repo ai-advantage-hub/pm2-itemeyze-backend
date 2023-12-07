@@ -660,6 +660,9 @@ class EditFileViewSet(viewsets.ModelViewSet):
             # return CustomResponse({"message": "File updated Successfully"}, status=status_code.HTTP_200_OK)
         else:
             file = Files.objects.filter(id=id).update(thumbnail=thumbnail, manufacturing_number=manufacturing_number, location=location, manufacturer_name_id=manufacturer_name, quantity=quantity, project_details=project_details, additional_details=additional_details, location_points=location_points, is_edited=True)
+            e = ManufacturerName.objects.filter(id=manufacturer_name).first()
+            print("eee",e.name)
+            b = Files.objects.filter(id=id).update(name_manufacturer= e.name)
             file_created = Files.objects.filter(id=id).all().values().first()
             file_details = {
                 "message" : "File Created with existing Manufacturer Successfully",
