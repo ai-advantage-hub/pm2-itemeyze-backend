@@ -2436,6 +2436,8 @@ class FilesViewSet(viewsets.ViewSet):
         if Files.objects.filter(manufacturing_number=manufacturing_number).exists():
              return CustomResponse({"message": "This manufacturing number already exists"}, status=status.HTTP_400_BAD_REQUEST)
         if manual_manufacturer_name:
+            if ManufacturerName.objects.filter(name = manual_manufacturer_name).exists():
+                return CustomResponse({"message": "This manufacturer name already exists, please select from list"}, status=status_code.HTTP_400_BAD_REQUEST)
             new_manufacturer = ManufacturerName.objects.create(name=manual_manufacturer_name, is_read=True)
             print("newwwwww", new_manufacturer.id)
             file = Files.objects.create(manufacturer_name_id=new_manufacturer.id, manual_manufacturer_name=manual_manufacturer_name, project_id=project_id, manufacturing_number=manufacturing_number, quantity=quantity, project_details=project_details, additional_details=additional_details,location=location,file_name=file_name, recording=recording, location_points=location_points,is_admin_approved=True)
@@ -2472,6 +2474,8 @@ class FilesViewSet(viewsets.ViewSet):
         if Files.objects.filter(manufacturing_number=manufacturing_number).exclude(id=id).exists():
             return CustomResponse({"message": "This manufacturing number already exists"}, status=status_code.HTTP_400_BAD_REQUEST)
         if manual_manufacturer_name:
+            if ManufacturerName.objects.filter(name = manual_manufacturer_name).exists():
+                return CustomResponse({"message": "This manufacturer name already exists, please select from list"}, status=status_code.HTTP_400_BAD_REQUEST)
             manufacturer = ManufacturerName.objects.create(name=manual_manufacturer_name, added_by=1, is_read=True)
             file = Files.objects.filter(id=id).update(manufacturer_name_id=manufacturer.id,thumbnail=thumbnail, manual_manufacturer_name=manual_manufacturer_name, manufacturing_number=manufacturing_number, quantity=quantity, project_details=project_details, additional_details=additional_details,location=location, location_points=location_points)
             e = ManufacturerName.objects.filter(id=manufacturer.id).first()
