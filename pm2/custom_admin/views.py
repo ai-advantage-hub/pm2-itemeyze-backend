@@ -2474,9 +2474,15 @@ class FilesViewSet(viewsets.ViewSet):
         if manual_manufacturer_name:
             manufacturer = ManufacturerName.objects.create(name=manual_manufacturer_name, added_by=1, is_read=True)
             file = Files.objects.filter(id=id).update(manufacturer_name_id=manufacturer.id,thumbnail=thumbnail, manual_manufacturer_name=manual_manufacturer_name, manufacturing_number=manufacturing_number, quantity=quantity, project_details=project_details, additional_details=additional_details,location=location, location_points=location_points)
+            e = ManufacturerName.objects.filter(id=manufacturer.id).first()
+            print("eee",e.name)
+            f = Files.objects.filter(id=id).update(name_manufacturer= e.name)
             return CustomResponse({"message": "File updated Successfully with new Manufacturer"}, status=status_code.HTTP_200_OK)
         else:
             file = Files.objects.filter(id=id).update(thumbnail=thumbnail, manufacturing_number=manufacturing_number, location=location, manufacturer_name_id=manufacturer_name, quantity=quantity, project_details=project_details, additional_details=additional_details, location_points=location_points)
+            e = ManufacturerName.objects.filter(id=manufacturer_name).first()
+            print("eee",e.name)
+            f = Files.objects.filter(id=id).update(name_manufacturer= e.name)
             return CustomResponse({"message": "File updated Successfully with existing Manufacturer"}, status=status_code.HTTP_200_OK)
 
 

@@ -645,6 +645,9 @@ class EditFileViewSet(viewsets.ModelViewSet):
         if manual_manufacturer_name:
             manufacturer = ManufacturerName.objects.create(users = request.user, name=manual_manufacturer_name, added_by=2, is_read=False)
             file = Files.objects.filter(id=id).update(manufacturer_name_id=manufacturer.id,thumbnail=thumbnail, manual_manufacturer_name=manual_manufacturer_name, manufacturing_number=manufacturing_number, quantity=quantity, project_details=project_details, additional_details=additional_details,location=location, location_points=location_points,is_edited=True)
+            e = ManufacturerName.objects.filter(id=manufacturer.id).first()
+            print("eee",e.name)
+            b = Files.objects.filter(id=file.id).update(name_manufacturer= e.name)
             file_created = Files.objects.filter(id=id).all().values().first()
             file_details = {
                 "message" : "File Created with new Manufacturer Successfully",
