@@ -654,7 +654,7 @@ class EditFileViewSet(viewsets.ModelViewSet):
             b = Files.objects.filter(id=file.id).update(name_manufacturer= e.name)
             file_created = Files.objects.filter(id=id).all().values().first()
             file_details = {
-                "message" : "File Created with new Manufacturer Successfully",
+                "message" : "File updated with new Manufacturer Successfully",
                 "file_id": id,
                 "file_details": file_created,
                 "status" : status_code.HTTP_200_OK,
@@ -669,7 +669,7 @@ class EditFileViewSet(viewsets.ModelViewSet):
             b = Files.objects.filter(id=id).update(name_manufacturer= e.name)
             file_created = Files.objects.filter(id=id).all().values().first()
             file_details = {
-                "message" : "File Created with existing Manufacturer Successfully",
+                "message" : "File updated with existing Manufacturer Successfully",
                 "file_id": id,
                 "file_details": file_created,
                 "status" : status_code.HTTP_200_OK,
