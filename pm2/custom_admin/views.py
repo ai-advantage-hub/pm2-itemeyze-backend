@@ -1354,12 +1354,12 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
         if not user:
             return CustomResponse({"message": "User not found"}, status=status.HTTP_400_BAD_REQUEST)
 
-        file_query = Files.objects.filter(project__users__id=id)
+        # file_query = Files.objects.filter(project__users__id=id)
+        file_query = Files.objects.filter(Q(created_by_id=id)|Q(project__created_by_id=id)|Q(project__users__id=id))
         if selected_project_id:
-            file_query = file_query.filter(project_id=selected_project_id)
-        # c= file_query.count()
-        # return CustomResponse(c)
-            # file_query = Files.objects.filter(project_id=selected_project_id)
+            # file_query = file_query.filter(project_id=selected_project_id)
+            file_query = file_query.filter(project__created_by__is_admin_approved=True, project_id=selected_project_id)
+ 
 
         if year and not month:
             # If a year is given but no month, show counts for each month of the year
@@ -1669,7 +1669,8 @@ class ApprovedFilesListingViewSet(viewsets.ViewSet):
             function to get list of approved files
         """
         page_size = request.GET.get('page_size', '')
-        approved_files = Files.objects.filter(project_id=id, is_edited=False, is_deleted=False, submitted_to_admin=True).all().values('id','file_name', 'thumbnail','created_at','is_file_disapproved').order_by('-created_at')
+        # approved_files = Files.objects.filter(project_id=id, is_edited=False, is_deleted=False, submitted_to_admin=True).all().values('id','file_name', 'thumbnail','created_at','is_file_disapproved').order_by('-created_at')
+        approved_files = Files.objects.filter(project_id=id, is_deleted=False, submitted_to_admin=True).all().values('id','file_name', 'thumbnail','created_at','is_file_disapproved').order_by('-created_at')
         page = None
         if page_size:
             pagination_class = self.pagination_class()
@@ -1702,7 +1703,8 @@ class DisapproveFileViewSet(viewsets.ViewSet):
         if not file:
             return CustomResponse({"message": "File not found."}, status=status.HTTP_400_BAD_REQUEST)
         if status_value == 1:
-            c = Files.objects.filter(id=file_id).update(is_file_disapproved=True,is_admin_approved=False, disapproved_reason=disapprove_reason)
+            # c = Files.objects.filter(id=file_id).update(is_file_disapproved=True,is_admin_approved=False, disapproved_reason=disapprove_reason)
+            c = Files.objects.filter(id=file_id).update(is_file_disapproved=True,is_admin_approved=False, disapproved_reason=disapprove_reason, is_edited=False)
             disapproved_file = Files.objects.filter(id=file_id).first()
             print("disss", disapproved_file.disapproved_count)
             disapproved_file.disapproved_count=1
