@@ -1820,7 +1820,6 @@ class CreateFileWithImage2(viewsets.ViewSet):
         print("taking input")
         print("temp file id", temp_file_id)
         # Extract other necessary fields from file_data
-        file_id = request.data.get(f'file_id_{temp_file_id}') 
         manufacturer_name = request.data.get(f'manufacturer_name_{temp_file_id}')     
         manual_manufacturer_name = request.data.get(f'manual_manufacturer_name_{temp_file_id}')     
         project_id = request.data.get(f'project_id_{temp_file_id}')     
@@ -1831,16 +1830,6 @@ class CreateFileWithImage2(viewsets.ViewSet):
         recording = request.data.get(f'recording_{temp_file_id}')     
         location = request.data.get(f'location_{temp_file_id}')     
         location_points = request.data.get(f'location_points_{temp_file_id}')
-
-        # b = Files.objects.filter(id=file_id)
-        # print("file_id",file_id)
-        # if b.exists():
-        #     print("editing")
-        #     if thumbnail_url:
-        #         b.update(created_by=request.user, manufacturer_name=manufacturer_name, manual_manufacturer_name=manual_manufacturer_name, project_id=project_id, thumbnail=thumbnail_url, manufacturing_number=manufacturing_number, quantity=quantity, project_details=project_details, additional_details=additional_details, recording=recording, location=location, location_points=location_points, is_admin_approved=True, submitted_to_admin=False)
-            
-        #         return {"message": "File updated succesfully with thumbnail", "file_id": file_id, "thumbnail_url": thumbnail_url}
-
 
         print("creating file")
 
