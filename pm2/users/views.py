@@ -500,30 +500,38 @@ class FileDetailsViewSet(viewsets.ModelViewSet):
         list_type = request.GET.get('list_type', None)
         name = request.GET.get('name', None)
         page_size = request.GET.get('page_size', '')
+        data = request.data
+        file_id = data.get("delete_file_id", [])
         if not Project.objects.filter(id=id).exists():
             return CustomResponse({"message": "Project of this id does not exist"}, status=status_code.HTTP_400_BAD_REQUEST)
+        
+        if file_id:
+            print("file id", file_id)
+            for id2 in file_id:
+                print("id", id2)
+                Files.objects.filter(id=id2).update(is_marked_deleted=True)
 
         if list_type == '1':
             # type one for only created files that are not submitted to admin
             # files = Files.objects.filter(project_id = id, created_by=request.user, submitted_to_admin=False, is_marked_deleted=False).all().values('id','file_name','thumbnail','manufacturer_name__full_name', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason')
             if name == None:
-                files = Files.objects.filter(project_id=id, created_by=request.user,submitted_to_admin=False, is_marked_deleted=False).all().values('id','file_name','thumbnail','name_manufacturer','manufacturer_name__name','manufacturer_name__id', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason').order_by('-created_at')
+                files = Files.objects.filter(project_id=id, created_by=request.user,submitted_to_admin=False, is_marked_deleted=False).all().values('id','file_name','thumbnail','name_manufacturer','manufacturer_name__name','manufacturer_name__id', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason','submitted_to_admin').order_by('-created_at')
             else:
                 files = Files.objects.filter(Q(location__icontains=name) |
                                         Q(manufacturer_name__name__icontains=name) |
                                         Q(manufacturing_number__icontains=name),
-                                        project_id=id, created_by=request.user,submitted_to_admin=False, is_marked_deleted=False).all().values('id','file_name','thumbnail','name_manufacturer','manufacturer_name__name','manufacturer_name__id', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason').order_by('-created_at')
+                                        project_id=id, created_by=request.user,submitted_to_admin=False, is_marked_deleted=False).all().values('id','file_name','thumbnail','name_manufacturer','manufacturer_name__name','manufacturer_name__id', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason','submitted_to_admin').order_by('-created_at')
         elif list_type == '2':
             # type 2 for those files which are submitted to admin
             # files = Files.objects.filter(project_id=id, created_by=request.user, is_admin_approved=True, submitted_to_admin=True).all().values('id','file_name','thumbnail','manufacturer_name__full_name', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason')
             if name == None:
-                files = Files.objects.filter(project_id=id, created_by=request.user,is_admin_approved=True, submitted_to_admin=True, is_marked_deleted=False).all().values('id','file_name','thumbnail','name_manufacturer','manufacturer_name__name','manufacturer_name__id', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason').order_by('-created_at')
+                files = Files.objects.filter(project_id=id, created_by=request.user,is_admin_approved=True, submitted_to_admin=True, is_marked_deleted=False).all().values('id','file_name','thumbnail','name_manufacturer','manufacturer_name__name','manufacturer_name__id', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason','submitted_to_admin').order_by('-created_at')
 
             else:
                 files = Files.objects.filter(Q(location__icontains=name) |
                                         Q(manufacturer_name__name__icontains=name) |
                                         Q(manufacturing_number__icontains=name),
-                                        project_id=id, created_by=request.user,is_admin_approved=True, submitted_to_admin=True, is_marked_deleted=False).all().values('id','file_name','thumbnail','name_manufacturer','manufacturer_name__name','manufacturer_name__id', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason').order_by('-created_at')
+                                        project_id=id, created_by=request.user,is_admin_approved=True, submitted_to_admin=True, is_marked_deleted=False).all().values('id','file_name','thumbnail','name_manufacturer','manufacturer_name__name','manufacturer_name__id', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason','submitted_to_admin').order_by('-created_at')
 
         else:
             return CustomResponse({"message": "Invalid filter type"}, status=status_code.HTTP_400_BAD_REQUEST)
@@ -548,6 +556,81 @@ class FileDetailsViewSet(viewsets.ModelViewSet):
         return CustomResponse(files) 
 
         # return CustomResponse(files)
+
+
+    def file_list2(self, request, id):
+        """
+        function to give a list of files based on the provided filter
+        """
+        list_type = request.GET.get('list_type', None)
+        name = request.GET.get('name', None)
+        page_size = request.GET.get('page_size', '')
+        data = request.data
+        file_id = data.get("delete_file_id", [])
+        # delete_file_ids = request.GET.getlist('delete_file_ids', [])
+        
+        if not Project.objects.filter(id=id).exists():
+            return CustomResponse({"message": "Project of this id does not exist"}, status=status_code.HTTP_400_BAD_REQUEST)
+        
+        if file_id:
+            print("file id", file_id)
+            for id2 in file_id:
+                print("id", id2)
+                Files.objects.filter(id=id2).update(is_marked_deleted=True)
+
+        # if delete_file_ids:         
+        #     print("file ids", delete_file_ids)         
+        #     for file_id in delete_file_ids:             
+        #         print("id", file_id)             
+        #         Files.objects.filter(id=file_id).update(is_marked_deleted=True)
+
+        print("list type", list_type)
+        if list_type == '1':
+            # type one for only created files that are not submitted to admin
+            # files = Files.objects.filter(project_id = id, created_by=request.user, submitted_to_admin=False, is_marked_deleted=False).all().values('id','file_name','thumbnail','manufacturer_name__full_name', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason')
+            if name == None:
+                files = Files.objects.filter(project_id=id, created_by=request.user,submitted_to_admin=False, is_marked_deleted=False).all().values('id','file_name','thumbnail','name_manufacturer','manufacturer_name__name','manufacturer_name__id', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason','submitted_to_admin').order_by('-created_at')
+            else:
+                files = Files.objects.filter(Q(location__icontains=name) |
+                                        Q(manufacturer_name__name__icontains=name) |
+                                        Q(manufacturing_number__icontains=name),
+                                        project_id=id, created_by=request.user,submitted_to_admin=False, is_marked_deleted=False).all().values('id','file_name','thumbnail','name_manufacturer','manufacturer_name__name','manufacturer_name__id', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason','submitted_to_admin').order_by('-created_at')
+
+        elif list_type == '2':
+            # type 2 for those files which are submitted to admin
+            # files = Files.objects.filter(project_id=id, created_by=request.user, is_admin_approved=True, submitted_to_admin=True).all().values('id','file_name','thumbnail','manufacturer_name__full_name', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason')
+            if name == None:
+                files = Files.objects.filter(project_id=id, created_by=request.user,is_admin_approved=True, submitted_to_admin=True, is_marked_deleted=False).all().values('id','file_name','thumbnail','name_manufacturer','manufacturer_name__name','manufacturer_name__id', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason','submitted_to_admin').order_by('-created_at')
+
+            else:
+                files = Files.objects.filter(Q(location__icontains=name) |
+                                        Q(manufacturer_name__name__icontains=name) |
+                                        Q(manufacturing_number__icontains=name),
+                                        project_id=id, created_by=request.user,is_admin_approved=True, submitted_to_admin=True, is_marked_deleted=False).all().values('id','file_name','thumbnail','name_manufacturer','manufacturer_name__name','manufacturer_name__id', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason','submitted_to_admin').order_by('-created_at')
+
+        else:
+            return CustomResponse({"message": "Invalid filter type"}, status=status_code.HTTP_400_BAD_REQUEST)
+        
+        print("files", files)
+        
+        # file_obj = Files.objects.filter(Q(location__icontains=name) |
+        #                                 Q(manufacturer_name__full_name__icontains=name) |
+        #                                 Q(manufacturing_number__icontains=name),
+        #                                 project_id=id, is_admin_approved=True, is_marked_deleted=False, is_deleted=False).order_by('-created_at')
+
+        # if name:
+        #     files = files.filter(files_name__icontains=name)
+
+        page = None
+
+        if page_size:
+            pagination_class = self.pagination_class()
+            page = pagination_class.paginate_queryset(files, request)
+
+        if page is not None:
+            return CustomResponse(pagination_class.get_paginated_response(page).data)
+
+        return CustomResponse(files) 
 
         
 class ProjectDetailsViewSet(viewsets.ModelViewSet):
@@ -2005,3 +2088,115 @@ class CreateFileWithImage3(viewsets.ViewSet):
             return CustomResponse({"error": str(e)}, status=status_code.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+class SyncUpdatedFiles(viewsets.ViewSet):
+    permission_classes = [IsAuthenticated]
+
+    def generate_signed_url(self, object_key):
+        try:
+            s3 = boto3.client('s3', aws_access_key_id=AWS_S3_ACCESS_KEY_ID, aws_secret_access_key=AWS_S3_SECRET_ACCESS_KEY, region_name=AWS_S3_REGION_NAME)
+            url = s3.generate_presigned_url(
+                ClientMethod='put_object',
+                Params={'Bucket': AWS_STORAGE_BUCKET_NAME, 'Key': object_key},
+                ExpiresIn=3600  # URL will expire in 1 hour (adjust as needed)
+            )
+            return url
+        except NoCredentialsError:
+            return None
+        
+    def compress_image(self, image):
+        try:
+            print("Compressing image...")
+            img = Image.open(image)
+            img.thumbnail((800, 800))
+            print("Compressing image 2...")
+            output_buffer = BytesIO()
+            print("Compressing image 3...")
+            img.save(output_buffer, format="png")
+            output_buffer.seek(0)
+            print("Image compressed...")
+            return output_buffer
+        except Exception:
+            return None
+
+    def post(self, request, *args, **kwargs):
+        try:
+            updated_files_data = request.data.get('updated_files')
+            response_data = []
+
+            for updated_file_data in updated_files_data:
+                file_id = updated_file_data.get('id')
+                thumbnail = updated_file_data.get('thumbnail')
+                manual_manufacturer_name = updated_file_data.get('manual_manufacturer_name')
+                manufacturer_name = updated_file_data.get('manufacturer_name')
+                manufacturing_number = updated_file_data.get('manufacturing_number')
+                location = updated_file_data.get('location')
+                quantity = updated_file_data.get('quantity')
+                project_details = updated_file_data.get('project_details')
+                additional_details = updated_file_data.get('additional_details')
+                location_points = updated_file_data.get('location_points')
+                image_update = updated_file_data.get('image_update', False)  # Default to False if not provided
+
+                if Files.objects.filter(manufacturing_number=manufacturing_number).exclude(id=file_id).exists():
+                    response_data.append({
+                        'file_id': file_id,
+                        'message': 'This manufacturing number already exists',
+                    })
+                else:
+                    # Handle image update logic if user is updating the image
+                    if image_update and thumbnail:
+                        compressed_image = self.compress_image(thumbnail)
+                        original_file_name = f"your_custom_prefix_{uuid.uuid4().hex}.png"
+                        path_key = f"image/{uuid.uuid4()}_{original_file_name.replace(' ', '_')}"
+                        # generate_signed_url(path_key, compressed_image)
+                        thumbnail_url = self.generate_signed_url(path_key)
+                        print("thumbnail", thumbnail_url)
+                    else:
+                        print("in else upload")
+                        thumbnail_url = None
+
+                    # Your logic to update the file based on the provided data
+                    # ...
+                    # if Files.objects.filter(manufacturing_number=manufacturing_number).exclude(id=id).exists():
+                    #     return CustomResponse({"message": "This manufacturing number already exists"}, status=status_code.HTTP_400_BAD_REQUEST)
+                    if manual_manufacturer_name:
+                        if ManufacturerName.objects.filter(name = manual_manufacturer_name).exists():
+                            return CustomResponse({"message": "This manufacturer name already exists, please select from list"}, status=status_code.HTTP_400_BAD_REQUEST)
+                        manufacturer = ManufacturerName.objects.create(users = request.user, name=manual_manufacturer_name, added_by=2, is_read=False)
+                        file = Files.objects.filter(id=id).update(manufacturer_name_id=manufacturer.id,thumbnail=thumbnail, manual_manufacturer_name=manual_manufacturer_name, manufacturing_number=manufacturing_number, quantity=quantity, project_details=project_details, additional_details=additional_details,location=location, location_points=location_points,is_edited=True, submitted_to_admin=False)
+                        e = ManufacturerName.objects.filter(id=manufacturer.id).first()
+                        print("eee",e.name)
+                        b = Files.objects.filter(id=file.id).update(name_manufacturer= e.name)
+                        file_created = Files.objects.filter(id=id).all().values().first()
+                        file_details = {
+                            "message" : "File updated with new Manufacturer Successfully",
+                            "file_id": id,
+                            "file_details": file_created,
+                            "status" : status_code.HTTP_200_OK,
+                            
+                        }
+                        return JsonResponse(file_details)
+                        # return CustomResponse({"message": "File updated Successfully"}, status=status_code.HTTP_200_OK)
+                    else:
+                        file = Files.objects.filter(id=id).update(thumbnail=thumbnail, manufacturing_number=manufacturing_number, location=location, manufacturer_name_id=manufacturer_name, quantity=quantity, project_details=project_details, additional_details=additional_details, location_points=location_points, is_edited=True, submitted_to_admin=False)
+                        e = ManufacturerName.objects.filter(id=manufacturer_name).first()
+                        print("eee",e.name)
+                        b = Files.objects.filter(id=id).update(name_manufacturer= e.name)
+                        file_created = Files.objects.filter(id=id).all().values().first()
+                        file_details = {
+                            "message" : "File updated with existing Manufacturer Successfully",
+                            "file_id": id,
+                            "file_details": file_created,
+                            "status" : status_code.HTTP_200_OK,
+                            
+                        }
+                        return JsonResponse(file_details)
+
+                    # response_data.append({
+                    #     'file_id': file_id,
+                    #     'message': 'File updated successfully',
+                    # })
+
+            return Response({'data': response_data, 'message': 'Files updated successfully'}, status=200)
+
+        except Exception as e:
+            return Response({'error': str(e)}, status=500)
