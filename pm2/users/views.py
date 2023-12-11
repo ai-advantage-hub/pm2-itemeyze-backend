@@ -2684,9 +2684,10 @@ class CreateFileWithImage4(viewsets.ViewSet):
                 # Generate signed URL for the uploaded image
                 thumbnail_url = self.generate_signed_url(path_key)
                 print("thumbnail", thumbnail_url)
-            else:
-                print("in else upload")
-                thumbnail_url = None
+                
+            # else:
+            #     print("in else upload")
+            #     thumbnail_url = None
 
             print("taking input")
             # Extract other necessary fields from file_data
