@@ -2088,8 +2088,8 @@ class CreateFileWithImage3(viewsets.ViewSet):
             return CustomResponse({"error": str(e)}, status=status_code.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-class SyncUpdatedFiles(viewsets.ViewSet):
-    permission_classes = [IsAuthenticated]
+class UpdateOfflineEditedFiles(viewsets.ViewSet):
+    permission_classes = (IsAuthenticated, CheckUserRoleStatusPermission)
 
     def generate_signed_url(self, object_key):
         try:
