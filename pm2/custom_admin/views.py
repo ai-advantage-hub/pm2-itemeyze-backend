@@ -1355,10 +1355,10 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
             return CustomResponse({"message": "User not found"}, status=status.HTTP_400_BAD_REQUEST)
 
         # file_query = Files.objects.filter(project__users__id=id)
-        file_query = Files.objects.filter(Q(created_by_id=id)|Q(project__created_by_id=id)|Q(project__users__id=id)).distinct('id')
+        file_query = Files.objects.filter(Q(created_by_id=id)|Q(project__created_by_id=id)|Q(project__users__id=id))
         if selected_project_id:
             # file_query = file_query.filter(project_id=selected_project_id)
-            file_query = file_query.filter(project__created_by__is_admin_approved=True, project_id=selected_project_id)
+            file_query = file_query.filter(project__is_admin_approved=True, project_id=selected_project_id, created_by_id=id)
  
 
         if year and not month:
