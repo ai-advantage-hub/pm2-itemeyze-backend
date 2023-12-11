@@ -119,6 +119,9 @@ urlpatterns = [
     path("create", views.CreateFileWithImage.as_view(
         {"post": "create"}, name="create")),
 
+    path("edit_offline_files", views.UpdateFileOfflineView.as_view(
+        {"post": "post"}, name="edit_offline_files")),
+
     
     
 
