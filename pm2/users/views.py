@@ -1959,7 +1959,11 @@ class CreateFileWithImage2(viewsets.ViewSet):
             return CustomResponse({"error": str(e)}, status=status_code.HTTP_400_BAD_REQUEST)
         
 
-class CreateFileWithImage3(viewsets.ViewSet):
+
+
+
+
+class CreateEditFileWithImage(viewsets.ViewSet):
     permission_classes = (IsAuthenticated, CheckUserRoleStatusPermission)
 
     def generate_signed_url(self, object_key):
