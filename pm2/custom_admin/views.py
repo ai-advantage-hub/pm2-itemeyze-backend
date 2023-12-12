@@ -1361,8 +1361,8 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
             # file_query = file_query.filter(project_id=selected_project_id)
             file_query = file_query.filter(project__is_admin_approved=True, project_id=selected_project_id, created_by_id=id)
 
-        else:
-            file_query = Files.objects.filter(Q(created_by_id=id)|Q(project__created_by_id=id)|Q(project__users__id=id), project__is_admin_approved=True)
+        # else:
+        #     file_query = Files.objects.filter(Q(created_by_id=id)|Q(project__created_by_id=id)|Q(project__users__id=id), project__is_admin_approved=True)
  
 
         if year and not month:
