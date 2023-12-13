@@ -2067,7 +2067,7 @@ class CreateFileWithImage2(viewsets.ViewSet):
             return CustomResponse({"message": "Files uploaded successfully", "data": response_data}, status=status_code.HTTP_200_OK)
 
         except Exception as e:
-            return CustomResponse({"error": str(e)}, status=status_code.HTTP)
+            return CustomResponse({"error": str(e)}, status=status_code.HTTP_400_BAD_REQUEST)
 
 
 
