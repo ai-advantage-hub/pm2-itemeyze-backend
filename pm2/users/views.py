@@ -2039,7 +2039,7 @@ class CreateFileWithImage2(viewsets.ViewSet):
             print("eee",e.name)
             b = Files.objects.filter(id=file.id).update(file_name=c, name_manufacturer= e.name)
             # b = Files.objects.filter(id=file.id).update(file_name=c)
-            return {"message": "File Created with new Manufacturer Successfully", "file_id": file.id, "thumbnail_url": thumbnail_url}
+            return {"message": "File Created with new Manufacturer Successfully","temp_file_id": temp_file_id ,"file_id": file.id, "thumbnail_url": thumbnail_url}
 
         file = Files.objects.create(created_by=request.user, manufacturer_name_id=manufacturer_name, manual_manufacturer_name=manual_manufacturer_name, project_id=project_id, thumbnail=thumbnail_url, manufacturing_number=manufacturing_number, quantity=quantity, project_details=project_details, additional_details=additional_details, recording=recording, location=location, location_points=location_points, is_admin_approved=True, submitted_to_admin=True)
         c = f"{project_id}_{file.id}_filename"
@@ -2047,7 +2047,7 @@ class CreateFileWithImage2(viewsets.ViewSet):
         print("eee",e.name)
         b = Files.objects.filter(id=file.id).update(file_name=c, name_manufacturer= e.name)
         # b = Files.objects.filter(id=file.id).update(file_name=c)
-        return {"message": "File created with existing Manufacturer Successfully", "file_id": file.id, "thumbnail_url": thumbnail_url}
+        return {"message": "File created with existing Manufacturer Successfully","temp_file_id": temp_file_id ,"file_id": file.id, "thumbnail_url": thumbnail_url}
 
     def create(self, request, *args, **kwargs):
         try:
@@ -2816,13 +2816,16 @@ class CreateFileWithImage4(viewsets.ViewSet):
 
             print("updating file")
             file_instance = Files.objects.get(id=file_id)
+            print("file_instance name", file_instance.file_name)
 
             if manual_manufacturer_name:
                 print("manual manufacturer")
                 new_manufacturer = ManufacturerName.objects.create(users=request.user, name=manual_manufacturer_name, added_by=2, is_read=False)
                 # file_instance.name_manufacturer = new_manufacturer.id
                 file_instance.manual_manufacturer_name = manual_manufacturer_name
-                file_instance.thumbnail = thumbnail_url
+                if upload:
+                    print("thumbnail", thumbnail_url)
+                    file_instance.thumbnail = thumbnail_url
                 file_instance.manufacturing_number = manufacturing_number
                 file_instance.quantity = quantity
                 file_instance.project_details = project_details
@@ -2835,15 +2838,20 @@ class CreateFileWithImage4(viewsets.ViewSet):
                 e = ManufacturerName.objects.filter(id=new_manufacturer.id).first()
                 print("eee", e.name)
                 Files.objects.filter(id=file_instance.id).update(file_name=c, name_manufacturer=e.name)
+                if upload:
 
-                return {"message": "File updated with new Manufacturer Successfully", "file_id": file_instance.id, "thumbnail_url": thumbnail_url}
+                    return {"message": "File updated with new Manufacturer Successfully", "file_id": file_instance.id, "thumbnail_url": thumbnail_url}
+                else:
+                    return {"message": "File updated with new Manufacturer Successfully", "file_id": file_instance.id}
 
             print("existing manufacturer")
             # file_instance.manufacturer_name = manufacturer_name
             manufacturer_instance = ManufacturerName.objects.get(id=manufacturer_name)
             file_instance.manufacturer_name = manufacturer_instance
             # file_instance.manual_manufacturer_name = manual_manufacturer_name
-            file_instance.thumbnail = thumbnail_url
+            if upload:
+                print("thumbnail", thumbnail_url)
+                file_instance.thumbnail = thumbnail_url
             file_instance.manufacturing_number = manufacturing_number
             file_instance.quantity = quantity
             file_instance.project_details = project_details
@@ -2857,7 +2865,10 @@ class CreateFileWithImage4(viewsets.ViewSet):
             print("eee", e.name)
             Files.objects.filter(id=file_instance.id).update(file_name=c, name_manufacturer=e.name)
 
-            return {"message": "File updated with existing Manufacturer successfully", "file_id": file_instance.id, "thumbnail_url": thumbnail_url}
+            if upload:
+                return {"message": "File updated with existing Manufacturer successfully", "file_id": file_instance.id, "thumbnail_url": thumbnail_url}
+            else:
+                return {"message": "File updated with existing Manufacturer Successfully", "file_id": file_instance.id}
 
         except Exception as e:
             return {"error": str(e)}
