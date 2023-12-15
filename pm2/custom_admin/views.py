@@ -235,7 +235,7 @@ class ManageCompanyView(viewsets.ViewSet):
             return CustomResponse({"message": "this company name already registered"}, status=status.HTTP_400_BAD_REQUEST)
         else:
             Company.objects.filter(id=id).update(name=company_title)
-            return CustomResponse({"message": "company name updated"})
+            return CustomResponse({"message": "company name updated"}, status=status.HTTP_200_OK)
 
     def delete(self, request):
         """
@@ -245,8 +245,45 @@ class ManageCompanyView(viewsets.ViewSet):
         company = Company.objects.filter(id=id).first()
         if not company:
             return CustomResponse({"message": "company Does not exist"}, status=status.HTTP_400_BAD_REQUEST)
+        
         Company.objects.filter(id=id).delete()
-        return CustomResponse({"message": "company Deleted successfully"})
+        return CustomResponse({"message": "company Deleted successfully"}, status=status.HTTP_200_OK)
+        
+    # def delete(self, request):
+    #     """
+    #         delete method to permanently delete the company.
+    #     """
+    #     id = request.GET.get('id')
+    #     company = Company.objects.filter(id=id).first()
+    #     if not company:
+    #         return CustomResponse({"message": "company Does not exist"}, status=status.HTTP_400_BAD_REQUEST)
+    #     # Get all users associated with the company
+    #     users_to_logout = UserCompany.objects.filter(company=company).all().values_list('user_id', flat=True)
+    #     list = []
+    #     for i in range(0,len(users_to_logout)):
+    #         user = User.objects.filter(id=users_to_logout[i]).first()
+    #         list.append(user)
+    #     Company.objects.filter(id=id).delete()
+    #     # Force logout all associated users
+    #     if UserCompany.objects.filter(company_id=id).count()==0:
+    #         return CustomResponse({"message": "Status deactivated successfully."}, status=status.HTTP_200_OK)
+    #     list1=[]
+    #     if None in list:
+    #         list1=[]
+    #         for i in range(0,len(list)):
+    #             if list[i]!=None:
+    #                 list1.append(list[i])
+    #     if len(list1)!=0:
+    #         for user in list1:
+    #             Token.objects.filter(user=user).delete()
+    #             logged_out_users(user.email)
+    #         return CustomResponse({"message": "Status deactivated successfully. Users associated with this company have been logged out."}, status=status.HTTP_200_OK)
+    #     else:
+    #         for user in list:
+    #             Token.objects.filter(user=user).delete()
+    #             logged_out_users(user.email)
+    #         return CustomResponse({"message": "Status deactivated successfully. Users associated with this company have been logged out."}, status=status.HTTP_200_OK)
+    #     # return CustomResponse({"message": "company Deleted successfully"})
 
     def search(self, request):
         """
@@ -2161,6 +2198,7 @@ class ProjectViewSet(viewsets.ViewSet):
         if status_value == 1:
             if Project.objects.filter(id=project_id, project_name=project_name, project_number=project_number).exists():
                 if assigned_to:
+                    print("in if assigned")
                     project = Project.objects.filter(id=project_id, project_name=project_name, project_number=project_number).first()
                     for id in assigned_to:
                         print("id",id)
@@ -2219,6 +2257,7 @@ class ProjectViewSet(viewsets.ViewSet):
                     return CustomResponse({"message": "Project Number of this name already exists"}, status=status.HTTP_400_BAD_REQUEST)
                 else:
                     if assigned_to:
+                        print("in else assigned")
                         project = Project.objects.filter(id=project_id).update(project_name=project_name, project_number=project_number)
                         project = Project.objects.filter(id=project_id).first()
                         for id in assigned_to:
