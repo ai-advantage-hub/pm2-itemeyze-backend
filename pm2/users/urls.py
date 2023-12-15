@@ -110,16 +110,11 @@ urlpatterns = [
     path("update_file/<int:id>", views.EditFileViewSet.as_view(
         {"put": "update_file"}, name="update_file")),
 
-
-    # path("create_and_upload_file", views.CreateFileWithImage.as_view(
-    #     {"post": "create_and_upload_file"}, name="create_and_upload_file")),
     path("create_and_upload_file", views.CreateFileWithImage2.as_view(
         {"post": "create"}, name="create_and_upload_file")),
 
-    path("create", views.CreateFileWithImage.as_view(
-        {"post": "create"}, name="create")),
 
-    path("edit_offline_files", views.CreateFileWithImage4.as_view(
+    path("edit_offline_files", views.UpdateFileWithImage.as_view(
         {"put": "update"}, name="edit_offline_files")),
 
     
