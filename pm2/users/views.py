@@ -2064,6 +2064,203 @@ class CreateFileWithImage3(viewsets.ViewSet):
 
 
 
+# class UpdateFileWithImage(viewsets.ViewSet):
+#     """
+#         class to update offline edited files
+#     """
+#     permission_classes = (IsAuthenticated, CheckUserRoleStatusPermission)
+
+#     def generate_signed_url(self, object_key):
+#         """
+#             function to generate signed url
+#         """
+#         try:
+#             # Create an S3 client
+#             s3 = boto3.client('s3', aws_access_key_id=AWS_S3_ACCESS_KEY_ID, aws_secret_access_key=AWS_S3_SECRET_ACCESS_KEY, region_name=AWS_S3_REGION_NAME)
+
+#             # Generate a pre-signed URL
+#             url = s3.generate_presigned_url(
+#                 ClientMethod='get_object',
+#                 Params={'Bucket': AWS_STORAGE_BUCKET_NAME, 'Key': object_key},
+#                 ExpiresIn=3600000  # URL will expire in 1 hour (3600 seconds) - adjust as needed
+#             )
+
+#             return url
+#         except NoCredentialsError:
+#             return None
+        
+#     def compress_image(self, image):
+#         """
+#             function to compress image
+#         """
+#         try:
+#             print("Compressing image...")
+#             img = Image.open(image)
+#             img.thumbnail((800, 800))
+#             print("Compressing image 2...")
+#             output_buffer = BytesIO()
+#             print("Compressing image 3...")
+#             img.save(output_buffer, format="png")
+#             output_buffer.seek(0)
+#             print("Image compressed...")
+#             return output_buffer
+#         except Exception:
+#             return None
+
+#     def create_and_upload_file(self, request, file_data):
+#         """
+#             function to upload updated files to server
+#         """
+#         try:
+#             print("in upload function")
+#             upload = file_data['image']
+#             print("image", upload)
+
+#             if upload:
+#                 print("in if upload")
+#                 compressed_image = self.compress_image(upload)
+#                 original_file_name = f"your_custom_prefix_{uuid.uuid4().hex}.png"
+#                 path_key = "image/{}_{}".format(uuid.uuid4(), original_file_name.replace(' ', '_'))
+
+#                 # Upload compressed image to S3
+#                 s3 = boto3.resource('s3', aws_access_key_id=AWS_S3_ACCESS_KEY_ID, aws_secret_access_key=AWS_S3_SECRET_ACCESS_KEY)
+#                 s3.Bucket(AWS_STORAGE_BUCKET_NAME).upload_fileobj(compressed_image, path_key)
+
+#                 # Generate signed URL for the uploaded image
+#                 thumbnail_url = self.generate_signed_url(path_key)
+#                 print("thumbnail", thumbnail_url)
+                
+#             # else:
+#             #     print("in else upload")
+#             #     thumbnail_url = None
+
+#             print("taking input")
+#             # Extract other necessary fields from file_data
+#             file_id = file_data['file_id']
+#             manufacturer_name = file_data['manufacturer_name']     
+#             manual_manufacturer_name = file_data['manual_manufacturer_name']     
+#             project_id = file_data['project_id']     
+#             manufacturing_number = file_data['manufacturing_number']     
+#             quantity = file_data['quantity']     
+#             project_details = file_data['project_details']     
+#             additional_details = file_data['additional_details']     
+#             recording = file_data['recording']     
+#             location = file_data['location']     
+
+#             print("updating file")
+#             file_instance = Files.objects.get(id=file_id)
+#             print("file_instance name", file_instance.file_name)
+
+#             if manual_manufacturer_name:
+#                 print("manual manufacturer")
+#                 new_manufacturer = ManufacturerName.objects.create(users=request.user, name=manual_manufacturer_name, added_by=2, is_read=False)
+#                 # file_instance.name_manufacturer = new_manufacturer.id
+#                 file_instance.manual_manufacturer_name = manual_manufacturer_name
+#                 if upload:
+#                     print("thumbnail", thumbnail_url)
+#                     file_instance.thumbnail = thumbnail_url
+#                 file_instance.manufacturing_number = manufacturing_number
+#                 file_instance.quantity = quantity
+#                 file_instance.project_details = project_details
+#                 file_instance.additional_details = additional_details
+#                 file_instance.recording = recording
+#                 file_instance.location = location
+#                 file_instance.save()
+
+#                 c = f"{project_id}_{file_instance.id}_filename"
+#                 e = ManufacturerName.objects.filter(id=new_manufacturer.id).first()
+#                 print("eee", e.name)
+#                 Files.objects.filter(id=file_instance.id).update(file_name=c, name_manufacturer=e.name)
+#                 if upload:
+
+#                     return {"message": "File updated with new Manufacturer Successfully", "file_id": file_instance.id, "thumbnail_url": thumbnail_url}
+#                 else:
+#                     return {"message": "File updated with new Manufacturer Successfully", "file_id": file_instance.id}
+
+#             print("existing manufacturer")
+#             # file_instance.manufacturer_name = manufacturer_name
+#             manufacturer_instance = ManufacturerName.objects.get(id=manufacturer_name)
+#             file_instance.manufacturer_name = manufacturer_instance
+#             # file_instance.manual_manufacturer_name = manual_manufacturer_name
+#             if upload:
+#                 print("thumbnail", thumbnail_url)
+#                 file_instance.thumbnail = thumbnail_url
+#             file_instance.manufacturing_number = manufacturing_number
+#             file_instance.quantity = quantity
+#             file_instance.project_details = project_details
+#             file_instance.additional_details = additional_details
+#             file_instance.recording = recording
+#             file_instance.location = location
+#             file_instance.save()
+
+#             c = f"{project_id}_{file_instance.id}_filename"
+#             e = ManufacturerName.objects.filter(id=manufacturer_name).first()
+#             print("eee", e.name)
+#             Files.objects.filter(id=file_instance.id).update(file_name=c, name_manufacturer=e.name)
+
+#             if upload:
+#                 return {"message": "File updated with existing Manufacturer successfully", "file_id": file_instance.id, "thumbnail_url": thumbnail_url}
+#             else:
+#                 return {"message": "File updated with existing Manufacturer Successfully", "file_id": file_instance.id}
+
+#         except Exception as e:
+#             return {"error": str(e)}
+
+#     def update(self, request, *args, **kwargs):
+#         """
+#             functio to take updated file from user
+#         """
+#         try:
+#             file_ids = request.data.getlist('file_id')
+#             response_data = []
+#             print("Received file_ids:", file_ids)
+
+#             for file_id in file_ids:
+#                 print("Processing file_id:", file_id)
+#                 # Convert file_id to integer
+#                 file_id = int(file_id)
+                
+#                 # Construct key names for each file in form data
+#                 image_key = f"image_{file_id}"
+#                 manufacturer_name_key = f"manufacturer_name_{file_id}"
+#                 manual_manufacturer_name_key = f"manual_manufacturer_name_{file_id}"
+#                 project_id = "project_id"
+#                 manufacturing_number_key = f"manufacturing_number_{file_id}"
+#                 quantity_key = f"quantity_{file_id}"
+#                 project_details_key = f"project_details_{file_id}"
+#                 additional_details_key = f"additional_details_{file_id}"
+#                 recording_key = f"recording_{file_id}"
+#                 location_key = f"location_{file_id}"
+#                 # ... (similarly for other fields)
+
+#                 # Create a dictionary with form data for the current file
+#                 file_data = {
+#                     'file_id': file_id,
+#                     'image': request.data.get(image_key),
+#                     'manufacturer_name': request.data.get(manufacturer_name_key),
+#                     'manual_manufacturer_name': request.data.get(manual_manufacturer_name_key),
+#                     'project_id': request.data.get(project_id),
+#                     'manufacturing_number': request.data.get(manufacturing_number_key),
+#                     'quantity': request.data.get(quantity_key),
+#                     'project_details': request.data.get(project_details_key),
+#                     'additional_details': request.data.get(additional_details_key),
+#                     'recording': request.data.get(recording_key),
+#                     'location': request.data.get(location_key),
+#                     # ... (similarly for other fields)
+#                 }
+
+#                 result = self.create_and_upload_file(request, file_data)
+#                 print("upload function called")
+#                 print("response data", response_data)
+#                 response_data.append(result)
+#                 print("result", result)
+
+#             return CustomResponse({"message": "Files updated successfully", "data": response_data}, status=status_code.HTTP_200_OK)
+
+#         except Exception as e:
+#             return CustomResponse({"error": str(e)}, status=status_code.HTTP_400_BAD_REQUEST)
+        
+
 class UpdateFileWithImage(viewsets.ViewSet):
     """
         class to update offline edited files
@@ -2115,6 +2312,8 @@ class UpdateFileWithImage(viewsets.ViewSet):
             print("in upload function")
             upload = file_data['image']
             print("image", upload)
+            thumbnail_null = file_data['image_null']
+            print("thumbnail_null", thumbnail_null)
 
             if upload:
                 print("in if upload")
@@ -2129,6 +2328,21 @@ class UpdateFileWithImage(viewsets.ViewSet):
                 # Generate signed URL for the uploaded image
                 thumbnail_url = self.generate_signed_url(path_key)
                 print("thumbnail", thumbnail_url)
+
+            # else:
+            #     print("in else upload")
+            #     # If user wants to update the thumbnail to null
+            #     update_thumbnail_to_null = file_data.get('image_null', False)
+            #     if update_thumbnail_to_null:
+            #         thumbnail_url = None
+            #     else:
+            #         # Retrieve the old thumbnail URL from the database
+            #         file_id = file_data['file_id']
+            #         file_instance = Files.objects.get(id=file_id)
+            #         thumbnail_url = file_instance.thumbnail
+            if thumbnail_null:
+                print("in if thumbnail null")
+                thumbnail_url = None
                 
             # else:
             #     print("in else upload")
@@ -2159,6 +2373,9 @@ class UpdateFileWithImage(viewsets.ViewSet):
                 if upload:
                     print("thumbnail", thumbnail_url)
                     file_instance.thumbnail = thumbnail_url
+                if thumbnail_null:
+                    print("thumbnail null", thumbnail_null)
+                    file_instance.thumbnail = thumbnail_url
                 file_instance.manufacturing_number = manufacturing_number
                 file_instance.quantity = quantity
                 file_instance.project_details = project_details
@@ -2185,6 +2402,9 @@ class UpdateFileWithImage(viewsets.ViewSet):
             if upload:
                 print("thumbnail", thumbnail_url)
                 file_instance.thumbnail = thumbnail_url
+            if thumbnail_null:
+                    print("thumbnail null", thumbnail_null)
+                    file_instance.thumbnail = thumbnail_url
             file_instance.manufacturing_number = manufacturing_number
             file_instance.quantity = quantity
             file_instance.project_details = project_details
@@ -2222,6 +2442,7 @@ class UpdateFileWithImage(viewsets.ViewSet):
                 
                 # Construct key names for each file in form data
                 image_key = f"image_{file_id}"
+                image_null_key = f"image_null_{file_id}"
                 manufacturer_name_key = f"manufacturer_name_{file_id}"
                 manual_manufacturer_name_key = f"manual_manufacturer_name_{file_id}"
                 project_id = "project_id"
@@ -2237,6 +2458,7 @@ class UpdateFileWithImage(viewsets.ViewSet):
                 file_data = {
                     'file_id': file_id,
                     'image': request.data.get(image_key),
+                    'image_null': request.data.get(image_null_key),
                     'manufacturer_name': request.data.get(manufacturer_name_key),
                     'manual_manufacturer_name': request.data.get(manual_manufacturer_name_key),
                     'project_id': request.data.get(project_id),
