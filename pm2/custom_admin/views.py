@@ -1256,7 +1256,7 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
         user = User.all_objects.filter(id=id).first()
         if not user:
             return CustomResponse({"message": "User not found"}, status=status.HTTP_400_BAD_REQUEST)
-        projects = Project.objects.filter(created_by__id=id, is_admin_approved=True, is_marked_deleted=False).values("id","project_name", "created_at",'site_id','site_id__name')
+        projects = Project.objects.filter(Q(created_by__id=id)|Q(users__id=id), is_admin_approved=True, is_marked_deleted=False).values("id","project_name", "created_at",'site_id','site_id__name')
         page = None
         if page_size:
             pagination_class = self.pagination_class()
@@ -2065,9 +2065,11 @@ class ProjectViewSet(viewsets.ViewSet):
 
         # Validations
         if not project_name:
-            return CustomResponse({"message": "Please provide project_name"}, status=status.HTTP_400_BAD_REQUEST)
+            return CustomResponse({"message": "Please provide project name"}, status=status.HTTP_400_BAD_REQUEST)
         if not project_number:
-            return CustomResponse({"message": "Please provide project_number"}, status=status.HTTP_400_BAD_REQUEST)
+            return CustomResponse({"message": "Please provide project number"}, status=status.HTTP_400_BAD_REQUEST)
+        if not site_name:
+            return CustomResponse({"message": "Please provide Site Name"}, status=status.HTTP_400_BAD_REQUEST)
        
         if Project.objects.filter(project_name=project_name).exists():
             return CustomResponse({"message": "Project of this name already exists"}, status=status.HTTP_400_BAD_REQUEST)

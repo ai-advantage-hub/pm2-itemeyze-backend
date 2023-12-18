@@ -297,7 +297,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
         page_size = request.GET.get('page_size', '')
         print("user====",request.user.id)
         projects = Project.objects.filter(
-            created_by=request.user,
+            Q(created_by=request.user)|Q(users__id=request.user.id),
             is_admin_approved=True, is_marked_deleted=False
             ).values(
             'id', 'created_at', 'updated_at', 'project_name', 'project_description',
