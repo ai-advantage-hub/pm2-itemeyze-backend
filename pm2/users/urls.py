@@ -97,7 +97,25 @@ urlpatterns = [
         {"get": "submitted_to_admin_list"}, name="submitted_to_admin_list")),
 
     path("file_list/<int:id>", views.FileDetailsViewSet.as_view(
-        {"get": "file_list"}, name="file_list")),
+        {"put": "file_list"}, name="file_list")),
+    path("file_list2/<int:id>", views.FileDetailsViewSet.as_view(
+        {"put": "file_list2"}, name="file_list2")),
+
+    path("manufacturer_list", views.FileDetailsViewSet.as_view(
+        {"get": "manufacturer_list"}, name="manufacturer_list")),
+
+    path("create_file", views.FileDetailsViewSet.as_view(
+        {"post": "create_file"}, name="create_file")),
+    
+    path("update_file/<int:id>", views.EditFileViewSet.as_view(
+        {"put": "update_file"}, name="update_file")),
+
+    path("create_and_upload_file", views.CreateFileWithImage2.as_view(
+        {"post": "create"}, name="create_and_upload_file")),
+
+
+    path("edit_offline_files", views.UpdateFileWithImage.as_view(
+        {"put": "update"}, name="edit_offline_files")),
 
     
     

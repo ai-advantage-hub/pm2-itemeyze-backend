@@ -9,7 +9,8 @@ from .models import (
     Company,
     UserCompany,
     UserNotification,
-    Site
+    Site,
+    ManufacturerName
 
 )
 from custom_admin.models import ContentManagement
@@ -215,6 +216,9 @@ class UserNameViewSet(viewsets.ViewSet):
 
 #Home
 
+from django.http import JsonResponse
+
+
 class ProjectViewSet(viewsets.ModelViewSet):
     """
         CreateProjectViewSet to create project
@@ -293,11 +297,12 @@ class ProjectViewSet(viewsets.ModelViewSet):
         page_size = request.GET.get('page_size', '')
         print("user====",request.user.id)
         projects = Project.objects.filter(
-            users=request.user,
+            Q(created_by=request.user)|Q(users__id=request.user.id),
             is_admin_approved=True, is_marked_deleted=False
             ).values(
             'id', 'created_at', 'updated_at', 'project_name', 'project_description',
-            'is_admin_approved', 'is_marked_deleted', 'project_number', 'created_by_id'
+            'is_admin_approved', 'is_marked_deleted', 'project_number', 'created_by_id',
+            'site_id_id', 'site_id__name'
             ).order_by('-created_at')
         if project_name:
             projects = projects.filter(project_name__icontains=project_name)
@@ -359,7 +364,7 @@ class FileDetailsViewSet(viewsets.ModelViewSet):
         """
             function to give list of file
         """
-        user = Files.objects.filter(id=id).all().values('file_name','thumbnail','manufacturer_name__full_name', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording')
+        user = Files.objects.filter(id=id).all().values('file_name','thumbnail','name_manufacturer','manufacturer_name__name', 'manufacturer_name__id','manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording')
         return CustomResponse(user)
 
     def create(self, request, *args, **kwargs):
@@ -389,6 +394,71 @@ class FileDetailsViewSet(viewsets.ModelViewSet):
             c = str(project_id)+'_'+str(file.id)+'_'+'filename'
             b = Files.objects.filter(id=file.id).update(file_name=c)
             return CustomResponse({"message": "File Created with existing user Successfully", "file_id": file.id}, status=status_code.HTTP_201_CREATED)
+        
+    
+    def manufacturer_list(self, request):
+        """
+            function to give list of manufacturers
+        """
+        name = request.GET.get('name', None)
+        manufacturers = ManufacturerName.objects.all().values('id','name')
+        if name:
+            manufacturers = manufacturers.filter(name__icontains=name)
+        return CustomResponse(manufacturers)
+        
+    
+    def create_file(self, request, *args, **kwargs):
+        """
+            function to create file
+        """
+        data = request.data
+        manufacturer_name = data.get('manufacturer_name')
+        manual_manufacturer_name = data.get('manual_manufacturer_name')
+        project_id = data.get('project_id')
+        thumbnail = data.get('thumbnail')
+        manufacturing_number = data.get('manufacturing_number')
+        quantity = data.get('quantity')
+        project_details = data.get('project_details')
+        additional_details = data.get('additional_details')
+        recording = data.get('recording')
+        location = data.get('location')
+        location_points = data.get('location_points')
+        if manual_manufacturer_name:
+            if ManufacturerName.objects.filter(name = manual_manufacturer_name).exists():
+                return CustomResponse({"message": "This manufacturer name already exists, please select from list"}, status=status_code.HTTP_400_BAD_REQUEST)
+            print("in manual")
+            new_manufacturer = ManufacturerName.objects.create(users = request.user,name=manual_manufacturer_name, added_by=2, is_read=False)
+            file = Files.objects.create(created_by=request.user, manufacturer_name_id=new_manufacturer.id, manual_manufacturer_name=manual_manufacturer_name, project_id=project_id, thumbnail=thumbnail, manufacturing_number=manufacturing_number, quantity=quantity, project_details=project_details, additional_details=additional_details, recording=recording, location=location, location_points=location_points, is_admin_approved=True, submitted_to_admin=False)
+            c = str(project_id)+'_'+str(file.id)+'_'+'filename'
+            e = ManufacturerName.objects.filter(id=new_manufacturer.id).first()
+            print("eee",e.name)
+            b = Files.objects.filter(id=file.id).update(file_name=c, name_manufacturer= e.name)
+            file_created = Files.objects.filter(id=file.id).all().values().first()
+            file_details = {
+                "message" : "File Created with new Manufacturer Successfully",
+                "file_id": file.id,
+                "file_details": file_created,
+                "status" : status_code.HTTP_200_OK,
+                
+            }
+            return JsonResponse(file_details)
+            # return CustomResponse({"message": "File Created with new Manufacturer Successfully", "file_id": file.id}, status=status_code.HTTP_200_OK)
+        else:
+            file = Files.objects.create(created_by=request.user, manufacturer_name_id=manufacturer_name, project_id=project_id, thumbnail=thumbnail, manufacturing_number=manufacturing_number, quantity=quantity, project_details=project_details, additional_details=additional_details, recording=recording, location=location, location_points=location_points, is_admin_approved=True, submitted_to_admin=False)
+            c = str(project_id)+'_'+str(file.id)+'_'+'filename'
+            e = ManufacturerName.objects.filter(id=manufacturer_name).first()
+            print("eee",e.name)
+            b = Files.objects.filter(id=file.id).update(file_name=c, name_manufacturer= e.name)
+            file_created = Files.objects.filter(id=file.id).all().values().first()
+            file_details = {
+                "message" : "File Created with existing Manufacturer Successfully",
+                "file_id": file.id,
+                "file_details": file_created,
+                "status" : status_code.HTTP_200_OK,
+                
+            }
+            return JsonResponse(file_details)
+            # return CustomResponse({"message": "File Created with existing Manufacturer Successfully", "file_id": file.id}, status=status_code.HTTP_200_OK)
 
     def user_saved_list(self, request, id):
         """
@@ -428,17 +498,139 @@ class FileDetailsViewSet(viewsets.ModelViewSet):
         function to give a list of files based on the provided filter
         """
         list_type = request.GET.get('list_type', None)
+        name = request.GET.get('name', None)
+        page_size = request.GET.get('page_size', '')
+        data = request.data
+        file_id = data.get("delete_file_id", [])
         if not Project.objects.filter(id=id).exists():
             return CustomResponse({"message": "Project of this id does not exist"}, status=status_code.HTTP_400_BAD_REQUEST)
+        
+        if file_id:
+            print("file id", file_id)
+            for id2 in file_id:
+                print("id", id2)
+                Files.objects.filter(id=id2).update(is_marked_deleted=True)
 
         if list_type == '1':
-            files = Files.objects.filter(project_id = id, created_by=request.user, submitted_to_admin=False, is_marked_deleted=False).all().values('id','file_name','thumbnail','manufacturer_name__full_name', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason')
+            # type one for only created files that are not submitted to admin
+            # files = Files.objects.filter(project_id = id, created_by=request.user, submitted_to_admin=False, is_marked_deleted=False).all().values('id','file_name','thumbnail','manufacturer_name__full_name', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason')
+            if name == None:
+                files = Files.objects.filter(project_id=id, created_by=request.user,submitted_to_admin=False, is_marked_deleted=False).all().values('id','file_name','thumbnail','name_manufacturer','manufacturer_name__name','manufacturer_name__id', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason','submitted_to_admin').order_by('-created_at')
+            else:
+                files = Files.objects.filter(Q(location__icontains=name) |
+                                        Q(manufacturer_name__name__icontains=name) |
+                                        Q(manufacturing_number__icontains=name),
+                                        project_id=id, created_by=request.user,submitted_to_admin=False, is_marked_deleted=False).all().values('id','file_name','thumbnail','name_manufacturer','manufacturer_name__name','manufacturer_name__id', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason','submitted_to_admin').order_by('-created_at')
         elif list_type == '2':
-            files = Files.objects.filter(project_id=id, created_by=request.user, is_admin_approved=True, submitted_to_admin=True).all().values('id','file_name','thumbnail','manufacturer_name__full_name', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason')
-        else:
-            return CustomResponse({"message": "Invalid filter_type"}, status=status_code.HTTP_400_BAD_REQUEST)
+            # type 2 for those files which are submitted to admin
+            # files = Files.objects.filter(project_id=id, created_by=request.user, is_admin_approved=True, submitted_to_admin=True).all().values('id','file_name','thumbnail','manufacturer_name__full_name', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason')
+            if name == None:
+                files = Files.objects.filter(project_id=id, created_by=request.user,is_admin_approved=True, submitted_to_admin=True, is_marked_deleted=False).all().values('id','file_name','thumbnail','name_manufacturer','manufacturer_name__name','manufacturer_name__id', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason','submitted_to_admin').order_by('-created_at')
 
-        return CustomResponse(files)
+            else:
+                files = Files.objects.filter(Q(location__icontains=name) |
+                                        Q(manufacturer_name__name__icontains=name) |
+                                        Q(manufacturing_number__icontains=name),
+                                        project_id=id, created_by=request.user,is_admin_approved=True, submitted_to_admin=True, is_marked_deleted=False).all().values('id','file_name','thumbnail','name_manufacturer','manufacturer_name__name','manufacturer_name__id', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason','submitted_to_admin').order_by('-created_at')
+
+        else:
+            return CustomResponse({"message": "Invalid filter type"}, status=status_code.HTTP_400_BAD_REQUEST)
+        
+        # file_obj = Files.objects.filter(Q(location__icontains=name) |
+        #                                 Q(manufacturer_name__full_name__icontains=name) |
+        #                                 Q(manufacturing_number__icontains=name),
+        #                                 project_id=id, is_admin_approved=True, is_marked_deleted=False, is_deleted=False).order_by('-created_at')
+
+        # if name:
+        #     files = files.filter(files_name__icontains=name)
+
+        page = None
+
+        if page_size:
+            pagination_class = self.pagination_class()
+            page = pagination_class.paginate_queryset(files, request)
+
+        if page is not None:
+            return CustomResponse(pagination_class.get_paginated_response(page).data)
+
+        return CustomResponse(files) 
+
+        # return CustomResponse(files)
+
+
+    def file_list2(self, request, id):
+        """
+        function to give a list of files based on the provided filter
+        """
+        list_type = request.GET.get('list_type', None)
+        name = request.GET.get('name', None)
+        page_size = request.GET.get('page_size', '')
+        data = request.data
+        file_id = data.get("delete_file_id", [])
+        # delete_file_ids = request.GET.getlist('delete_file_ids', [])
+        
+        if not Project.objects.filter(id=id).exists():
+            return CustomResponse({"message": "Project of this id does not exist"}, status=status_code.HTTP_400_BAD_REQUEST)
+        
+        if file_id:
+            print("file id", file_id)
+            for id2 in file_id:
+                print("id", id2)
+                Files.objects.filter(id=id2).update(is_marked_deleted=True)
+
+        # if delete_file_ids:         
+        #     print("file ids", delete_file_ids)         
+        #     for file_id in delete_file_ids:             
+        #         print("id", file_id)             
+        #         Files.objects.filter(id=file_id).update(is_marked_deleted=True)
+
+        print("list type", list_type)
+        if list_type == '1':
+            # type one for only created files that are not submitted to admin
+            # files = Files.objects.filter(project_id = id, created_by=request.user, submitted_to_admin=False, is_marked_deleted=False).all().values('id','file_name','thumbnail','manufacturer_name__full_name', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason')
+            if name == None:
+                files = Files.objects.filter(project_id=id, created_by=request.user,submitted_to_admin=False, is_marked_deleted=False).all().values('id','file_name','thumbnail','name_manufacturer','manufacturer_name__name','manufacturer_name__id', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason','submitted_to_admin').order_by('-created_at')
+            else:
+                files = Files.objects.filter(Q(location__icontains=name) |
+                                        Q(manufacturer_name__name__icontains=name) |
+                                        Q(manufacturing_number__icontains=name),
+                                        project_id=id, created_by=request.user,submitted_to_admin=False, is_marked_deleted=False).all().values('id','file_name','thumbnail','name_manufacturer','manufacturer_name__name','manufacturer_name__id', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason','submitted_to_admin').order_by('-created_at')
+
+        elif list_type == '2':
+            # type 2 for those files which are submitted to admin
+            # files = Files.objects.filter(project_id=id, created_by=request.user, is_admin_approved=True, submitted_to_admin=True).all().values('id','file_name','thumbnail','manufacturer_name__full_name', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason')
+            if name == None:
+                files = Files.objects.filter(project_id=id, created_by=request.user,is_admin_approved=True, submitted_to_admin=True, is_marked_deleted=False).all().values('id','file_name','thumbnail','name_manufacturer','manufacturer_name__name','manufacturer_name__id', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason','submitted_to_admin').order_by('-created_at')
+
+            else:
+                files = Files.objects.filter(Q(location__icontains=name) |
+                                        Q(manufacturer_name__name__icontains=name) |
+                                        Q(manufacturing_number__icontains=name),
+                                        project_id=id, created_by=request.user,is_admin_approved=True, submitted_to_admin=True, is_marked_deleted=False).all().values('id','file_name','thumbnail','name_manufacturer','manufacturer_name__name','manufacturer_name__id', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason','submitted_to_admin').order_by('-created_at')
+
+        else:
+            return CustomResponse({"message": "Invalid filter type"}, status=status_code.HTTP_400_BAD_REQUEST)
+        
+        print("files", files)
+        
+        # file_obj = Files.objects.filter(Q(location__icontains=name) |
+        #                                 Q(manufacturer_name__full_name__icontains=name) |
+        #                                 Q(manufacturing_number__icontains=name),
+        #                                 project_id=id, is_admin_approved=True, is_marked_deleted=False, is_deleted=False).order_by('-created_at')
+
+        # if name:
+        #     files = files.filter(files_name__icontains=name)
+
+        page = None
+
+        if page_size:
+            pagination_class = self.pagination_class()
+            page = pagination_class.paginate_queryset(files, request)
+
+        if page is not None:
+            return CustomResponse(pagination_class.get_paginated_response(page).data)
+
+        return CustomResponse(files) 
 
         
 class ProjectDetailsViewSet(viewsets.ModelViewSet):
@@ -468,7 +660,7 @@ class ProjectDetailsViewSet(viewsets.ModelViewSet):
         location = self.request.GET.get('location', '')
         # Filtering for Files based on the search criteria
         file_obj = Files.objects.filter(Q(location__icontains=location) |
-                                        Q(manufacturer_name__full_name__icontains=location) |
+                                        Q(manufacturer_name__name__icontains=location) |
                                         Q(manufacturing_number__icontains=location),
                                         project_id=pk, is_admin_approved=True, is_marked_deleted=False, is_deleted=False).order_by('-created_at')
 
@@ -518,6 +710,57 @@ class EditFileViewSet(viewsets.ModelViewSet):
             file = Files.objects.filter(id=id).update(thumbnail=thumbnail, manufacturing_number=manufacturing_number, location=location, manufacturer_name_id=manufacturer_name, quantity=quantity, project_details=project_details, additional_details=additional_details, location_points=location_points, is_edited=True)
             return CustomResponse({"message": "File updated Successfully"}, status=status_code.HTTP_200_OK)
         
+    def update_file(self, request, id):
+        """
+            function to update file
+        """
+        data = request.data
+        thumbnail = data.get("thumbnail")
+        manual_manufacturer_name = data.get('manual_manufacturer_name')
+        manufacturer_name = data.get("manufacturer_name")
+        manufacturing_number = data.get("manufacturing_number")
+        location = data.get("location")
+        quantity = data.get("quantity")
+        project_details = data.get("project_details")
+        additional_details = data.get("additional_details")
+        location_points = data.get('location_points')
+
+        if Files.objects.filter(manufacturing_number=manufacturing_number).exclude(id=id).exists():
+            return CustomResponse({"message": "This manufacturing number already exists"}, status=status_code.HTTP_400_BAD_REQUEST)
+        if manual_manufacturer_name:
+            if ManufacturerName.objects.filter(name = manual_manufacturer_name).exists():
+                return CustomResponse({"message": "This manufacturer name already exists, please select from list"}, status=status_code.HTTP_400_BAD_REQUEST)
+            manufacturer = ManufacturerName.objects.create(users = request.user, name=manual_manufacturer_name, added_by=2, is_read=False)
+            file = Files.objects.filter(id=id).update(manufacturer_name_id=manufacturer.id,thumbnail=thumbnail, manual_manufacturer_name=manual_manufacturer_name, manufacturing_number=manufacturing_number, quantity=quantity, project_details=project_details, additional_details=additional_details,location=location, location_points=location_points,is_edited=True, submitted_to_admin=False)
+            e = ManufacturerName.objects.filter(id=manufacturer.id).first()
+            print("eee",e.name)
+            b = Files.objects.filter(id=file.id).update(name_manufacturer= e.name)
+            file_created = Files.objects.filter(id=id).all().values().first()
+            file_details = {
+                "message" : "File updated with new Manufacturer Successfully",
+                "file_id": id,
+                "file_details": file_created,
+                "status" : status_code.HTTP_200_OK,
+                
+            }
+            return JsonResponse(file_details)
+            # return CustomResponse({"message": "File updated Successfully"}, status=status_code.HTTP_200_OK)
+        else:
+            file = Files.objects.filter(id=id).update(thumbnail=thumbnail, manufacturing_number=manufacturing_number, location=location, manufacturer_name_id=manufacturer_name, quantity=quantity, project_details=project_details, additional_details=additional_details, location_points=location_points, is_edited=True, submitted_to_admin=False)
+            e = ManufacturerName.objects.filter(id=manufacturer_name).first()
+            print("eee",e.name)
+            b = Files.objects.filter(id=id).update(name_manufacturer= e.name)
+            file_created = Files.objects.filter(id=id).all().values().first()
+            file_details = {
+                "message" : "File updated with existing Manufacturer Successfully",
+                "file_id": id,
+                "file_details": file_created,
+                "status" : status_code.HTTP_200_OK,
+                
+            }
+            return JsonResponse(file_details)
+            # return CustomResponse({"message": "File updated Successfully"}, status=status_code.HTTP_200_OK)
+        
     def destroy(self, request, id):
         """
             delete method to delete the file from the database.
@@ -526,6 +769,7 @@ class EditFileViewSet(viewsets.ModelViewSet):
         if not user:
             return CustomResponse({"message": "File Not Found"}, status=status_code.HTTP_400_BAD_REQUEST)
         user.is_marked_deleted = True
+        user.deleted_at = timezone.now()
         user.save()
         return CustomResponse({"message": gettext(SUCCESS_MESSAGES.get('FILE_DELETED'))}, status=status_code.HTTP_200_OK)
 
@@ -716,8 +960,10 @@ class GlobalSearchViewSet(viewsets.ViewSet):
         search = self.request.GET.get('search', '')
         print("user====",request.user.id)
         file_obj = Files.objects.filter(Q(location__icontains=search) |
-                                        Q(manufacturer_name__full_name__icontains=search) |
-                                        Q(manufacturing_number__icontains=search)).filter(Q(project__created_by_id=request.user.id) | Q(manufacturer_name=request.user) | Q(project__users__id=request.user.id)).filter(
+                                        Q(manufacturer_name__name__icontains=search) |
+                                        Q(manufacturing_number__icontains=search)).filter(Q(project__created_by_id=request.user.id) | 
+                                                                                        #   Q(manufacturer_name=request.user) | 
+                                                                                          Q(project__users__id=request.user.id)).filter(
                                            is_admin_approved=True, is_marked_deleted=False).order_by("-created_at")
         if page_size:
             pagination_class = self.pagination_class()
@@ -928,3 +1174,727 @@ class ClearAllNotificationViewset(viewsets.ViewSet):
         """
         UserNotification.objects.filter(user=request.user).delete()
         return CustomResponse({"message":"All Notifications Cleared"}, status=status_code.HTTP_200_OK)
+    
+
+from django.shortcuts import render
+from rest_framework import views
+from rest_framework.parsers import MultiPartParser
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework import status as status_code
+import boto3
+import uuid
+import os
+from PIL import Image
+from io import BytesIO
+import io 
+from pydub import AudioSegment
+from core.common_utils import check_file_size
+from config.local import AWS_S3_ACCESS_KEY_ID, AWS_S3_SECRET_ACCESS_KEY, AWS_STORAGE_BUCKET_NAME, AWS_S3_REGION_NAME
+from botocore.exceptions import NoCredentialsError
+from urllib.parse import urlparse
+
+
+class createfile(viewsets.ViewSet):
+    
+    def generate_signed_url(self, object_key):
+        try:
+            # Create an S3 client
+            s3 = boto3.client('s3', aws_access_key_id=AWS_S3_ACCESS_KEY_ID, aws_secret_access_key=AWS_S3_SECRET_ACCESS_KEY, region_name=AWS_S3_REGION_NAME)
+            
+            # Generate a pre-signed URL
+            url = s3.generate_presigned_url(
+                ClientMethod='get_object',
+                Params={'Bucket': AWS_STORAGE_BUCKET_NAME, 'Key': object_key},
+                ExpiresIn=3600000  # URL will expire in 1 hour (3600 seconds) - adjust as needed
+            )
+
+            return url
+        except NoCredentialsError:
+            return None
+
+    def post(self, request):
+        """
+        POST method used to upload files into an S3 bucket.
+        :param request:
+        :return: response
+        """
+        images = []
+        result = []
+        if not request.data.get("file"):
+            return CustomResponse({"message": "No file data found"}, status=status_code.HTTP_400_BAD_REQUEST)
+        result = request.data.getlist("file")
+        for upload in result:
+            s3 = boto3.resource('s3', aws_access_key_id=AWS_S3_ACCESS_KEY_ID, aws_secret_access_key=AWS_S3_SECRET_ACCESS_KEY)
+            # Extract and convert the file extension to lowercase
+            file_extension = os.path.splitext(upload.name)[1].lower()
+            file_full_name = upload.name
+            updated_filename = file_full_name.replace(' ', '_')
+            if file_extension in [".jpg", ".jpeg", ".png"]:
+                path_key = "image/{}_{}".format(uuid.uuid4(), updated_filename)
+                # Compress the image
+                compressed_image = self.compress_image(upload)
+                if not compressed_image:
+                    return CustomResponse({"message": "Failed to compress image"}, status=status_code.HTTP_400_BAD_REQUEST)
+                upload = compressed_image
+            elif file_extension in [".mp3"]:
+                path_key = "audio/{}_{}".format(uuid.uuid4(), updated_filename)
+                # Compress the audio (if needed)
+                compressed_audio = self.compress_audio(upload)
+                if not compressed_audio:
+                    return CustomResponse({"message": "Failed to compress audio"}, status=status_code.HTTP_400_BAD_REQUEST)
+                upload = compressed_audio
+            else:
+                return CustomResponse({"message": "Please provide a valid file."},
+                                    status=status_code.HTTP_400_BAD_REQUEST)
+
+            try:
+                s3.Bucket(AWS_STORAGE_BUCKET_NAME).upload_fileobj(upload, path_key)
+            except Exception:
+                return CustomResponse({"message": "Something went wrong during file uploading."},
+                                    status=status_code.HTTP_400_BAD_REQUEST)
+
+            created_url = 'https://' + AWS_STORAGE_BUCKET_NAME + '.s3.amazonaws.com/' + path_key
+
+            # Generate a pre-signed URL for the uploaded file
+            print("path_key===", path_key)
+            pre_signed_url = self.generate_signed_url(path_key)
+
+            # Include the pre-signed URL in the response
+            data = {'name': path_key, 'url': pre_signed_url}
+            images.append(data)
+        return CustomResponse(images)
+
+    def compress_image(self, image):
+        """
+           compress_image method to compress the images 
+        """
+        try:
+            print("Compressing image...")
+            img = Image.open(image)
+            print("Compressing image 2...")
+            img.thumbnail((800, 800))
+            print("Compressing image 3...")
+            output_buffer = BytesIO()
+            print("Compressing image 4...")
+            img.save(output_buffer, format="png")
+            output_buffer.seek(0)
+            print("Compressed image...")
+            return output_buffer
+        except Exception:
+            return None
+
+    def compress_audio(self, audio):
+        """
+            compress_audio method to compress the audio
+        """
+        try:
+            sound = AudioSegment.from_file(audio)
+            compressed_audio = sound.set_frame_rate(22050)
+            output_buffer = BytesIO()
+            compressed_audio.export(output_buffer, format="mp3")
+            return output_buffer
+        except Exception:
+            return None
+        
+    def create_file(self, request, *args, **kwargs):
+        """
+            function to create file
+        """
+        data = request.data
+        manufacturer_name = data.get('manufacturer_name')
+        manual_manufacturer_name = data.get('manual_manufacturer_name')
+        project_id = data.get('project_id')
+        thumbnail = data.get('thumbnail')
+        manufacturing_number = data.get('manufacturing_number')
+        quantity = data.get('quantity')
+        project_details = data.get('project_details')
+        additional_details = data.get('additional_details')
+        recording = data.get('recording')
+        location = data.get('location')
+        location_points = data.get('location_points')
+        if manual_manufacturer_name:
+            new_manufacturer = ManufacturerName.objects.create(users = request.user,name=manual_manufacturer_name, added_by=2, is_read=False)
+            file = Files.objects.create(created_by=request.user, manufacturer_name_id=new_manufacturer.id, manual_manufacturer_name=manual_manufacturer_name, project_id=project_id, thumbnail=thumbnail, manufacturing_number=manufacturing_number, quantity=quantity, project_details=project_details, additional_details=additional_details, recording=recording, location=location, location_points=location_points, is_admin_approved=True, submitted_to_admin=False)
+            c = str(project_id)+'_'+str(file.id)+'_'+'filename'
+            b = Files.objects.filter(id=file.id).update(file_name=c)
+            return CustomResponse({"message": "File Created with new Manufacturer Successfully", "file_id": file.id}, status=status_code.HTTP_200_OK)
+        else:
+            file = Files.objects.create(created_by=request.user, manufacturer_name_id=manufacturer_name, project_id=project_id, thumbnail=thumbnail, manufacturing_number=manufacturing_number, quantity=quantity, project_details=project_details, additional_details=additional_details, recording=recording, location=location, location_points=location_points, is_admin_approved=True, submitted_to_admin=False)
+            c = str(project_id)+'_'+str(file.id)+'_'+'filename'
+            b = Files.objects.filter(id=file.id).update(file_name=c)
+            return CustomResponse({"message": "File Created with existing Manufacturer Successfully", "file_id": file.id}, status=status_code.HTTP_200_OK)
+        
+
+
+class CreateFileWithImage(viewsets.ViewSet):
+    permission_classes = (IsAuthenticated, CheckUserRoleStatusPermission)
+
+    def generate_signed_url(self, object_key):
+        try:
+            s3 = boto3.client('s3', aws_access_key_id=AWS_S3_ACCESS_KEY_ID, aws_secret_access_key=AWS_S3_SECRET_ACCESS_KEY, region_name=AWS_S3_REGION_NAME)
+            url = s3.generate_presigned_url(
+                ClientMethod='get_object',
+                Params={'Bucket': AWS_STORAGE_BUCKET_NAME, 'Key': object_key},
+                ExpiresIn=3600000  # URL will expire in 1 hour (3600 seconds) - adjust as needed
+            )
+            return url
+        except NoCredentialsError:
+            return None
+
+    def compress_image(self, image):
+        try:
+            print("compressing image")
+            img = Image.open(image)
+            img.thumbnail((800, 800))
+            output_buffer = BytesIO()
+            img.save(output_buffer, format="png")
+            output_buffer.seek(0)
+            print("image compressed")
+            return output_buffer
+        except Exception:
+            return None
+
+    def create_and_upload_file(self, request, file_data):
+        print("in upload function")
+        print("file data", file_data)
+        upload = file_data.get('file')
+        print("got file")
+        if upload:
+            compressed_image = self.compress_image(upload)
+            path_key = "image/{}_{}".format(uuid.uuid4(), upload.name.replace(' ', '_'))
+            s3 = boto3.resource('s3', aws_access_key_id=AWS_S3_ACCESS_KEY_ID, aws_secret_access_key=AWS_S3_SECRET_ACCESS_KEY)
+            s3.Bucket(AWS_STORAGE_BUCKET_NAME).upload_fileobj(compressed_image, path_key)
+            thumbnail_url = self.generate_signed_url(path_key)
+        else:
+            thumbnail_url = None
+
+        # Extract other necessary fields from file_data
+        manufacturer_name = file_data.get('manufacturer_name')
+        manual_manufacturer_name = file_data.get('manual_manufacturer_name')
+        project_id = file_data.get('project_id')
+        manufacturing_number = file_data.get('manufacturing_number')
+        quantity = file_data.get('quantity')
+        project_details = file_data.get('project_details')
+        additional_details = file_data.get('additional_details')
+        recording = file_data.get('recording')
+        location = file_data.get('location')
+        location_points = file_data.get('location_points')
+
+        print("creating file")
+
+        if manual_manufacturer_name:
+            new_manufacturer = ManufacturerName.objects.create(users=request.user, name=manual_manufacturer_name, added_by=2, is_read=False)
+            file = Files.objects.create(created_by=request.user, manufacturer_name_id=new_manufacturer.id, manual_manufacturer_name=manual_manufacturer_name, project_id=project_id, thumbnail=thumbnail_url, manufacturing_number=manufacturing_number, quantity=quantity, project_details=project_details, additional_details=additional_details, recording=recording, location=location, location_points=location_points, is_admin_approved=True, submitted_to_admin=False)
+            c = str(project_id)+'_'+str(file.id)+'_'+'filename'
+            b = Files.objects.filter(id=file.id).update(file_name=c)
+            return {"message": "File Created with new Manufacturer Successfully", "file_id": file.id, "thumbnail_url": thumbnail_url}
+
+        file = Files.objects.create(created_by=request.user, manufacturer_name_id=manufacturer_name, manual_manufacturer_name=manual_manufacturer_name, project_id=project_id, thumbnail=thumbnail_url, manufacturing_number=manufacturing_number, quantity=quantity, project_details=project_details, additional_details=additional_details, recording=recording, location=location, location_points=location_points, is_admin_approved=True, submitted_to_admin=False)
+        c = str(project_id)+'_'+str(file.id)+'_'+'filename'
+        b = Files.objects.filter(id=file.id).update(file_name=c)
+        return {"message": "File created successfully", "file_id": file.id, "thumbnail_url": thumbnail_url}
+
+    def create(self, request, *args, **kwargs):
+        try:
+            files_data = request.data.getlist('file')
+            response_data = []
+            print("Received files_data:", files_data)
+
+            for file_data in files_data:
+                print("Processing file_data:", file_data)
+                print("calling upload function")
+                result = self.create_and_upload_file(request, file_data)
+                print("upload function called")
+                print("response data",response_data)
+                response_data.append(result)
+                print("result", result)
+
+            return CustomResponse({"message": "Files uploaded successfully", "data": response_data}, status=status_code.HTTP_200_OK)
+
+        except Exception as e:
+            return CustomResponse({"error": str(e)}, status=status_code.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+
+class CreateFileWithImage2(viewsets.ViewSet):
+    """
+        Class to upload offline created files to server
+    """
+    permission_classes = (IsAuthenticated, CheckUserRoleStatusPermission)
+
+    def generate_signed_url(self, object_key):
+        """
+            function to generate signed url
+        """
+        try:
+            # Create an S3 client
+            s3 = boto3.client('s3', aws_access_key_id=AWS_S3_ACCESS_KEY_ID, aws_secret_access_key=AWS_S3_SECRET_ACCESS_KEY, region_name=AWS_S3_REGION_NAME)
+            
+            # Generate a pre-signed URL
+            url = s3.generate_presigned_url(
+                ClientMethod='get_object',
+                Params={'Bucket': AWS_STORAGE_BUCKET_NAME, 'Key': object_key},
+                ExpiresIn=3600000  # URL will expire in 1 hour (3600 seconds) - adjust as needed
+            )
+
+            return url
+        except NoCredentialsError:
+            return None
+        
+    def compress_image(self, image):
+        """
+            function to compress image
+        """
+        try:
+            print("Compressing image...")
+            img = Image.open(image)
+            img.thumbnail((800, 800))
+            print("Compressing image 2...")
+            output_buffer = BytesIO()
+            print("Compressing image 3...")
+            img.save(output_buffer, format="png")
+            output_buffer.seek(0)
+            print("Image compressed...")
+            return output_buffer
+        except Exception:
+            return None
+
+    def create_and_upload_file(self, request, temp_file_id):
+        """
+            function to upload files
+        """
+        print("in create_and_upload_file function")
+        print("temp file id:", temp_file_id)
+
+        upload = request.data.get(f'file_{temp_file_id}')
+        print("upload:", upload)
+
+        if upload:
+            print("in if upload")
+            compressed_image = self.compress_image(upload)
+            original_file_name = f"your_custom_prefix_{uuid.uuid4().hex}.png"
+            path_key = "image/{}_{}".format(uuid.uuid4(), original_file_name.replace(' ', '_'))
+
+            # Upload compressed image to S3
+            s3 = boto3.resource('s3', aws_access_key_id=AWS_S3_ACCESS_KEY_ID, aws_secret_access_key=AWS_S3_SECRET_ACCESS_KEY)
+            s3.Bucket(AWS_STORAGE_BUCKET_NAME).upload_fileobj(compressed_image, path_key)
+
+            # Generate signed URL for the uploaded image
+            thumbnail_url = self.generate_signed_url(path_key)
+            print("thumbnail", thumbnail_url)
+        else:
+            print("in else upload")
+            thumbnail_url = None
+
+        # Extract other necessary fields from file_data
+        manufacturer_name = request.data.get(f'manufacturer_name_{temp_file_id}')     
+        manual_manufacturer_name = request.data.get(f'manual_manufacturer_name_{temp_file_id}')     
+        project_id = request.data.get(f'project_id_{temp_file_id}')     
+        manufacturing_number = request.data.get(f'manufacturing_number_{temp_file_id}')     
+        quantity = request.data.get(f'quantity_{temp_file_id}')     
+        project_details = request.data.get(f'project_details_{temp_file_id}')     
+        additional_details = request.data.get(f'additional_details_{temp_file_id}')     
+        recording = request.data.get(f'recording_{temp_file_id}')     
+        location = request.data.get(f'location_{temp_file_id}')     
+        location_points = request.data.get(f'location_points_{temp_file_id}')
+
+        print("creating file")
+
+        if manual_manufacturer_name:
+            new_manufacturer = ManufacturerName.objects.create(users=request.user, name=manual_manufacturer_name, added_by=2, is_read=False)
+            file = Files.objects.create(created_by=request.user, manufacturer_name_id=new_manufacturer.id, manual_manufacturer_name=manual_manufacturer_name, project_id=project_id, thumbnail=thumbnail_url, manufacturing_number=manufacturing_number, quantity=quantity, project_details=project_details, additional_details=additional_details, recording=recording, location=location, location_points=location_points, is_admin_approved=True, submitted_to_admin=True)
+            c = f"{project_id}_{file.id}_filename"
+            e = ManufacturerName.objects.filter(id=new_manufacturer.id).first()
+            print("eee",e.name)
+            b = Files.objects.filter(id=file.id).update(file_name=c, name_manufacturer= e.name)
+            # b = Files.objects.filter(id=file.id).update(file_name=c)
+            return {"message": "File Created with new Manufacturer Successfully","temp_file_id": temp_file_id ,"file_id": file.id, "thumbnail_url": thumbnail_url}
+
+        file = Files.objects.create(created_by=request.user, manufacturer_name_id=manufacturer_name, manual_manufacturer_name=manual_manufacturer_name, project_id=project_id, thumbnail=thumbnail_url, manufacturing_number=manufacturing_number, quantity=quantity, project_details=project_details, additional_details=additional_details, recording=recording, location=location, location_points=location_points, is_admin_approved=True, submitted_to_admin=True)
+        c = f"{project_id}_{file.id}_filename"
+        e = ManufacturerName.objects.filter(id=manufacturer_name).first()
+        print("eee",e.name)
+        b = Files.objects.filter(id=file.id).update(file_name=c, name_manufacturer= e.name)
+        # b = Files.objects.filter(id=file.id).update(file_name=c)
+        return {"message": "File created with existing Manufacturer Successfully","temp_file_id": temp_file_id ,"file_id": file.id, "thumbnail_url": thumbnail_url}
+
+    def create(self, request, *args, **kwargs):
+        """
+            function to get temp file id
+        """
+        try:
+            temp_file_ids = request.data.getlist('temp_file_id')
+            response_data = []
+            print("Received temp_file_ids:", temp_file_ids)
+
+            for temp_file_id in temp_file_ids:
+                print("Processing temp_file_id:", temp_file_id)
+                print("calling create_and_upload_file function")
+                result = self.create_and_upload_file(request, temp_file_id)
+                print("create_and_upload_file function called")
+                print("response data", response_data)
+                response_data.append(result)
+                print("result", result)
+
+            return CustomResponse({"message": "Files uploaded successfully", "data": response_data}, status=status_code.HTTP_200_OK)
+
+        except Exception as e:
+            return CustomResponse({"error": str(e)}, status=status_code.HTTP_400_BAD_REQUEST)
+
+
+
+class CreateEditFileWithImage(viewsets.ViewSet):
+    permission_classes = (IsAuthenticated, CheckUserRoleStatusPermission)
+
+    def generate_signed_url(self, object_key):
+        try:
+            s3 = boto3.client('s3', aws_access_key_id=AWS_S3_ACCESS_KEY_ID, aws_secret_access_key=AWS_S3_SECRET_ACCESS_KEY, region_name=AWS_S3_REGION_NAME)
+            url = s3.generate_presigned_url(
+                ClientMethod='put_object',
+                Params={'Bucket': AWS_STORAGE_BUCKET_NAME, 'Key': object_key},
+                ExpiresIn=3600  # URL will expire in 1 hour (adjust as needed)
+            )
+            return url
+        except NoCredentialsError:
+            return None
+        
+    def compress_image(self, image):
+        try:
+            print("Compressing image...")
+            img = Image.open(image)
+            img.thumbnail((800, 800))
+            print("Compressing image 2...")
+            output_buffer = BytesIO()
+            print("Compressing image 3...")
+            img.save(output_buffer, format="png")
+            output_buffer.seek(0)
+            print("Image compressed...")
+            return output_buffer
+        except Exception:
+            return None
+
+    def create_and_upload_file(self, request, file_data):
+        print("in upload function")
+        print("file data==", file_data)
+
+        # upload = file_data['file']
+        upload = file_data.file
+        temp_file_id = request.data.get('temp_file_id')
+
+        # temp_file_id = file_data.temp_file_id
+        print("upload ====", upload)
+        # temp_file_id = file_data['temp_file_id']
+
+        if upload:
+            print("in if upload")
+            compressed_image = self.compress_image(upload)
+            print("compressed", compressed_image)
+            # print("upload name", upload.name)
+            # original_file_name = upload.name
+            # print("originsl", original_file_name)
+            original_file_name = f"your_custom_prefix_{uuid.uuid4().hex}.png"
+            print("original", original_file_name)
+            # path_key = "image/{}_{}".format(uuid.uuid4(), upload.name.replace(' ', '_'))
+            path_key = "image/{}_{}".format(uuid.uuid4(), original_file_name.replace(' ', '_'))
+            print("path key", path_key)
+
+            # Upload compressed image to S3
+            s3 = boto3.resource('s3', aws_access_key_id=AWS_S3_ACCESS_KEY_ID, aws_secret_access_key=AWS_S3_SECRET_ACCESS_KEY)
+            print("s3", s3)
+            s3.Bucket(AWS_STORAGE_BUCKET_NAME).upload_fileobj(compressed_image, path_key)
+
+            # Generate signed URL for the uploaded image
+            thumbnail_url = self.generate_signed_url(path_key)
+            print("thumbnail", thumbnail_url)
+        else:
+            print("in else upload")
+            thumbnail_url = None
+
+        print("taking input")
+        print("temp file id", temp_file_id)
+        # Extract other necessary fields from file_data
+        file_id = request.data.get(f'file_id_{temp_file_id}') 
+        manufacturer_name = request.data.get(f'manufacturer_name_{temp_file_id}')     
+        manual_manufacturer_name = request.data.get(f'manual_manufacturer_name_{temp_file_id}')     
+        project_id = request.data.get(f'project_id_{temp_file_id}')     
+        manufacturing_number = request.data.get(f'manufacturing_number_{temp_file_id}')     
+        quantity = request.data.get(f'quantity_{temp_file_id}')     
+        project_details = request.data.get(f'project_details_{temp_file_id}')     
+        additional_details = request.data.get(f'additional_details_{temp_file_id}')     
+        recording = request.data.get(f'recording_{temp_file_id}')     
+        location = request.data.get(f'location_{temp_file_id}')     
+        location_points = request.data.get(f'location_points_{temp_file_id}')
+
+        b = Files.objects.filter(id=file_id)
+        print("file_id",file_id)
+        if b.exists():
+            print("editing")
+            if thumbnail_url:
+                b.update(created_by=request.user, manufacturer_name=manufacturer_name, manual_manufacturer_name=manual_manufacturer_name, project_id=project_id, thumbnail=thumbnail_url, manufacturing_number=manufacturing_number, quantity=quantity, project_details=project_details, additional_details=additional_details, recording=recording, location=location, location_points=location_points, is_admin_approved=True, submitted_to_admin=False)
+            
+                return {"message": "File updated succesfully with thumbnail", "file_id": file_id, "thumbnail_url": thumbnail_url}
+
+
+        print("creating file")
+
+        if manual_manufacturer_name:
+            new_manufacturer = ManufacturerName.objects.create(users=request.user, name=manual_manufacturer_name, added_by=2, is_read=False)
+            file = Files.objects.create(created_by=request.user, manufacturer_name_id=new_manufacturer.id, manual_manufacturer_name=manual_manufacturer_name, project_id=project_id, thumbnail=thumbnail_url, manufacturing_number=manufacturing_number, quantity=quantity, project_details=project_details, additional_details=additional_details, recording=recording, location=location, location_points=location_points, is_admin_approved=True, submitted_to_admin=False)
+            c = f"{project_id}_{file.id}_filename"
+            e = ManufacturerName.objects.filter(id=new_manufacturer.id).first()
+            print("eee",e.name)
+            b = Files.objects.filter(id=file.id).update(file_name=c, name_manufacturer= e.name)
+            # b = Files.objects.filter(id=file.id).update(file_name=c)
+            return {"message": "File Created with new Manufacturer Successfully", "file_id": file.id, "thumbnail_url": thumbnail_url}
+
+        file = Files.objects.create(created_by=request.user, manufacturer_name_id=manufacturer_name, manual_manufacturer_name=manual_manufacturer_name, project_id=project_id, thumbnail=thumbnail_url, manufacturing_number=manufacturing_number, quantity=quantity, project_details=project_details, additional_details=additional_details, recording=recording, location=location, location_points=location_points, is_admin_approved=True, submitted_to_admin=False)
+        c = f"{project_id}_{file.id}_filename"
+        e = ManufacturerName.objects.filter(id=manufacturer_name).first()
+        print("eee",e.name)
+        b = Files.objects.filter(id=file.id).update(file_name=c, name_manufacturer= e.name)
+        # b = Files.objects.filter(id=file.id).update(file_name=c)
+        return {"message": "File created successfully", "file_id": file.id, "thumbnail_url": thumbnail_url}
+
+    def create(self, request, *args, **kwargs):
+        try:
+            files_data = request.data.getlist('file')
+            response_data = []
+            print("Received files_data:", files_data)
+
+            for file_data in files_data:
+                print("Processing file_data:", file_data)
+                print("calling upload function")
+                result = self.create_and_upload_file(request, file_data)
+                print("upload function called")
+                print("response data", response_data)
+                response_data.append(result)
+                print("result", result)
+
+            return CustomResponse({"message": "Files uploaded successfully", "data": response_data}, status=status_code.HTTP_200_OK)
+
+        except Exception as e:
+            return CustomResponse({"error": str(e)}, status=status_code.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+
+
+class UpdateFileWithImage(viewsets.ViewSet):
+    """
+        class to update offline edited files
+    """
+    permission_classes = (IsAuthenticated, CheckUserRoleStatusPermission)
+
+    def generate_signed_url(self, object_key):
+        """
+            function to generate signed url
+        """
+        try:
+            # Create an S3 client
+            s3 = boto3.client('s3', aws_access_key_id=AWS_S3_ACCESS_KEY_ID, aws_secret_access_key=AWS_S3_SECRET_ACCESS_KEY, region_name=AWS_S3_REGION_NAME)
+
+            # Generate a pre-signed URL
+            url = s3.generate_presigned_url(
+                ClientMethod='get_object',
+                Params={'Bucket': AWS_STORAGE_BUCKET_NAME, 'Key': object_key},
+                ExpiresIn=3600000  # URL will expire in 1 hour (3600 seconds) - adjust as needed
+            )
+
+            return url
+        except NoCredentialsError:
+            return None
+        
+    def compress_image(self, image):
+        """
+            function to compress image
+        """
+        try:
+            print("Compressing image...")
+            img = Image.open(image)
+            img.thumbnail((800, 800))
+            print("Compressing image 2...")
+            output_buffer = BytesIO()
+            print("Compressing image 3...")
+            img.save(output_buffer, format="png")
+            output_buffer.seek(0)
+            print("Image compressed...")
+            return output_buffer
+        except Exception:
+            return None
+
+    def create_and_upload_file(self, request, file_data):
+        """
+            function to upload updated files to server
+        """
+        try:
+            print("in upload function")
+            upload = file_data['image']
+            print("image", upload)
+            thumbnail_null = file_data['image_null']
+            print("thumbnail_null", thumbnail_null)
+
+            if upload:
+                print("in if upload")
+                compressed_image = self.compress_image(upload)
+                original_file_name = f"your_custom_prefix_{uuid.uuid4().hex}.png"
+                path_key = "image/{}_{}".format(uuid.uuid4(), original_file_name.replace(' ', '_'))
+
+                # Upload compressed image to S3
+                s3 = boto3.resource('s3', aws_access_key_id=AWS_S3_ACCESS_KEY_ID, aws_secret_access_key=AWS_S3_SECRET_ACCESS_KEY)
+                s3.Bucket(AWS_STORAGE_BUCKET_NAME).upload_fileobj(compressed_image, path_key)
+
+                # Generate signed URL for the uploaded image
+                thumbnail_url = self.generate_signed_url(path_key)
+                print("thumbnail", thumbnail_url)
+
+            # else:
+            #     print("in else upload")
+            #     # If user wants to update the thumbnail to null
+            #     update_thumbnail_to_null = file_data.get('image_null', False)
+            #     if update_thumbnail_to_null:
+            #         thumbnail_url = None
+            #     else:
+            #         # Retrieve the old thumbnail URL from the database
+            #         file_id = file_data['file_id']
+            #         file_instance = Files.objects.get(id=file_id)
+            #         thumbnail_url = file_instance.thumbnail
+            if thumbnail_null:
+                print("in if thumbnail null")
+                thumbnail_url = None
+                
+            # else:
+            #     print("in else upload")
+            #     thumbnail_url = None
+
+            print("taking input")
+            # Extract other necessary fields from file_data
+            file_id = file_data['file_id']
+            manufacturer_name = file_data['manufacturer_name']     
+            manual_manufacturer_name = file_data['manual_manufacturer_name']     
+            project_id = file_data['project_id']     
+            manufacturing_number = file_data['manufacturing_number']     
+            quantity = file_data['quantity']     
+            project_details = file_data['project_details']     
+            additional_details = file_data['additional_details']     
+            recording = file_data['recording']     
+            location = file_data['location']     
+
+            print("updating file")
+            file_instance = Files.objects.get(id=file_id)
+            print("file_instance name", file_instance.file_name)
+
+            if manual_manufacturer_name:
+                print("manual manufacturer")
+                new_manufacturer = ManufacturerName.objects.create(users=request.user, name=manual_manufacturer_name, added_by=2, is_read=False)
+                # file_instance.name_manufacturer = new_manufacturer.id
+                file_instance.manual_manufacturer_name = manual_manufacturer_name
+                if upload:
+                    print("thumbnail", thumbnail_url)
+                    file_instance.thumbnail = thumbnail_url
+                if thumbnail_null:
+                    print("thumbnail null", thumbnail_null)
+                    file_instance.thumbnail = thumbnail_url
+                file_instance.manufacturing_number = manufacturing_number
+                file_instance.quantity = quantity
+                file_instance.project_details = project_details
+                file_instance.additional_details = additional_details
+                file_instance.recording = recording
+                file_instance.location = location
+                file_instance.save()
+
+                c = f"{project_id}_{file_instance.id}_filename"
+                e = ManufacturerName.objects.filter(id=new_manufacturer.id).first()
+                print("eee", e.name)
+                Files.objects.filter(id=file_instance.id).update(file_name=c, name_manufacturer=e.name)
+                if upload:
+
+                    return {"message": "File updated with new Manufacturer Successfully", "file_id": file_instance.id, "thumbnail_url": thumbnail_url}
+                else:
+                    return {"message": "File updated with new Manufacturer Successfully", "file_id": file_instance.id}
+
+            print("existing manufacturer")
+            # file_instance.manufacturer_name = manufacturer_name
+            manufacturer_instance = ManufacturerName.objects.get(id=manufacturer_name)
+            file_instance.manufacturer_name = manufacturer_instance
+            # file_instance.manual_manufacturer_name = manual_manufacturer_name
+            if upload:
+                print("thumbnail", thumbnail_url)
+                file_instance.thumbnail = thumbnail_url
+            if thumbnail_null:
+                    print("thumbnail null", thumbnail_null)
+                    file_instance.thumbnail = thumbnail_url
+            file_instance.manufacturing_number = manufacturing_number
+            file_instance.quantity = quantity
+            file_instance.project_details = project_details
+            file_instance.additional_details = additional_details
+            file_instance.recording = recording
+            file_instance.location = location
+            file_instance.save()
+
+            c = f"{project_id}_{file_instance.id}_filename"
+            e = ManufacturerName.objects.filter(id=manufacturer_name).first()
+            print("eee", e.name)
+            Files.objects.filter(id=file_instance.id).update(file_name=c, name_manufacturer=e.name)
+
+            if upload:
+                return {"message": "File updated with existing Manufacturer successfully", "file_id": file_instance.id, "thumbnail_url": thumbnail_url}
+            else:
+                return {"message": "File updated with existing Manufacturer Successfully", "file_id": file_instance.id}
+
+        except Exception as e:
+            return {"error": str(e)}
+
+    def update(self, request, *args, **kwargs):
+        """
+            functio to take updated file from user
+        """
+        try:
+            file_ids = request.data.getlist('file_id')
+            response_data = []
+            print("Received file_ids:", file_ids)
+
+            for file_id in file_ids:
+                print("Processing file_id:", file_id)
+                # Convert file_id to integer
+                file_id = int(file_id)
+                
+                # Construct key names for each file in form data
+                image_key = f"image_{file_id}"
+                image_null_key = f"image_null_{file_id}"
+                manufacturer_name_key = f"manufacturer_name_{file_id}"
+                manual_manufacturer_name_key = f"manual_manufacturer_name_{file_id}"
+                project_id = "project_id"
+                manufacturing_number_key = f"manufacturing_number_{file_id}"
+                quantity_key = f"quantity_{file_id}"
+                project_details_key = f"project_details_{file_id}"
+                additional_details_key = f"additional_details_{file_id}"
+                recording_key = f"recording_{file_id}"
+                location_key = f"location_{file_id}"
+                # ... (similarly for other fields)
+
+                # Create a dictionary with form data for the current file
+                file_data = {
+                    'file_id': file_id,
+                    'image': request.data.get(image_key),
+                    'image_null': request.data.get(image_null_key),
+                    'manufacturer_name': request.data.get(manufacturer_name_key),
+                    'manual_manufacturer_name': request.data.get(manual_manufacturer_name_key),
+                    'project_id': request.data.get(project_id),
+                    'manufacturing_number': request.data.get(manufacturing_number_key),
+                    'quantity': request.data.get(quantity_key),
+                    'project_details': request.data.get(project_details_key),
+                    'additional_details': request.data.get(additional_details_key),
+                    'recording': request.data.get(recording_key),
+                    'location': request.data.get(location_key),
+                    # ... (similarly for other fields)
+                }
+
+                result = self.create_and_upload_file(request, file_data)
+                print("upload function called")
+                print("response data", response_data)
+                response_data.append(result)
+                print("result", result)
+
+            return CustomResponse({"message": "Files updated successfully", "data": response_data}, status=status_code.HTTP_200_OK)
+
+        except Exception as e:
+            return CustomResponse({"error": str(e)}, status=status_code.HTTP_400_BAD_REQUEST)
+

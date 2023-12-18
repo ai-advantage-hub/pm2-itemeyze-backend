@@ -100,12 +100,13 @@ class FileSerializer(serializers.ModelSerializer):
 
 
 class ProjectDetailSerializer(serializers.ModelSerializer):
+    site_name = serializers.CharField(source='site_id.name', read_only=True)
     created_by = serializers.SerializerMethodField()
     files = serializers.SerializerMethodField()
 
     class Meta:
         model = Project
-        fields = ['id','project_name', 'project_number','created_by','created_at','site_id_id', 'files']
+        fields = ['id','project_name', 'project_number','created_by','created_at','site_id_id','site_name', 'files']
 
     def get_created_by(self, obj):
         try:
@@ -114,17 +115,18 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
             return None
     
     def get_files(self, obj):
-        approved_files = obj.project_files.filter(is_marked_deleted=False)
+        approved_files = obj.project_files.filter(is_marked_deleted=False, is_deleted=False, is_admin_approved=True)
         return FileSerializer(approved_files, many=True).data
 
 
 class FilesSerializer(serializers.ModelSerializer):
-    manufacturer_name = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
+    manufacturer_name = serializers.PrimaryKeyRelatedField(queryset=ManufacturerName.objects.all())
     #project = serializers.PrimaryKeyRelatedField(queryset=Project.objects.all())
 
     class Meta:
         model = Files
-        fields = '__all__'
+        # fields = '__all__'
+        fields = ['id', 'file_name', 'manufacturer_name','manual_manufacturer_name','name_manufacturer','thumbnail', 'manufacturing_number', 'quantity', 'project_details', 'additional_details', 'recording', 'location', 'location_points','created_at', 'is_file_disapproved', 'disapproved_reason']
     
     def update(self, instance, validated_data):
         validated_data['is_admin_approved'] = True
@@ -215,22 +217,30 @@ class CreateFileDetailsSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
 
+class SiteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Site
+        fields = ['id','name']
+
+
 class ProjectSerializer(serializers.ModelSerializer):
-    
+    site_name = serializers.CharField(source='site_id.name', read_only=True)
     class Meta:
         model = Project
-        fields = ['id', 'project_name', 'created_at']
+        fields = ['id', 'project_name', 'created_at','site_id','site_name']
 
 class UserDetailSerializer(serializers.ModelSerializer):
     company_names = serializers.SerializerMethodField()
     assigned_projects = ProjectSerializer(many=True)
+    created_by_project = ProjectSerializer(many=True)
 
     class Meta:
         model = User
-        fields = ['id','full_name', 'email','profile_pic','modules_accessible','created_at','company_names', 'assigned_projects']
+        fields = ['id','full_name', 'email','profile_pic','modules_accessible','created_at','company_names', 'assigned_projects','created_by_project']
 
     def get_company_names(self, obj):
         return [uc.company.name for uc in obj.user_company.all()]
+    
     
 
 class UserListingSerializer(serializers.ModelSerializer):

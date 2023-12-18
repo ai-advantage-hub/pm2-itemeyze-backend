@@ -179,6 +179,8 @@ class ManufacturerName(BaseModel):
     name = models.CharField(max_length=255)
     is_active = models.BooleanField(default=True)
     added_by = models.IntegerField("User role", choices=AddedBy, default=ADMIN)
+    users = models.ForeignKey(User, on_delete=models.CASCADE, related_name='added_by_users', null=True)
+    is_read = models.BooleanField(default=False, verbose_name='is_admin_read')
 
     def __str__(self):
         return self.name
@@ -188,7 +190,9 @@ class Files(BaseModel):
     """
         ProjecDetails model to see the details of the projects
     """
-    manufacturer_name = models.ForeignKey(User, on_delete=models.CASCADE, related_name='name_manufacture')
+    # manufacturer_name = models.ForeignKey(ManufacturerName, on_delete=models.CASCADE, related_name='name_manufacture', null=True)
+    manufacturer_name = models.ForeignKey(ManufacturerName,on_delete=models.SET_NULL,related_name='name_manufacture',null=True)
+    name_manufacturer = models.CharField(blank=True, null=True, max_length=254, verbose_name='nae_manufacturer')
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='project_files')
     manual_manufacturer_name = models.CharField(blank=True, null=True, max_length=254, verbose_name='manual_name')
     file_name = models.CharField(blank=True, null=True, max_length=254)

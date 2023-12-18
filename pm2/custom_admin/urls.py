@@ -40,7 +40,7 @@ urlpatterns = [
     path("un_approved_files_count/<int:id>", views.ManageProjectViewSet.as_view({"get": "un_approved_files_count"}), name="un_approved_files_count"),
     path("view_file/<int:id>", views.ManageProjectViewSet.as_view({"get": "view_file"}), name="view_file"),
     path("destroy_file/<int:id>", views.ManageProjectViewSet.as_view({"delete": "destroy_file"}), name="destroy_file"),
-    path("update_file/<int:pk>", views.ManageProjectViewSet.as_view({"put": "update_file"}), name="update_file"),
+    # path("update_file/<int:pk>", views.ManageProjectViewSet.as_view({"put": "update_file"}), name="update_file"),
     path("approve_file", views.ManageProjectViewSet.as_view({"put": "approve_file"}), name="approve_file"),
     path("delete_file_list/<int:id>", views.ManageProjectViewSet.as_view({"get": "delete_file_list"}), name="delete_file_list"),
     path("delete_file_admin", views.ManageProjectViewSet.as_view({"delete": "delete_file_admin"}), name="delete_file_admin"),
@@ -80,13 +80,12 @@ urlpatterns = [
     #CR Points
     path("list_deleted_projects", views.DeletedProjectsViewSet.as_view({"get": "list"}), name="list_deleted_projects"),
     path("restore_project/<int:id>", views.DeletedProjectsViewSet.as_view({"put": "restore"}), name="restore_project"),
-    path("list_deleted_files", views.DeletedFilesViewSet.as_view({"get": "list"}), name="list_deleted_files"),
+    path("list_deleted_files/<int:id>", views.DeletedFilesViewSet.as_view({"get": "list"}), name="list_deleted_files"),
     path("restore_files", views.DeletedFilesViewSet.as_view({"put": "restore"}), name="restore_files"),
 
     path("approve_user", views.EditUserCompanyViewSet.as_view({"put": "approve_user"}), name="approve_user"),
 
     path("company_status", views.DeactivateCompanyViewSet.as_view({"put": "update"}), name="company_status"),
-
 
     path("users_listing", views.UserListingViewSet.as_view({"get": "list"}), name="users_listing"),
 
@@ -95,11 +94,11 @@ urlpatterns = [
     path("approved_files_list/<int:id>", views.ApprovedFilesListingViewSet.as_view({"get": "approved_files_list"}), name="approved_files_list"),
 
     path("disapprove_file", views.DisapproveFileViewSet.as_view({"put": "disapprove_file"}), name="disapprove_file"),
-    path("list_disapproved_file", views.DisapproveFileViewSet.as_view({"get": "list_disapproved_file"}), name="list_disapproved_file"),
+    path("list_disapproved_file/<int:id>", views.DisapproveFileViewSet.as_view({"get": "list_disapproved_file"}), name="list_disapproved_file"),
     path("view_disapproved_file/<int:id>", views.DisapproveFileViewSet.as_view({"get": "view_disapproved_file"}), name="view_disapproved_file"),
     path("approve", views.DisapproveFileViewSet.as_view({"put": "approve"}), name="approve"),
 
-    path("marked_for_delete_files", views.MarkedForDeletedFilesViewSet.as_view({"get": "list"}), name="marked_for_delete_files"),
+    path("marked_for_delete_files/<int:id>", views.MarkedForDeletedFilesViewSet.as_view({"get": "list"}), name="marked_for_delete_files"),
     path("approve_marked_for_deleted_file", views.MarkedForDeletedFilesViewSet.as_view({"put": "approve"}), name="approve_marked_for_deleted_file"),
 
     path("edit_user_details/<int:id>", views.EditUserDetailsViewSet.as_view({"put": "update"}), name="edit_user_details"),
@@ -119,6 +118,14 @@ urlpatterns = [
     path("delete_manufacturer", views.ManageManufacturerNameViewSet.as_view({"delete": "delete_manufacturer"}), name="delete_manufacturer"),
 
     path("users_list_of_company/<int:id>", views.AssignToUsersViewSet.as_view({"get": "users_list"}), name="users_list_of_company"),
+
+    path("list_manufacturer", views.FilesViewSet.as_view({"get": "list_manufacturer"}), name="list_manufacturer"),
+    path("create_file_admin", views.FilesViewSet.as_view({"post": "create_file_admin"}), name="create_file_admin"),
+    path("update_file/<int:id>", views.FilesViewSet.as_view({"put": "update_file"}), name="update_file"),
+
+    path("company_list", views.CompanyManufacturerListViewSet.as_view({"get": "company_list"}), name="company_list"),
+    path("manufacturer_listing", views.CompanyManufacturerListViewSet.as_view({"get": "manufacturer_listing"}), name="manufacturer_listing"),
+
 
 
     path("upload_excel_data", views.UploadexcelViewSet.as_view({"post": "create"}), name="upload_excel_data"),

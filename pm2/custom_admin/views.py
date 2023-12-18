@@ -235,7 +235,7 @@ class ManageCompanyView(viewsets.ViewSet):
             return CustomResponse({"message": "this company name already registered"}, status=status.HTTP_400_BAD_REQUEST)
         else:
             Company.objects.filter(id=id).update(name=company_title)
-            return CustomResponse({"message": "company name updated"})
+            return CustomResponse({"message": "company name updated"}, status=status.HTTP_200_OK)
 
     def delete(self, request):
         """
@@ -245,8 +245,45 @@ class ManageCompanyView(viewsets.ViewSet):
         company = Company.objects.filter(id=id).first()
         if not company:
             return CustomResponse({"message": "company Does not exist"}, status=status.HTTP_400_BAD_REQUEST)
+        
         Company.objects.filter(id=id).delete()
-        return CustomResponse({"message": "company Deleted successfully"})
+        return CustomResponse({"message": "company Deleted successfully"}, status=status.HTTP_200_OK)
+        
+    # def delete(self, request):
+    #     """
+    #         delete method to permanently delete the company.
+    #     """
+    #     id = request.GET.get('id')
+    #     company = Company.objects.filter(id=id).first()
+    #     if not company:
+    #         return CustomResponse({"message": "company Does not exist"}, status=status.HTTP_400_BAD_REQUEST)
+    #     # Get all users associated with the company
+    #     users_to_logout = UserCompany.objects.filter(company=company).all().values_list('user_id', flat=True)
+    #     list = []
+    #     for i in range(0,len(users_to_logout)):
+    #         user = User.objects.filter(id=users_to_logout[i]).first()
+    #         list.append(user)
+    #     Company.objects.filter(id=id).delete()
+    #     # Force logout all associated users
+    #     if UserCompany.objects.filter(company_id=id).count()==0:
+    #         return CustomResponse({"message": "Status deactivated successfully."}, status=status.HTTP_200_OK)
+    #     list1=[]
+    #     if None in list:
+    #         list1=[]
+    #         for i in range(0,len(list)):
+    #             if list[i]!=None:
+    #                 list1.append(list[i])
+    #     if len(list1)!=0:
+    #         for user in list1:
+    #             Token.objects.filter(user=user).delete()
+    #             logged_out_users(user.email)
+    #         return CustomResponse({"message": "Status deactivated successfully. Users associated with this company have been logged out."}, status=status.HTTP_200_OK)
+    #     else:
+    #         for user in list:
+    #             Token.objects.filter(user=user).delete()
+    #             logged_out_users(user.email)
+    #         return CustomResponse({"message": "Status deactivated successfully. Users associated with this company have been logged out."}, status=status.HTTP_200_OK)
+    #     # return CustomResponse({"message": "company Deleted successfully"})
 
     def search(self, request):
         """
@@ -658,7 +695,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
             methof to get list of unapproved projects
         """
         page_size = request.GET.get('page_size', '')
-        projects = Project.objects.filter(is_admin_approved=False).annotate(num_files=Count('project_files')).values('id', 'project_name', 'created_by__full_name', 'num_files','created_at').order_by('-created_at')
+        projects = Project.objects.filter(is_admin_approved=False).annotate(num_files=Count('project_files')).values('id', 'project_name', 'created_by__full_name', 'num_files','created_at','site_id','site_id__name').order_by('-created_at')
         page = None
         if page_size:
             pagination_class = self.pagination_class()
@@ -692,7 +729,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
         if not file:
             return CustomResponse({"message": "File not found"}, status=status.HTTP_400_BAD_REQUEST)
         else:
-            file.is_marked_deleted=True
+            file.is_deleted=True
             file.deleted_at = timezone.now()
             file.save()
             return CustomResponse({"message": "File deleted successfully"}, status=status.HTTP_200_OK)
@@ -1042,6 +1079,9 @@ class AdminNameViewset(viewsets.ViewSet):
 
 #Manage Users
 
+from django.db.models import Subquery, OuterRef, Count, Q, Value, IntegerField, ExpressionWrapper, F
+from django.db.models.functions import Coalesce
+
 class  ManageUserAdminViewSet(viewsets.ViewSet):
     """
         UserListAdminViewSet to Manage Users
@@ -1056,25 +1096,50 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
         name = request.GET.get('name', '')
         page_size = request.GET.get('page_size', '')
         is_active = request.GET.get('is_active', None)
+
+        exclude_created_projects = Project.objects.filter(
+            created_by=OuterRef('pk')
+        ).values('id')
+
         users = (
-            User.all_objects.filter(is_admin_approved=True,user_role=2, full_name__icontains=name).annotate(
-                approved_project_count=Count(
-                    'created_by_project',
-                    filter=Q(created_by_project__is_admin_approved=True),
-                    distinct=True
-                ),
+            User.all_objects.filter(is_admin_approved=True, user_role=2, full_name__icontains=name)
+            .annotate(
+                created_project_count=Count('created_by_project', distinct=True),
                 assigned_project_count=Count(
-                    'assigned_projects__id',
-                     filter=Q(assigned_projects__is_admin_approved=True),  
+                    'assigned_projects',
+                    filter=~Q(assigned_projects__in=Subquery(exclude_created_projects)),
                     distinct=True
                 )
-            ).annotate(
-                total_project_count=ExpressionWrapper(
-                    F('approved_project_count') + F('assigned_project_count'),
-                    output_field=IntegerField()
-                )
-            ).values('id','full_name','email', 'assigned_project_count', 'user_company', 'user_company__company__name', 'is_active').order_by("-created_at")
+            )
+            .annotate(
+                total_project_count=F('created_project_count') + F('assigned_project_count')
+            )
+            .values(
+                'id', 'full_name', 'email', 'assigned_project_count', 'user_company', 
+                'user_company__company__name', 'is_active', 'created_project_count', 'total_project_count'
+            )
+            .order_by("-created_at")
         )
+
+        # users = (
+        #     User.all_objects.filter(is_admin_approved=True,user_role=2, full_name__icontains=name).annotate(
+        #         approved_project_count=Count(
+        #             'created_by_project',
+        #             filter=Q(created_by_project__is_admin_approved=True),
+        #             distinct=True
+        #         ),
+        #         assigned_project_count=Count(
+        #             'assigned_projects__id',
+        #              filter=Q(assigned_projects__is_admin_approved=True),  
+        #             distinct=True
+        #         )
+        #     ).annotate(
+        #         total_project_count=ExpressionWrapper(
+        #             F('approved_project_count') + F('assigned_project_count'),
+        #             output_field=IntegerField()
+        #         )
+        #     ).values('id','full_name','email', 'assigned_project_count', 'user_company', 'user_company__company__name', 'is_active','approved_project_count','total_project_count').order_by("-created_at")
+        # )
 
         if is_active:
             if is_active == "true":
@@ -1175,7 +1240,7 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
         """
             function to give count og unapproved users
         """
-        user = User.objects.filter(is_admin_approved=False,user_role=2, is_email_verified=True).count()
+        user = User.objects.filter(Q(is_admin_approved=False, is_email_verified=True) | Q(is_edited=True), user_role=2).count()
         return CustomResponse(user)
     
     def approve_users(self, request):
@@ -1219,7 +1284,7 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
         user = User.all_objects.filter(id=id).first()
         if not user:
             return CustomResponse({"message": "User not found"}, status=status.HTTP_400_BAD_REQUEST)
-        projects = Project.objects.filter(users__id=id, is_admin_approved=True, is_marked_deleted=False).values("id","project_name", "created_at")
+        projects = Project.objects.filter(Q(created_by__id=id)|Q(users__id=id), is_admin_approved=True, is_marked_deleted=False).values("id","project_name", "created_at",'site_id','site_id__name')
         page = None
         if page_size:
             pagination_class = self.pagination_class()
@@ -1268,7 +1333,9 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
         if not file:
             return CustomResponse({"message": "File dont exist"}, status=status.HTTP_400_BAD_REQUEST)
         
-        file.delete()
+        file.is_deleted=True
+        file.deleted_at = timezone.now()
+        file.save()
         return CustomResponse({"message": "File deleted successfully"})
 
     @action(detail=True, methods=['get'])
@@ -1348,15 +1415,23 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
         """
         year = request.GET.get('year')
         month = request.GET.get('month')
-        selected_project_id = request.GET.get('project_id', None)
+        selected_project_id = request.GET.get('selected_project_id', None)
         
         user = User.all_objects.filter(id=id).first()
         if not user:
             return CustomResponse({"message": "User not found"}, status=status.HTTP_400_BAD_REQUEST)
 
-        file_query = Files.objects.filter(project__users__id=id)
+        # file_query = Files.objects.filter(project__users__id=id)
+        # file_query = Files.objects.filter(Q(created_by_id=id)|Q(project__created_by_id=id)|Q(project__users__id=id), project__is_admin_approved=True, is_deleted=False, is_marked_deleted=False)
+        file_query = Files.objects.filter(Q(created_by_id=id)|Q(project__users__id=id), project__is_admin_approved=True, project__created_by_id=id)
+        
         if selected_project_id:
-            file_query = file_query.filter(project_id=selected_project_id)
+            # file_query = file_query.filter(project_id=selected_project_id)
+            file_query = file_query.filter(project__is_admin_approved=True, project_id=selected_project_id).filter(Q(created_by_id=id)|Q(created_by_id=None))
+
+        # else:
+        #     file_query = Files.objects.filter(Q(created_by_id=id)|Q(project__created_by_id=id)|Q(project__users__id=id), project__is_admin_approved=True)
+ 
 
         if year and not month:
             # If a year is given but no month, show counts for each month of the year
@@ -1406,6 +1481,10 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
                                 .annotate(month=TruncMonth('created_at'))
                                 .values('month')
                                 .annotate(files_count=Count('id')))
+            # monthly_files_count = (file_query
+            #                     .annotate(month=TruncMonth('created_at'))
+            #                     .values('month')
+            #                     .annotate(files_count=Count('created_by')))
             
             return CustomResponse(monthly_files_count)
 
@@ -1459,12 +1538,12 @@ class DeletedFilesViewSet(viewsets.ViewSet):
     permission_classes = (IsAuthenticated, CheckAdminOrSubAdminRoleStatusPermission,)
     pagination_class = CustomPagination
 
-    def list(self, request):
+    def list(self, request, id):
         """
             function to give list of deleted files
         """
         page_size = request.GET.get('page_size', '')
-        files = Files.objects.filter(is_deleted=True).values('id', 'file_name', 'deleted_at').order_by("-created_at")
+        files = Files.objects.filter(project_id=id, is_deleted=True).values('id', 'file_name', 'deleted_at').order_by("-created_at")
         page = None
         if page_size:
             pagination_class = self.pagination_class()
@@ -1483,10 +1562,10 @@ class DeletedFilesViewSet(viewsets.ViewSet):
         data = request.data
         file_id = data.get("file_id", [])
         if not file_id:
-                return CustomResponse({"message": "Please select file"})
+                return CustomResponse({"message": "Please select file"}, status=status_code.HTTP_400_BAD_REQUEST)
         for i in file_id:
             print("i",i)        
-        Files.objects.filter(id=i).update(is_deleted=False, is_admin_approved=True , submitted_to_admin=True, is_edited=False, disapproved_count=0)
+            Files.objects.filter(id=i).update(is_deleted=False, is_admin_approved=True, is_edited=False, disapproved_count=0)
         return CustomResponse({"Message": "File Restored Successfully"}, status=status_code.HTTP_200_OK)
 
 
@@ -1662,7 +1741,19 @@ class ApprovedFilesListingViewSet(viewsets.ViewSet):
             function to get list of approved files
         """
         page_size = request.GET.get('page_size', '')
-        approved_files = Files.objects.filter(project_id=id, is_edited=False, is_deleted=False).all().values('id','file_name', 'thumbnail','created_at','is_file_disapproved').order_by('-created_at')
+        # approved_files = Files.objects.filter(project_id=id, is_edited=False, is_deleted=False, submitted_to_admin=True).all().values('id','file_name', 'thumbnail','created_at','is_file_disapproved').order_by('-created_at')
+        # approved_files = Files.objects.filter(project_id=id, is_deleted=False, submitted_to_admin=True).all().values('id','file_name', 'thumbnail','created_at','is_file_disapproved').order_by('-created_at')
+        approved_files1 = Files.objects.filter(project_id=id, is_deleted=False, submitted_to_admin=True).all().values('id','file_name', 'thumbnail','created_at','is_file_disapproved').order_by('-created_at')
+        approved_files2 = Files.objects.filter(project_id=id, is_deleted=False, submitted_to_admin=False, is_file_disapproved=True).all().values('id','file_name', 'thumbnail','created_at','is_file_disapproved').order_by('-created_at')
+        d = Files.objects.filter(project_id=id, is_deleted=False, submitted_to_admin=True).all().values_list('id',flat=True)
+        e = Files.objects.filter(project_id=id, is_deleted=False, submitted_to_admin=False, is_file_disapproved=True).all().values_list('id',flat=True)
+        print("d",d)
+        print("d type",type(d))
+        print("e",e)
+        f = set(list(d)+list(e))
+        j = list(f)
+        print("jjjjj",len(j))
+        approved_files = Files.objects.filter(id__in=j).all().values('id','file_name', 'thumbnail','created_at','is_file_disapproved')
         page = None
         if page_size:
             pagination_class = self.pagination_class()
@@ -1695,7 +1786,8 @@ class DisapproveFileViewSet(viewsets.ViewSet):
         if not file:
             return CustomResponse({"message": "File not found."}, status=status.HTTP_400_BAD_REQUEST)
         if status_value == 1:
-            c = Files.objects.filter(id=file_id).update(is_file_disapproved=True,is_admin_approved=False, disapproved_reason=disapprove_reason)
+            # c = Files.objects.filter(id=file_id).update(is_file_disapproved=True,is_admin_approved=False, disapproved_reason=disapprove_reason)
+            c = Files.objects.filter(id=file_id).update(is_file_disapproved=True,submitted_to_admin=False, disapproved_reason=disapprove_reason, is_edited=False)
             disapproved_file = Files.objects.filter(id=file_id).first()
             print("disss", disapproved_file.disapproved_count)
             disapproved_file.disapproved_count=1
@@ -1705,12 +1797,12 @@ class DisapproveFileViewSet(viewsets.ViewSet):
             return CustomResponse({"message": "Please provide valid status value."}, status=status.HTTP_400_BAD_REQUEST)
         
 
-    def list_disapproved_file(self, request):
+    def list_disapproved_file(self, request, id):
         """
             function to give list of disapproved files
         """
         page_size = request.GET.get('page_size', '')
-        disapproved_files = Files.objects.filter(is_admin_approved=False,is_file_disapproved=True, submitted_to_admin=True, is_edited=True, is_deleted=False).all().values('id','file_name','thumbnail','deleted_at')
+        disapproved_files = Files.objects.filter(project_id=id, is_admin_approved=False,is_file_disapproved=True, submitted_to_admin=True, is_edited=True, is_deleted=False).all().values('id','file_name','thumbnail','deleted_at')
         page = None
         if page_size:
             pagination_class = self.pagination_class()
@@ -1754,7 +1846,7 @@ class DisapproveFileViewSet(viewsets.ViewSet):
                 disapproved_file.save()
                 print("disss2", disapproved_file.disapproved_count)
                 Files.objects.filter(id=file_id).update(is_admin_approved=False,submitted_to_admin=False, is_edited=False) #this will happen only when file is denied for 5 times, if file will be denied for 6th time, then - is_admin_approved = false , submitted_to_admin = false, is_edited = false, is_deleted = True
-                return CustomResponse ({"message": "File Approval Denied Successfully"}, status=status.HTTP_400_BAD_REQUEST)
+                return CustomResponse ({"message": "File Approval Denied Successfully"}, status=status.HTTP_200_OK)
             else:
                 file.is_deleted=True
                 file.save()
@@ -1769,12 +1861,12 @@ class MarkedForDeletedFilesViewSet(viewsets.ViewSet):
     permission_classes = (IsAuthenticated, CheckAdminOrSubAdminRoleStatusPermission,)
     pagination_class = CustomPagination
 
-    def list(self, request):
+    def list(self, request, id):
         """
             function to give list of mark for deleted files
         """
         page_size = request.GET.get('page_size', '')   
-        files = Files.objects.filter(is_marked_deleted=True).all().values('id','file_name','thumbnail','deleted_at')
+        files = Files.objects.filter(project_id=id, is_marked_deleted=True).all().values('id','file_name','thumbnail','deleted_at')
         page = None
         if page_size:
             pagination_class = self.pagination_class()
@@ -1799,13 +1891,18 @@ class MarkedForDeletedFilesViewSet(viewsets.ViewSet):
         for i in file_id:
             print("i=",i)
             if status_value==1:
-                Files.objects.filter(id=i).update(is_marked_deleted=False, is_deleted=True)
-                return CustomResponse ({"message": "File Deleted Request Approved Successfully"}, status=status.HTTP_200_OK)
+                file = Files.objects.filter(id=i).update(is_marked_deleted=False, is_deleted=True)
+        
+                # return CustomResponse ({"message": "File Deleted Request Approved Successfully"}, status=status.HTTP_200_OK)
             if status_value==2:
                 Files.objects.filter(id=i).update(is_marked_deleted=False)
-                return CustomResponse ({"message": "File Delete Request Denied Successfully"}, status=status.HTTP_200_OK)
-            else:
-                return CustomResponse ({"message": "Please Provide Valid Status Value"}, status=status.HTTP_400_BAD_REQUEST)
+                # return CustomResponse ({"message": "File Delete Request Denied Successfully"}, status=status.HTTP_200_OK)
+        if status_value==1:
+            return CustomResponse ({"message": "File Deleted Request Approved Successfully"}, status=status.HTTP_200_OK)
+        if status_value==2:
+            return CustomResponse ({"message": "File Delete Request Denied Successfully"}, status=status.HTTP_200_OK)
+        else:
+            return CustomResponse ({"message": "Please Provide Valid Status Value"}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class EditUserDetailsViewSet(viewsets.ViewSet):
@@ -1851,6 +1948,7 @@ class UnapprovedUsersViewSet(viewsets.ViewSet):
         request_type = request.GET.get('request_type', None)
 
         if request_type == '1':
+            # type 1 for newly created users
             users = (
                 User.objects
                 .filter(is_admin_approved=False, is_email_verified=True, user_role=2)
@@ -1860,6 +1958,7 @@ class UnapprovedUsersViewSet(viewsets.ViewSet):
                 .values('id', 'full_name', 'profile_pic', 'email', 'user_company', 'user_company__company__name', 'company_name')
             )
         elif request_type == '2':
+            # type 2 for edited users
             users = (
                 User.objects
                 .filter(user_role=2, is_edited=True)
@@ -1868,10 +1967,19 @@ class UnapprovedUsersViewSet(viewsets.ViewSet):
                 .distinct('id')
                 .values('id', 'full_name', 'profile_pic', 'email', 'user_company', 'user_company__company__name', 'company_name')
             )
+        # else:
+        #     users = (
+        #         User.objects
+        #         .filter(is_admin_approved=False, is_email_verified=True, user_role=2, is_edited=True)
+        #         .exclude(email=None)
+        #         .order_by('-id', '-created_at')
+        #         .distinct('id')
+        #         .values('id', 'full_name', 'profile_pic', 'email', 'user_company', 'user_company__company__name', 'company_name')
+        #     )
         else:
             users = (
                 User.objects
-                .filter(is_admin_approved=False, is_email_verified=True, user_role=2)
+                .filter(Q(is_admin_approved=False, is_email_verified=True) | Q(is_edited=True), user_role=2)
                 .exclude(email=None)
                 .order_by('-id', '-created_at')
                 .distinct('id')
@@ -1998,9 +2106,11 @@ class ProjectViewSet(viewsets.ViewSet):
 
         # Validations
         if not project_name:
-            return CustomResponse({"message": "Please provide project_name"}, status=status.HTTP_400_BAD_REQUEST)
+            return CustomResponse({"message": "Please provide project name"}, status=status.HTTP_400_BAD_REQUEST)
         if not project_number:
-            return CustomResponse({"message": "Please provide project_number"}, status=status.HTTP_400_BAD_REQUEST)
+            return CustomResponse({"message": "Please provide project number"}, status=status.HTTP_400_BAD_REQUEST)
+        if not site_name:
+            return CustomResponse({"message": "Please provide Site Name"}, status=status.HTTP_400_BAD_REQUEST)
        
         if Project.objects.filter(project_name=project_name).exists():
             return CustomResponse({"message": "Project of this name already exists"}, status=status.HTTP_400_BAD_REQUEST)
@@ -2131,6 +2241,7 @@ class ProjectViewSet(viewsets.ViewSet):
         if status_value == 1:
             if Project.objects.filter(id=project_id, project_name=project_name, project_number=project_number).exists():
                 if assigned_to:
+                    print("in if assigned")
                     project = Project.objects.filter(id=project_id, project_name=project_name, project_number=project_number).first()
                     for id in assigned_to:
                         print("id",id)
@@ -2189,6 +2300,7 @@ class ProjectViewSet(viewsets.ViewSet):
                     return CustomResponse({"message": "Project Number of this name already exists"}, status=status.HTTP_400_BAD_REQUEST)
                 else:
                     if assigned_to:
+                        print("in else assigned")
                         project = Project.objects.filter(id=project_id).update(project_name=project_name, project_number=project_number)
                         project = Project.objects.filter(id=project_id).first()
                         for id in assigned_to:
@@ -2254,12 +2366,25 @@ class AssignToUsersViewSet(viewsets.ViewSet):
     """
 
     permission_classes = (IsAuthenticated, CheckAdminOrSubAdminRoleStatusPermission,)
+    pagination_class = CustomPagination
 
     def users_list(self, request, id):
         """
             function to give list of users of a particular company
         """
+        name = request.GET.get('name', None)
+        page_size = request.GET.get('page_size', '')
         users = UserCompany.objects.filter(company_id=id).all().values('user_id','user__full_name', 'user__email').order_by('-created_at')
+        if name:
+            users = users.filter(user__full_name__icontains=name)
+        page = None
+
+        if page_size:
+            pagination_class = self.pagination_class()
+            page = pagination_class.paginate_queryset(users, request)
+
+        if page is not None:
+            return CustomResponse(pagination_class.get_paginated_response(page).data)
         return CustomResponse(users)
     
 
@@ -2283,7 +2408,7 @@ class ManageManufacturerNameViewSet(viewsets.ViewSet):
         if ManufacturerName.objects.filter(name=manufacturer_name).exists():
             return CustomResponse({"message": "This Manufacturer Name already exists"}, status=status_code.HTTP_400_BAD_REQUEST)
         else:
-            manufacturer = ManufacturerName.objects.create(name=manufacturer_name, added_by=1)
+            manufacturer = ManufacturerName.objects.create(name=manufacturer_name, added_by=1, users=request.user, is_read=True)
             return CustomResponse({"message": "Manufacturer Name added successfully","manufacturer_name_id":manufacturer.id}, status=status_code.HTTP_200_OK)
         
     
@@ -2309,7 +2434,8 @@ class ManageManufacturerNameViewSet(viewsets.ViewSet):
         """
             function to retrieve details of Manufacturer
         """
-        manufacturer = ManufacturerName.objects.filter(id=id).all().values('id','name','is_active', 'added_by')
+        manufacturer = ManufacturerName.objects.filter(id=id).all().values('id','name','is_active', 'added_by','created_at','users__id','users__full_name','users__email')
+        manufacturer.update(is_read=True)
         return CustomResponse(manufacturer)
     
     def manufacturer_list(self, request):
@@ -2321,13 +2447,16 @@ class ManageManufacturerNameViewSet(viewsets.ViewSet):
         manufacturer_type = request.GET.get('manufacturer_type', None)
 
         if manufacturer_type == '1':
-            manufacturer = ManufacturerName.objects.filter(added_by=1).all().values('id','name','added_by')
+            print("type1",type(manufacturer_type))
+            manufacturer = ManufacturerName.objects.annotate(num_files=Count('name_manufacture')).filter(added_by=1).values('id','name','added_by','is_read','num_files').order_by('-created_at')
 
-        if manufacturer_type == '2':
-            manufacturer = ManufacturerName.objects.filter(added_by=2).all().values('id','name','added_by')
+        elif manufacturer_type == '2':
+            print("type2",type(manufacturer_type))
+            manufacturer = ManufacturerName.objects.annotate(num_files=Count('name_manufacture')).filter(added_by=2).values('id','name','added_by','is_read','num_files').order_by('-created_at')
         
         else:
-            manufacturer = ManufacturerName.objects.all().values('id','name','added_by')
+            print("elsee")
+            manufacturer = ManufacturerName.objects.annotate(num_files=Count('name_manufacture')).all().values('id','name','added_by','is_read','num_files').order_by('-created_at')
 
         if name:
             manufacturer = manufacturer.filter(name__icontains=name)
@@ -2344,8 +2473,9 @@ class ManageManufacturerNameViewSet(viewsets.ViewSet):
         """
             function to delete manufacturer name
         """
-        data = request.data
-        id = data.get("id")
+        id = request.GET.get('id')
+        # data = request.data
+        # id = data.get("id")
         if not id:
             return CustomResponse({"message": "Please Select Manufacturer"}, status=status_code.HTTP_400_BAD_REQUEST)
         manufacturer = ManufacturerName.objects.filter(id=id).first()
@@ -2356,7 +2486,121 @@ class ManageManufacturerNameViewSet(viewsets.ViewSet):
         return CustomResponse({"message": "Manufacturer Deleted Successfully"}, status=status_code.HTTP_200_OK)
 
 
+class FilesViewSet(viewsets.ViewSet):
+    """
+        FilesViewSet to create and update files from admin side
+    """
+    permission_classes = (IsAuthenticated, CheckAdminOrSubAdminRoleStatusPermission,)
 
+    def list_manufacturer(self, request):
+        """
+            function to give list of manufacturers
+        """
+        name = request.GET.get('name', None)
+        manufacturers = ManufacturerName.objects.all().values('id','name')
+        if name:
+            manufacturers = manufacturers.filter(name__icontains=name)
+        return CustomResponse(manufacturers)
+        # manufacturer = ManufacturerName.objects.all().values('id','name')
+        # return CustomResponse(manufacturer)
+    
+    def create_file_admin(self, request):
+        """
+            method to create file
+        """
+        data = request.data
+        thumbnail = data.get("thumbnail")
+        file_name = data.get("file_name")
+        manual_manufacturer_name = data.get('manual_manufacturer_name')
+        manufacturer_name = data.get("manufacturer_name")
+        manufacturing_number = data.get("manufacturing_number")
+        project_id = data.get("project_id")
+        location = data.get("location")
+        quantity = data.get("quantity")
+        project_details = data.get("project_details")
+        recording = data.get('recording')
+        additional_details = data.get("additional_details")
+        location_points = data.get('location_points')
+
+        if Files.objects.filter(manufacturing_number=manufacturing_number).exists():
+             return CustomResponse({"message": "This manufacturing number already exists"}, status=status.HTTP_400_BAD_REQUEST)
+        if manual_manufacturer_name:
+            if ManufacturerName.objects.filter(name = manual_manufacturer_name).exists():
+                return CustomResponse({"message": "This manufacturer name already exists, please select from list"}, status=status_code.HTTP_400_BAD_REQUEST)
+            new_manufacturer = ManufacturerName.objects.create(name=manual_manufacturer_name, is_read=True)
+            print("newwwwww", new_manufacturer.id)
+            file = Files.objects.create(manufacturer_name_id=new_manufacturer.id, manual_manufacturer_name=manual_manufacturer_name, project_id=project_id, manufacturing_number=manufacturing_number, quantity=quantity, project_details=project_details, additional_details=additional_details,location=location,file_name=file_name, recording=recording, location_points=location_points,is_admin_approved=True)
+            e = ManufacturerName.objects.filter(id=new_manufacturer.id).first()
+            print("eee",e.name)
+            f = Files.objects.filter(id=file.id).update(name_manufacturer= e.name)
+            return CustomResponse({"message": "File Created with new Manufacturer Successfully", "file_id": file.id}, status=status_code.HTTP_200_OK)
+        else:
+            file = Files.objects.create(file_name=file_name, thumbnail=thumbnail, manufacturing_number=manufacturing_number, project_id=project_id, location=location, manufacturer_name_id=manufacturer_name, quantity=quantity, project_details=project_details, additional_details=additional_details, recording=recording, location_points=location_points, is_admin_approved=True)
+            e = ManufacturerName.objects.filter(id=manufacturer_name).first()
+            print("eee",e.name)
+            f = Files.objects.filter(id=file.id).update(name_manufacturer= e.name)
+            return CustomResponse({"message": "File created with existing Manufacturer Successfully", "file_id": file.id}, status=status_code.HTTP_200_OK)
+        
+
+    def update_file(self, request, id):
+        """
+            function to update file
+        """
+        data = request.data
+        thumbnail = data.get("thumbnail")
+        manual_manufacturer_name = data.get('manual_manufacturer_name')
+        manufacturer_name = data.get("manufacturer_name")
+        manufacturing_number = data.get("manufacturing_number")
+        location = data.get("location")
+        quantity = data.get("quantity")
+        project_details = data.get("project_details")
+        additional_details = data.get("additional_details")
+        location_points = data.get('location_points')
+
+        if not Files.objects.filter(id=id).exists():
+            return CustomResponse({"message": "File not found"}, status=status_code.HTTP_400_BAD_REQUEST)
+
+        if Files.objects.filter(manufacturing_number=manufacturing_number).exclude(id=id).exists():
+            return CustomResponse({"message": "This manufacturing number already exists"}, status=status_code.HTTP_400_BAD_REQUEST)
+        if manual_manufacturer_name:
+            if ManufacturerName.objects.filter(name = manual_manufacturer_name).exists():
+                return CustomResponse({"message": "This manufacturer name already exists, please select from list"}, status=status_code.HTTP_400_BAD_REQUEST)
+            manufacturer = ManufacturerName.objects.create(name=manual_manufacturer_name, added_by=1, is_read=True)
+            file = Files.objects.filter(id=id).update(manufacturer_name_id=manufacturer.id,thumbnail=thumbnail, manual_manufacturer_name=manual_manufacturer_name, manufacturing_number=manufacturing_number, quantity=quantity, project_details=project_details, additional_details=additional_details,location=location, location_points=location_points)
+            e = ManufacturerName.objects.filter(id=manufacturer.id).first()
+            print("eee",e.name)
+            f = Files.objects.filter(id=id).update(name_manufacturer= e.name)
+            return CustomResponse({"message": "File updated Successfully with new Manufacturer"}, status=status_code.HTTP_200_OK)
+        else:
+            file = Files.objects.filter(id=id).update(thumbnail=thumbnail, manufacturing_number=manufacturing_number, location=location, manufacturer_name_id=manufacturer_name, quantity=quantity, project_details=project_details, additional_details=additional_details, location_points=location_points)
+            e = ManufacturerName.objects.filter(id=manufacturer_name).first()
+            print("eee",e.name)
+            f = Files.objects.filter(id=id).update(name_manufacturer= e.name)
+            return CustomResponse({"message": "File updated Successfully with existing Manufacturer"}, status=status_code.HTTP_200_OK)
+
+
+class CompanyManufacturerListViewSet(viewsets.ViewSet):
+    """
+        CompanyManufacturerListViewSet to give list of comapny and manufacturer names
+    """
+    permission_classes = (IsAuthenticated, CheckAdminOrSubAdminRoleStatusPermission,)
+
+    def company_list(self, request):
+        """
+            function to give list of companies
+        """
+        company = Company.objects.all().values('id','name','is_active').order_by('-created_at')
+        return CustomResponse(company)
+    
+    def manufacturer_listing(self, request):
+        """
+            function to give list of manufacturer names
+        """
+        manufacturer = ManufacturerName.objects.all().values('id', 'name','added_by').order_by('-created_at')
+        return CustomResponse(manufacturer)
+
+
+# For reading data of manufacturer names and storing in the database
 
 class UploadexcelViewSet(viewsets.ViewSet):
      def create(self, request):
@@ -2364,21 +2608,19 @@ class UploadexcelViewSet(viewsets.ViewSet):
             print("tryy")
             # print(request.__dir__())
             request_file = request.FILES.get("test")
-            excel_data = pd.read_excel(request_file,engine='openpyxl')
+            excel_data = pd.read_excel(request_file,engine='openpyxl', na_filter=False)
             print(excel_data.columns)
             for index,val in excel_data.iterrows():
                 print("index",index, val)
                 mit,_=ManufacturerName.objects.get_or_create(name=val.get("MFGName"))
                 mit.save()
                 print(mit)
-            # for val in excel_data.iterrows():
-            #     print(val)
 
-               # print(index,val["name"],val["speciality"])
-            # for i in x:
-            #     print(i)
-        
         except Exception as e:
+            log.info("error")
+            log.info(e)
+            # return CustomResponse({"message": e})
             print("error:", e)
-        return CustomResponse({"message": "excel upload successful"})
+        return CustomResponse({"message": "Excel file uploaded Successfully"})
+
 
