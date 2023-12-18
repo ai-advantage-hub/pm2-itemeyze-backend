@@ -1110,7 +1110,7 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
                 total_project_count=Count('created_by_project', distinct=True) + 
                 Count('assigned_projects', filter=~Q(assigned_projects__in=F('created_by_project')), distinct=True)
             )
-            .values('id', 'full_name', 'email', 'assigned_project_count', 'user_company', 'user_company__company__name', 'is_active', 'approved_project_count', 'total_project_count')
+            .values('id', 'full_name', 'email', 'user_company', 'user_company__company__name', 'is_active', 'total_project_count')
             .order_by("-created_at")
         )
 
