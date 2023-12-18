@@ -1079,6 +1079,9 @@ class AdminNameViewset(viewsets.ViewSet):
 
 #Manage Users
 
+from django.db.models import Subquery, OuterRef, Count, Q, Value, IntegerField, ExpressionWrapper, F
+from django.db.models.functions import Coalesce
+
 class  ManageUserAdminViewSet(viewsets.ViewSet):
     """
         UserListAdminViewSet to Manage Users
@@ -1093,25 +1096,42 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
         name = request.GET.get('name', '')
         page_size = request.GET.get('page_size', '')
         is_active = request.GET.get('is_active', None)
-        users = (
-            User.all_objects.filter(is_admin_approved=True,user_role=2, full_name__icontains=name).annotate(
-                approved_project_count=Count(
-                    'created_by_project',
-                    filter=Q(created_by_project__is_admin_approved=True),
-                    distinct=True
-                ),
-                assigned_project_count=Count(
-                    'assigned_projects__id',
-                     filter=Q(assigned_projects__is_admin_approved=True),  
-                    distinct=True
-                )
-            ).annotate(
-                total_project_count=ExpressionWrapper(
-                    F('approved_project_count') + F('assigned_project_count'),
-                    output_field=IntegerField()
-                )
-            ).values('id','full_name','email', 'assigned_project_count', 'user_company', 'user_company__company__name', 'is_active','approved_project_count','total_project_count').order_by("-created_at")
+
+        distinct_project_count_subquery = Subquery(
+            Project.objects.filter(
+                Q(created_by_id=OuterRef('pk'), is_admin_approved=True) |
+                Q(users__id=OuterRef('pk'), is_admin_approved=True)
+            ).distinct().values('id').annotate(count=Value(1)).values('count')
         )
+
+        users = (
+            User.all_objects.filter(is_admin_approved=True, user_role=2, full_name__icontains=name)
+            .annotate(
+                total_project_count=Coalesce(distinct_project_count_subquery, Value(0))
+            )
+            .values('id', 'full_name', 'email', 'user_company', 'user_company__company__name', 'is_active', 'total_project_count')
+            .order_by("-created_at")
+        )
+
+        # users = (
+        #     User.all_objects.filter(is_admin_approved=True,user_role=2, full_name__icontains=name).annotate(
+        #         approved_project_count=Count(
+        #             'created_by_project',
+        #             filter=Q(created_by_project__is_admin_approved=True),
+        #             distinct=True
+        #         ),
+        #         assigned_project_count=Count(
+        #             'assigned_projects__id',
+        #              filter=Q(assigned_projects__is_admin_approved=True),  
+        #             distinct=True
+        #         )
+        #     ).annotate(
+        #         total_project_count=ExpressionWrapper(
+        #             F('approved_project_count') + F('assigned_project_count'),
+        #             output_field=IntegerField()
+        #         )
+        #     ).values('id','full_name','email', 'assigned_project_count', 'user_company', 'user_company__company__name', 'is_active','approved_project_count','total_project_count').order_by("-created_at")
+        # )
 
         if is_active:
             if is_active == "true":
@@ -1713,6 +1733,7 @@ class ApprovedFilesListingViewSet(viewsets.ViewSet):
         page_size = request.GET.get('page_size', '')
         # approved_files = Files.objects.filter(project_id=id, is_edited=False, is_deleted=False, submitted_to_admin=True).all().values('id','file_name', 'thumbnail','created_at','is_file_disapproved').order_by('-created_at')
         approved_files = Files.objects.filter(project_id=id, is_deleted=False, submitted_to_admin=True).all().values('id','file_name', 'thumbnail','created_at','is_file_disapproved').order_by('-created_at')
+        approved_files2 = Files.objects.filter(project_id=id, is_deleted=False, submitted_to_admin=False, is_file_disapproved=True).all().values('id','file_name', 'thumbnail','created_at','is_file_disapproved').order_by('-created_at')
         page = None
         if page_size:
             pagination_class = self.pagination_class()
