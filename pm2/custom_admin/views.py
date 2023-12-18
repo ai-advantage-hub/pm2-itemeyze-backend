@@ -1740,8 +1740,18 @@ class ApprovedFilesListingViewSet(viewsets.ViewSet):
         """
         page_size = request.GET.get('page_size', '')
         # approved_files = Files.objects.filter(project_id=id, is_edited=False, is_deleted=False, submitted_to_admin=True).all().values('id','file_name', 'thumbnail','created_at','is_file_disapproved').order_by('-created_at')
-        approved_files = Files.objects.filter(project_id=id, is_deleted=False, submitted_to_admin=True).all().values('id','file_name', 'thumbnail','created_at','is_file_disapproved').order_by('-created_at')
+        # approved_files = Files.objects.filter(project_id=id, is_deleted=False, submitted_to_admin=True).all().values('id','file_name', 'thumbnail','created_at','is_file_disapproved').order_by('-created_at')
+        approved_files1 = Files.objects.filter(project_id=id, is_deleted=False, submitted_to_admin=True).all().values('id','file_name', 'thumbnail','created_at','is_file_disapproved').order_by('-created_at')
         approved_files2 = Files.objects.filter(project_id=id, is_deleted=False, submitted_to_admin=False, is_file_disapproved=True).all().values('id','file_name', 'thumbnail','created_at','is_file_disapproved').order_by('-created_at')
+        d = Files.objects.filter(project_id=id, is_deleted=False, submitted_to_admin=True).all().values_list('id',flat=True)
+        e = Files.objects.filter(project_id=id, is_deleted=False, submitted_to_admin=False, is_file_disapproved=True).all().values_list('id',flat=True)
+        print("d",d)
+        print("d type",type(d))
+        print("e",e)
+        f = set(list(d)+list(e))
+        j = list(f)
+        print("jjjjj",len(j))
+        approved_files = Files.objects.filter(id__in=j).all().values('id','file_name', 'thumbnail','created_at','is_file_disapproved')
         page = None
         if page_size:
             pagination_class = self.pagination_class()
