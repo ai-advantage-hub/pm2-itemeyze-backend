@@ -1097,19 +1097,20 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
         page_size = request.GET.get('page_size', '')
         is_active = request.GET.get('is_active', None)
 
-        distinct_project_count_subquery = Subquery(
-            Project.objects.filter(
-                Q(created_by_id=OuterRef('pk'), is_admin_approved=True) |
-                Q(users__id=OuterRef('pk'), is_admin_approved=True)
-            ).distinct().values('id').annotate(count=Value(1)).values('count')
-        )
+        # distinct_project_count_subquery = Subquery(
+        #     Project.objects.filter(
+        #         Q(created_by_id=OuterRef('pk'), is_admin_approved=True) |
+        #         Q(users__id=OuterRef('pk'), is_admin_approved=True)
+        #     ).distinct().values('id').annotate(count=Value(1)).values('count')
+        # )
 
         users = (
             User.all_objects.filter(is_admin_approved=True, user_role=2, full_name__icontains=name)
             .annotate(
-                total_project_count=Coalesce(distinct_project_count_subquery, Value(0))
+                total_project_count=Count('created_by_project', distinct=True) + 
+                Count('assigned_projects', filter=~Q(assigned_projects__in=F('created_by_project')), distinct=True)
             )
-            .values('id', 'full_name', 'email', 'user_company', 'user_company__company__name', 'is_active', 'total_project_count')
+            .values('id', 'full_name', 'email', 'assigned_project_count', 'user_company', 'user_company__company__name', 'is_active', 'approved_project_count', 'total_project_count')
             .order_by("-created_at")
         )
 
