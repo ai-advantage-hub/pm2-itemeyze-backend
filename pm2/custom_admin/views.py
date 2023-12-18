@@ -729,7 +729,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
         if not file:
             return CustomResponse({"message": "File not found"}, status=status.HTTP_400_BAD_REQUEST)
         else:
-            file.is_marked_deleted=True
+            file.is_deleted=True
             file.deleted_at = timezone.now()
             file.save()
             return CustomResponse({"message": "File deleted successfully"}, status=status.HTTP_200_OK)
@@ -1333,7 +1333,9 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
         if not file:
             return CustomResponse({"message": "File dont exist"}, status=status.HTTP_400_BAD_REQUEST)
         
-        file.delete()
+        file.is_deleted=True
+        file.deleted_at = timezone.now()
+        file.save()
         return CustomResponse({"message": "File deleted successfully"})
 
     @action(detail=True, methods=['get'])
