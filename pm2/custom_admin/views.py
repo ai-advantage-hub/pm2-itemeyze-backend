@@ -1804,7 +1804,7 @@ class DisapproveFileViewSet(viewsets.ViewSet):
         """
         page_size = request.GET.get('page_size', '')
         # disapproved_files = Files.objects.filter(project_id=id, is_admin_approved=False,is_file_disapproved=True, submitted_to_admin=True, is_edited=True, is_deleted=False).all().values('id','file_name','thumbnail','deleted_at')
-        disapproved_files = Files.objects.filter(project_id=id,is_file_disapproved=True, submitted_to_admin=True, is_edited=True, is_deleted=False).all().values('id','file_name','thumbnail','deleted_at')
+        disapproved_files = Files.objects.filter(project_id=id,is_file_disapproved=True, submitted_to_admin=True, is_edited=True, is_deleted=False).all().values('id','file_name','thumbnail','disapproved_on')
         page = None
         if page_size:
             pagination_class = self.pagination_class()
