@@ -1791,6 +1791,7 @@ class DisapproveFileViewSet(viewsets.ViewSet):
             disapproved_file = Files.objects.filter(id=file_id).first()
             print("disss", disapproved_file.disapproved_count)
             disapproved_file.disapproved_count=1
+            disapproved_file.disapproved_on=timezone.now()
             disapproved_file.save() 
             return CustomResponse({"message": "File disapproved successfully"}, status=status_code.HTTP_200_OK)
         else:
