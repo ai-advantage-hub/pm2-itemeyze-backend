@@ -1802,7 +1802,8 @@ class DisapproveFileViewSet(viewsets.ViewSet):
             function to give list of disapproved files
         """
         page_size = request.GET.get('page_size', '')
-        disapproved_files = Files.objects.filter(project_id=id, is_admin_approved=False,is_file_disapproved=True, submitted_to_admin=True, is_edited=True, is_deleted=False).all().values('id','file_name','thumbnail','deleted_at')
+        # disapproved_files = Files.objects.filter(project_id=id, is_admin_approved=False,is_file_disapproved=True, submitted_to_admin=True, is_edited=True, is_deleted=False).all().values('id','file_name','thumbnail','deleted_at')
+        disapproved_files = Files.objects.filter(project_id=id, is_admin_approved=False,submitted_to_admin=True, is_edited=True, is_deleted=False).all().values('id','file_name','thumbnail','deleted_at')
         page = None
         if page_size:
             pagination_class = self.pagination_class()
@@ -1820,7 +1821,8 @@ class DisapproveFileViewSet(viewsets.ViewSet):
             return CustomResponse({"message":"file not found"}, status=status.HTTP_400_BAD_REQUEST)
         if Files.objects.filter(id=id, is_file_disapproved=False):
             return CustomResponse({"message":"this file is not disapproved"}, status=status.HTTP_400_BAD_REQUEST)
-        disapproved_file = Files.objects.filter(id=id,is_admin_approved=False, is_file_disapproved=True, is_deleted=False).all().values('id', 'file_name', 'thumbnail','manufacturer_name','manufacturing_number','quantity','project_details','additional_details','recording', 'location', 'location_points','is_file_disapproved')
+        # disapproved_file = Files.objects.filter(id=id,is_admin_approved=False, is_file_disapproved=True, is_deleted=False).all().values('id', 'file_name', 'thumbnail','manufacturer_name','manufacturing_number','quantity','project_details','additional_details','recording', 'location', 'location_points','is_file_disapproved')
+        disapproved_file = Files.objects.filter(id=id,is_file_disapproved=True, is_deleted=False).all().values('id', 'file_name', 'thumbnail','manufacturer_name','manufacturing_number','quantity','project_details','additional_details','recording', 'location', 'location_points','is_file_disapproved')
         return CustomResponse(disapproved_file)
     
     def approve(self, request):
