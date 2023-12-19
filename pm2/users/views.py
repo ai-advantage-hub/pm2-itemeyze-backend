@@ -1775,7 +1775,9 @@ class UpdateFileWithImage(viewsets.ViewSet):
             project_details = file_data['project_details']     
             additional_details = file_data['additional_details']     
             recording = file_data['recording']     
-            location = file_data['location']     
+            location = file_data['location']  
+
+            is_file_disapproved = file_data['is_file_disapproved']   
 
             print("updating file")
             file_instance = Files.objects.get(id=file_id)
@@ -1798,6 +1800,10 @@ class UpdateFileWithImage(viewsets.ViewSet):
                 file_instance.additional_details = additional_details
                 file_instance.recording = recording
                 file_instance.location = location
+
+                if is_file_disapproved == True:
+                    file_instance.submitted_to_admin=True
+
                 file_instance.save()
 
                 c = f"{project_id}_{file_instance.id}_filename"
@@ -1827,6 +1833,10 @@ class UpdateFileWithImage(viewsets.ViewSet):
             file_instance.additional_details = additional_details
             file_instance.recording = recording
             file_instance.location = location
+
+            if is_file_disapproved == True:
+                file_instance.submitted_to_admin=True
+
             file_instance.save()
 
             c = f"{project_id}_{file_instance.id}_filename"
@@ -1868,6 +1878,9 @@ class UpdateFileWithImage(viewsets.ViewSet):
                 additional_details_key = f"additional_details_{file_id}"
                 recording_key = f"recording_{file_id}"
                 location_key = f"location_{file_id}"
+
+                is_file_disapproved_key = f"is_file_disapproved_{file_id}"
+
                 # ... (similarly for other fields)
 
                 # Create a dictionary with form data for the current file
@@ -1884,6 +1897,9 @@ class UpdateFileWithImage(viewsets.ViewSet):
                     'additional_details': request.data.get(additional_details_key),
                     'recording': request.data.get(recording_key),
                     'location': request.data.get(location_key),
+
+                    'is_file_disapproved': request.data.get(is_file_disapproved_key)
+
                     # ... (similarly for other fields)
                 }
 
