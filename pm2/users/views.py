@@ -1821,7 +1821,7 @@ class UpdateFileWithImage(viewsets.ViewSet):
                 file_instance.recording = recording
                 file_instance.location = location
 
-                if is_file_disapproved == True:
+                if is_file_disapproved:
                     file_instance.submitted_to_admin=True
 
                 file_instance.save()
@@ -1854,7 +1854,7 @@ class UpdateFileWithImage(viewsets.ViewSet):
             file_instance.recording = recording
             file_instance.location = location
 
-            if is_file_disapproved == True:
+            if is_file_disapproved:
                 file_instance.submitted_to_admin=True
 
             file_instance.save()
