@@ -1823,7 +1823,7 @@ class DisapproveFileViewSet(viewsets.ViewSet):
         if Files.objects.filter(id=id, is_file_disapproved=False):
             return CustomResponse({"message":"this file is not disapproved"}, status=status.HTTP_400_BAD_REQUEST)
         # disapproved_file = Files.objects.filter(id=id,is_admin_approved=False, is_file_disapproved=True, is_deleted=False).all().values('id', 'file_name', 'thumbnail','manufacturer_name','manufacturing_number','quantity','project_details','additional_details','recording', 'location', 'location_points','is_file_disapproved')
-        disapproved_file = Files.objects.filter(id=id,is_file_disapproved=True, is_deleted=False).all().values('id', 'file_name', 'thumbnail','manufacturer_name','manufacturing_number','quantity','project_details','additional_details','recording', 'location', 'location_points','is_file_disapproved')
+        disapproved_file = Files.objects.filter(id=id,is_file_disapproved=True, is_deleted=False).all().values('id', 'file_name', 'thumbnail','name_manufacturer','manufacturer_name','manufacturing_number','quantity','project_details','additional_details','recording', 'location', 'location_points','is_file_disapproved')
         return CustomResponse(disapproved_file)
     
     def approve(self, request):
