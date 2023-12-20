@@ -423,6 +423,9 @@ class FileDetailsViewSet(viewsets.ModelViewSet):
         recording = data.get('recording')
         location = data.get('location')
         location_points = data.get('location_points')
+        if manufacturer_name:
+            if not ManufacturerName.objects.filter(name=manufacturer_name).exists():
+                return CustomResponse({"message": "This manufacturer name does not exist"}, status=status_code.HTTP_400_BAD_REQUEST)
         if manual_manufacturer_name:
             if ManufacturerName.objects.filter(name = manual_manufacturer_name).exists():
                 return CustomResponse({"message": "This manufacturer name already exists, please select from list"}, status=status_code.HTTP_400_BAD_REQUEST)
@@ -778,8 +781,7 @@ class EditFileViewSet(viewsets.ModelViewSet):
                 
             }
             return JsonResponse(file_details)
-
-
+        
 
     def destroy(self, request, id):
         """
@@ -1814,12 +1816,18 @@ class UpdateFileWithImage(viewsets.ViewSet):
                 if thumbnail_null:
                     print("thumbnail null", thumbnail_null)
                     file_instance.thumbnail = thumbnail_url
-                file_instance.manufacturing_number = manufacturing_number
-                file_instance.quantity = quantity
-                file_instance.project_details = project_details
-                file_instance.additional_details = additional_details
-                file_instance.recording = recording
-                file_instance.location = location
+                if manufacturing_number:
+                    file_instance.manufacturing_number = manufacturing_number
+                if quantity:
+                    file_instance.quantity = quantity
+                if project_details:
+                    file_instance.project_details = project_details
+                if additional_details:
+                    file_instance.additional_details = additional_details
+                if recording:
+                    file_instance.recording = recording
+                if location:
+                    file_instance.location = location
 
                 if is_file_disapproved:
                     file_instance.submitted_to_admin=True
@@ -1837,39 +1845,86 @@ class UpdateFileWithImage(viewsets.ViewSet):
                 else:
                     return {"message": "File updated with new Manufacturer Successfully", "file_id": file_instance.id}
 
-            print("existing manufacturer")
-            # file_instance.manufacturer_name = manufacturer_name
-            manufacturer_instance = ManufacturerName.objects.get(id=manufacturer_name)
-            file_instance.manufacturer_name = manufacturer_instance
-            # file_instance.manual_manufacturer_name = manual_manufacturer_name
-            if upload:
-                print("thumbnail", thumbnail_url)
-                file_instance.thumbnail = thumbnail_url
-            if thumbnail_null:
-                    print("thumbnail null", thumbnail_null)
+            elif manufacturer_name:
+
+                print("existing manufacturer")
+                # file_instance.manufacturer_name = manufacturer_name
+                manufacturer_instance = ManufacturerName.objects.get(id=manufacturer_name)
+                file_instance.manufacturer_name = manufacturer_instance
+                # file_instance.manual_manufacturer_name = manual_manufacturer_name
+                if upload:
+                    print("thumbnail", thumbnail_url)
                     file_instance.thumbnail = thumbnail_url
-            file_instance.manufacturing_number = manufacturing_number
-            file_instance.quantity = quantity
-            file_instance.project_details = project_details
-            file_instance.additional_details = additional_details
-            file_instance.recording = recording
-            file_instance.location = location
+                if thumbnail_null:
+                        print("thumbnail null", thumbnail_null)
+                        file_instance.thumbnail = thumbnail_url
+                if manufacturing_number:
+                    file_instance.manufacturing_number = manufacturing_number
+                if quantity:
+                    file_instance.quantity = quantity
+                if project_details:
+                    file_instance.project_details = project_details
+                if additional_details:
+                    file_instance.additional_details = additional_details
+                if recording:
+                    file_instance.recording = recording
+                if location:
+                    file_instance.location = location
 
-            if is_file_disapproved:
-                file_instance.submitted_to_admin=True
-                file_instance.is_deleted=True
+                if is_file_disapproved:
+                    file_instance.submitted_to_admin=True
+                    file_instance.is_deleted=True
 
-            file_instance.save()
+                file_instance.save()
 
-            c = f"{project_id}_{file_instance.id}_filename"
-            e = ManufacturerName.objects.filter(id=manufacturer_name).first()
-            print("eee", e.name)
-            Files.objects.filter(id=file_instance.id).update(file_name=c, name_manufacturer=e.name)
+                c = f"{project_id}_{file_instance.id}_filename"
+                e = ManufacturerName.objects.filter(id=manufacturer_name).first()
+                print("eee", e.name)
+                Files.objects.filter(id=file_instance.id).update(file_name=c, name_manufacturer=e.name)
 
-            if upload:
-                return {"message": "File updated with existing Manufacturer successfully", "file_id": file_instance.id, "thumbnail_url": thumbnail_url}
+                if upload:
+                    return {"message": "File updated with existing Manufacturer successfully", "file_id": file_instance.id, "thumbnail_url": thumbnail_url}
+                else:
+                    return {"message": "File updated with existing Manufacturer Successfully", "file_id": file_instance.id}
+                
             else:
-                return {"message": "File updated with existing Manufacturer Successfully", "file_id": file_instance.id}
+                # file_instance.manufacturer_name = manufacturer_instance
+                # file_instance.manual_manufacturer_name = manual_manufacturer_name
+                if upload:
+                    print("thumbnail", thumbnail_url)
+                    file_instance.thumbnail = thumbnail_url
+                if thumbnail_null:
+                        print("thumbnail null", thumbnail_null)
+                        file_instance.thumbnail = thumbnail_url
+                if manufacturing_number:
+                    file_instance.manufacturing_number = manufacturing_number
+                if quantity:
+                    file_instance.quantity = quantity
+                if project_details:
+                    file_instance.project_details = project_details
+                if additional_details:
+                    file_instance.additional_details = additional_details
+                if recording:
+                    file_instance.recording = recording
+                if location:
+                    file_instance.location = location
+
+                if is_file_disapproved:
+                    file_instance.submitted_to_admin=True
+                    file_instance.is_deleted=True
+
+                file_instance.save()
+
+                # c = f"{project_id}_{file_instance.id}_filename"
+                # e = ManufacturerName.objects.filter(id=manufacturer_name).first()
+                # print("eee", e.name)
+                # Files.objects.filter(id=file_instance.id).update(file_name=c, name_manufacturer=e.name)
+
+                if upload:
+                    return {"message": "File updated with successfully", "file_id": file_instance.id, "thumbnail_url": thumbnail_url}
+                else:
+                    return {"message": "File updated with Successfully", "file_id": file_instance.id}
+
 
         except Exception as e:
             return {"error": str(e)}
