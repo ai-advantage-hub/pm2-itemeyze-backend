@@ -729,23 +729,26 @@ class EditFileViewSet(viewsets.ModelViewSet):
             return CustomResponse({"message": "This manufacturing number already exists"}, status=status_code.HTTP_400_BAD_REQUEST)
         if manual_manufacturer_name:
             if ManufacturerName.objects.filter(name = manual_manufacturer_name).exists():
-                return CustomResponse({"message": "This manufacturer name already exists, please select from list"}, status=status_code.HTTP_400_BAD_REQUEST)
-            manufacturer = ManufacturerName.objects.create(users = request.user, name=manual_manufacturer_name, added_by=2, is_read=False)
-            file = Files.objects.filter(id=id).update(manufacturer_name_id=manufacturer.id,thumbnail=thumbnail, manual_manufacturer_name=manual_manufacturer_name, manufacturing_number=manufacturing_number, quantity=quantity, project_details=project_details, additional_details=additional_details,location=location, location_points=location_points,is_edited=True, submitted_to_admin=False)
-            e = ManufacturerName.objects.filter(id=manufacturer.id).first()
-            print("eee",e.name)
-            b = Files.objects.filter(id=id).update(name_manufacturer= e.name)
+                file = Files.objects.filter(id=id).update(thumbnail=thumbnail, manufacturing_number=manufacturing_number, quantity=quantity, project_details=project_details, additional_details=additional_details,location=location, location_points=location_points,is_edited=True, submitted_to_admin=False)
+                # return CustomResponse({"message": "This manufacturer name already exists, please select from list"}, status=status_code.HTTP_400_BAD_REQUEST)
+            else:
+
+                manufacturer = ManufacturerName.objects.create(users = request.user, name=manual_manufacturer_name, added_by=2, is_read=False)
+                file = Files.objects.filter(id=id).update(manufacturer_name_id=manufacturer.id,thumbnail=thumbnail, manual_manufacturer_name=manual_manufacturer_name, manufacturing_number=manufacturing_number, quantity=quantity, project_details=project_details, additional_details=additional_details,location=location, location_points=location_points,is_edited=True, submitted_to_admin=False)
+                e = ManufacturerName.objects.filter(id=manufacturer.id).first()
+                print("eee",e.name)
+                b = Files.objects.filter(id=id).update(name_manufacturer= e.name)
             file_created = Files.objects.filter(id=id).all().values().first()
             file_details = {
                 "message" : "File updated with new Manufacturer Successfully",
                 "file_id": id,
                 "file_details": file_created,
                 "status" : status_code.HTTP_200_OK,
-                
+                    
             }
             return JsonResponse(file_details)
             # return CustomResponse({"message": "File updated Successfully"}, status=status_code.HTTP_200_OK)
-        else:
+        elif manufacturer_name:
             file = Files.objects.filter(id=id).update(thumbnail=thumbnail, manufacturing_number=manufacturing_number, location=location, manufacturer_name_id=manufacturer_name, quantity=quantity, project_details=project_details, additional_details=additional_details, location_points=location_points, is_edited=True, submitted_to_admin=False)
             e = ManufacturerName.objects.filter(id=manufacturer_name).first()
             print("eee",e.name)
@@ -761,6 +764,23 @@ class EditFileViewSet(viewsets.ModelViewSet):
             return JsonResponse(file_details)
             # return CustomResponse({"message": "File updated Successfully"}, status=status_code.HTTP_200_OK)
         
+        else:
+            file = Files.objects.filter(id=id).update(thumbnail=thumbnail, manufacturing_number=manufacturing_number, location=location, quantity=quantity, project_details=project_details, additional_details=additional_details, location_points=location_points, is_edited=True, submitted_to_admin=False)
+            # e = ManufacturerName.objects.filter(id=manufacturer_name).first()
+            # print("eee",e.name)
+            # b = Files.objects.filter(id=id).update(name_manufacturer= e.name)
+            file_created = Files.objects.filter(id=id).all().values().first()
+            file_details = {
+                "message" : "File updated with existing Manufacturer Successfully",
+                "file_id": id,
+                "file_details": file_created,
+                "status" : status_code.HTTP_200_OK,
+                
+            }
+            return JsonResponse(file_details)
+
+
+
     def destroy(self, request, id):
         """
             delete method to delete the file from the database.
