@@ -512,7 +512,8 @@ class FileDetailsViewSet(viewsets.ModelViewSet):
             print("file id", file_id)
             for id2 in file_id:
                 print("id", id2)
-                Files.objects.filter(id=id2).update(is_marked_deleted=True)
+                file = Files.objects.filter(id=id2).update(is_marked_deleted=True, deleted_at=timezone.now())
+                
 
         if list_type == '1':
             # type one for only created files that are not submitted to admin
