@@ -423,9 +423,9 @@ class FileDetailsViewSet(viewsets.ModelViewSet):
         recording = data.get('recording')
         location = data.get('location')
         location_points = data.get('location_points')
-        if manufacturer_name:
-            if not ManufacturerName.objects.filter(name=manufacturer_name).exists():
-                return CustomResponse({"message": "This manufacturer name does not exist"}, status=status_code.HTTP_400_BAD_REQUEST)
+        # if manufacturer_name:
+        #     if not ManufacturerName.objects.filter(name=manufacturer_name).exists():
+        #         return CustomResponse({"message": "This manufacturer name does not exist"}, status=status_code.HTTP_400_BAD_REQUEST)
         if manual_manufacturer_name:
             if ManufacturerName.objects.filter(name = manual_manufacturer_name).exists():
                 return CustomResponse({"message": "This manufacturer name already exists, please select from list"}, status=status_code.HTTP_400_BAD_REQUEST)
