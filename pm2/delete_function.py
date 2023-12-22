@@ -18,7 +18,7 @@ def delete_projects():
 
     today = datetime.date.today()
     print(today)
-    one_year_ago = today - datetime.timedelta(minutes=2)
+    one_year_ago = today - datetime.timedelta(days=365)
     print(one_year_ago)
 
     try:
