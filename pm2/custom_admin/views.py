@@ -2139,12 +2139,37 @@ class ProjectViewSet(viewsets.ViewSet):
             project.is_internal=False
             project.save()
 
-        # Assign users to the project
+        # # Assign users to the project
+        # for id in assigned_to:
+        #     user = User.objects.filter(id=id).first()
+        #     if user:
+        #         project.users.add(user)  
+        #     print(id)
+
         for id in assigned_to:
             user = User.objects.filter(id=id).first()
             if user:
-                project.users.add(user)  
-            print(id)
+                project.users.add(user)
+                project.is_admin_approved = True
+                project.save()
+                # Push Notification to users who created the project
+                title = f"Admin Assigned you a Project"
+                message = f"Hello!! Admin Assigned you a project named '{project_name}'."
+                data = {
+                    "title": title,
+                    "message": message,
+                }
+
+                # notifyer = user
+                # if notifyer.is_notification_enabled == True:
+                notification = UserNotification.objects.create(user=user, title=title, message=message)
+                notification.save()
+                data.update({"notification_id": str(notification.id)})
+                print("notification id", notification.id)
+                print("data", data)
+
+                send_notification_bulk(
+                    user_ids=[user.id], title=title, message=message, data=data)
 
         return CustomResponse({"message": "Project created successfully", "project_id": project.id}, status=status.HTTP_200_OK)
     
