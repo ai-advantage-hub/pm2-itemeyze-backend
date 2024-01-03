@@ -2357,6 +2357,35 @@ class ProjectViewSet(viewsets.ViewSet):
                                 send_notification_bulk(
                                     user_ids=[user.id], title=title, message=message, data=data)
                                 print("notification sent.....")
+                                # created = Project.objects.filter(id=project_id).first()
+                                title = f"Project Approved by Admin"
+                                message = f"Hello!! Your project '{project_name}' has been approved by Admin."
+                                data = {
+                                    "title": title,
+                                    "message": message,
+                                }
+
+                                # notifyer = user
+                                # if notifyer.is_notification_enabled == True:
+                                c = Project.objects.filter(id=project_id).first()
+                                print("c===", c.created_by.id)
+                                notifyer = User.objects.filter(id=c.created_by.id).first()
+                                notification = UserNotification.objects.create(user_id=c.created_by.id, title=title, message=message)
+                                print("created_by_id line 2374=====", c.created_by.id)
+                                log.info("notification")
+                                log.info(notification)
+                                notification.save()
+                                data.update({"notification_id": str(notification.id)})
+                                print("notification id 2378 line", notification.id)
+                                log.info("Data")
+                                log.info(data)
+                                print("aaaaaaaa", notifyer.is_notification_enabled)
+                                if notifyer.is_notification_enabled == True:
+                                    print("sending notification")
+                                    send_notification_bulk(
+                                        user_ids=[c.created_by.id], title=title, message=message, data=data)
+                                    print("notification sent")
+
                         return CustomResponse({"message": "Project approved successfully"})
                     else:
                         log.info("comes")
@@ -2377,13 +2406,14 @@ class ProjectViewSet(viewsets.ViewSet):
                         # if notifyer.is_notification_enabled == True:
                         c = Project.objects.filter(id=project_id).first()
                         print("c===", c.created_by.id)
+                        print(" line 2409========created_by_id", created_by_id)
                         notifyer = User.objects.filter(id=c.created_by.id).first()
                         notification = UserNotification.objects.create(user=created_by_id, title=title, message=message)
                         log.info("notification")
                         log.info(notification)
                         notification.save()
                         data.update({"notification_id": str(notification.id)})
-                        print("notification id 2386 line", notification.id)
+                        print("notification id 2414 line", notification.id)
                         log.info("Data")
                         log.info(data)
                         print("aaaaaaaa", notifyer.is_notification_enabled)
