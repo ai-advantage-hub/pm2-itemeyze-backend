@@ -519,23 +519,23 @@ class FileDetailsViewSet(viewsets.ModelViewSet):
             # type one for only created files that are not submitted to admin
             # files = Files.objects.filter(project_id = id, created_by=request.user, submitted_to_admin=False, is_marked_deleted=False).all().values('id','file_name','thumbnail','manufacturer_name__full_name', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason')
             if name == None:
-                files = Files.objects.filter(Q(created_by=request.user)|Q(created_by=None),project_id=id,submitted_to_admin=False, is_marked_deleted=False, is_deleted=False).all().values('id','file_name','created_at','thumbnail','name_manufacturer','manufacturer_name__name','manufacturer_name__id', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason','submitted_to_admin').order_by('-created_at')
+                files = Files.objects.filter(Q(created_by=request.user)|Q(created_by=None),project_id=id,submitted_to_admin=False, is_marked_deleted=False, is_deleted=False).all().values('id','file_name','created_at','thumbnail','name_manufacturer','manufacturer_name__name','manufacturer_name__id', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason','submitted_to_admin','disapproved_file_is_edited').order_by('-created_at')
             else:
                 files = Files.objects.filter(Q(location__icontains=name) |
                                         Q(manufacturer_name__name__icontains=name) |
                                         Q(manufacturing_number__icontains=name),
-                                        Q(created_by=request.user)|Q(created_by=None),project_id=id,submitted_to_admin=False, is_marked_deleted=False, is_deleted=False).all().values('id','file_name','created_at','thumbnail','name_manufacturer','manufacturer_name__name','manufacturer_name__id', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason','submitted_to_admin').order_by('-created_at')
+                                        Q(created_by=request.user)|Q(created_by=None),project_id=id,submitted_to_admin=False, is_marked_deleted=False, is_deleted=False).all().values('id','file_name','created_at','thumbnail','name_manufacturer','manufacturer_name__name','manufacturer_name__id', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason','submitted_to_admin','disapproved_file_is_edited').order_by('-created_at')
         elif list_type == '2':
             # type 2 for those files which are submitted to admin
             # files = Files.objects.filter(project_id=id, created_by=request.user, is_admin_approved=True, submitted_to_admin=True).all().values('id','file_name','thumbnail','manufacturer_name__full_name', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason')
             if name == None:
-                files = Files.objects.filter(Q(created_by=request.user)|Q(created_by=None),project_id=id,is_admin_approved=True, submitted_to_admin=True, is_marked_deleted=False, is_deleted=False).all().values('id','file_name','created_at','thumbnail','name_manufacturer','manufacturer_name__name','manufacturer_name__id', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason','submitted_to_admin').order_by('-created_at')
+                files = Files.objects.filter(Q(created_by=request.user)|Q(created_by=None),project_id=id,is_admin_approved=True, submitted_to_admin=True, is_marked_deleted=False, is_deleted=False).all().values('id','file_name','created_at','thumbnail','name_manufacturer','manufacturer_name__name','manufacturer_name__id', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason','submitted_to_admin','disapproved_file_is_edited').order_by('-created_at')
 
             else:
                 files = Files.objects.filter(Q(location__icontains=name) |
                                         Q(manufacturer_name__name__icontains=name) |
                                         Q(manufacturing_number__icontains=name),
-                                        Q(created_by=request.user)|Q(created_by=None),project_id=id,is_admin_approved=True, submitted_to_admin=True, is_marked_deleted=False, is_deleted=False).all().values('id','file_name','created_at','thumbnail','name_manufacturer','manufacturer_name__name','manufacturer_name__id', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason','submitted_to_admin').order_by('-created_at')
+                                        Q(created_by=request.user)|Q(created_by=None),project_id=id,is_admin_approved=True, submitted_to_admin=True, is_marked_deleted=False, is_deleted=False).all().values('id','file_name','created_at','thumbnail','name_manufacturer','manufacturer_name__name','manufacturer_name__id', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason','submitted_to_admin','disapproved_file_is_edited').order_by('-created_at')
 
         else:
             return CustomResponse({"message": "Invalid filter type"}, status=status_code.HTTP_400_BAD_REQUEST)
@@ -732,6 +732,7 @@ class EditFileViewSet(viewsets.ModelViewSet):
         if Files.objects.filter(manufacturing_number=manufacturing_number).exclude(id=id).exists():
             return CustomResponse({"message": "This manufacturing number already exists"}, status=status_code.HTTP_400_BAD_REQUEST)
         if manual_manufacturer_name:
+
             if ManufacturerName.objects.filter(name = manual_manufacturer_name).exists():
                 file = Files.objects.filter(id=id).update(thumbnail=thumbnail, manufacturing_number=manufacturing_number, quantity=quantity, project_details=project_details, additional_details=additional_details,location=location, location_points=location_points,is_edited=True, submitted_to_admin=False)
                 # return CustomResponse({"message": "This manufacturer name already exists, please select from list"}, status=status_code.HTTP_400_BAD_REQUEST)
@@ -742,6 +743,11 @@ class EditFileViewSet(viewsets.ModelViewSet):
                 e = ManufacturerName.objects.filter(id=manufacturer.id).first()
                 print("eee",e.name)
                 b = Files.objects.filter(id=id).update(name_manufacturer= e.name)
+            c = Files.objects.filter(id=id).first()
+            print("c id",c.is_file_disapproved)
+            if c.is_file_disapproved==True:
+                c.disapproved_file_is_edited=True
+                c.save()
             file_created = Files.objects.filter(id=id).all().values().first()
             file_details = {
                 "message" : "File updated with new Manufacturer Successfully",
@@ -757,6 +763,10 @@ class EditFileViewSet(viewsets.ModelViewSet):
             e = ManufacturerName.objects.filter(id=manufacturer_name).first()
             print("eee",e.name)
             b = Files.objects.filter(id=id).update(name_manufacturer= e.name)
+            c = Files.objects.filter(id=id).first()
+            if c.is_file_disapproved==True:
+                c.disapproved_file_is_edited=True
+                c.save()
             file_created = Files.objects.filter(id=id).all().values().first()
             file_details = {
                 "message" : "File updated with existing Manufacturer Successfully",
@@ -773,6 +783,11 @@ class EditFileViewSet(viewsets.ModelViewSet):
             # e = ManufacturerName.objects.filter(id=manufacturer_name).first()
             # print("eee",e.name)
             # b = Files.objects.filter(id=id).update(name_manufacturer= e.name)
+            c = Files.objects.filter(id=id).first()
+            print("c id",c.is_file_disapproved)
+            if c.is_file_disapproved==True:
+                c.disapproved_file_is_edited=True
+                c.save()
             file_created = Files.objects.filter(id=id).all().values().first()
             file_details = {
                 "message" : "File updated with existing Manufacturer Successfully",
@@ -1836,6 +1851,11 @@ class UpdateFileWithImage(viewsets.ViewSet):
 
                 file_instance.save()
 
+                z = Files.objects.filter(id=file_id).first()
+                if z.is_file_disapproved==True:
+                    z.disapproved_file_is_edited=True
+                    z.save()
+
                 c = f"{project_id}_{file_instance.id}_filename"
                 e = ManufacturerName.objects.filter(id=new_manufacturer.id).first()
                 print("eee", e.name)
@@ -1878,6 +1898,11 @@ class UpdateFileWithImage(viewsets.ViewSet):
 
                 file_instance.save()
 
+                z = Files.objects.filter(id=file_id).first()
+                if z.is_file_disapproved==True:
+                    z.disapproved_file_is_edited=True
+                    z.save()
+
                 c = f"{project_id}_{file_instance.id}_filename"
                 e = ManufacturerName.objects.filter(id=manufacturer_name).first()
                 print("eee", e.name)
@@ -1915,6 +1940,11 @@ class UpdateFileWithImage(viewsets.ViewSet):
                     file_instance.is_deleted=True
 
                 file_instance.save()
+
+                z = Files.objects.filter(id=file_id).first()
+                if z.is_file_disapproved==True:
+                    z.disapproved_file_is_edited=True
+                    z.save()
 
                 # c = f"{project_id}_{file_instance.id}_filename"
                 # e = ManufacturerName.objects.filter(id=manufacturer_name).first()
