@@ -1787,7 +1787,7 @@ class DisapproveFileViewSet(viewsets.ViewSet):
             return CustomResponse({"message": "File not found."}, status=status.HTTP_400_BAD_REQUEST)
         if status_value == 1:
             # c = Files.objects.filter(id=file_id).update(is_file_disapproved=True,is_admin_approved=False, disapproved_reason=disapprove_reason)
-            c = Files.objects.filter(id=file_id).update(is_file_disapproved=True,submitted_to_admin=False, disapproved_reason=disapprove_reason, is_edited=False)
+            c = Files.objects.filter(id=file_id).update(disapproved_file_is_edited=False, is_file_disapproved=True,submitted_to_admin=False, disapproved_reason=disapprove_reason, is_edited=False)
             disapproved_file = Files.objects.filter(id=file_id).first()
             print("disss", disapproved_file.disapproved_count)
             disapproved_file.disapproved_count=1
@@ -1838,7 +1838,7 @@ class DisapproveFileViewSet(viewsets.ViewSet):
         if not file:
             return CustomResponse({"message": "File not found."}, status=status.HTTP_400_BAD_REQUEST)
         if status_value==1:
-            Files.objects.filter(id=file_id).update(is_admin_approved=True,submitted_to_admin=True,is_edited=False,is_file_disapproved=False, disapproved_count=0, disapproved_reason=None)
+            Files.objects.filter(id=file_id).update(is_admin_approved=True,submitted_to_admin=True,is_edited=False,is_file_disapproved=False, disapproved_count=0, disapproved_reason=None, disapproved_file_is_edited=False)
             return CustomResponse ({"message": "File Approved Successfully"}, status=status.HTTP_200_OK)
         if status_value==2:
             if file.disapproved_count<=4:
@@ -1848,7 +1848,7 @@ class DisapproveFileViewSet(viewsets.ViewSet):
                 disapproved_file.disapproved_count=disapproved_file.disapproved_count+1
                 disapproved_file.save()
                 print("disss2", disapproved_file.disapproved_count)
-                Files.objects.filter(id=file_id).update(is_admin_approved=False,submitted_to_admin=False, is_edited=False) #this will happen only when file is denied for 5 times, if file will be denied for 6th time, then - is_admin_approved = false , submitted_to_admin = false, is_edited = false, is_deleted = True
+                Files.objects.filter(id=file_id).update(is_admin_approved=False,submitted_to_admin=False, is_edited=False, disapproved_file_is_edited=False) #this will happen only when file is denied for 5 times, if file will be denied for 6th time, then - is_admin_approved = false , submitted_to_admin = false, is_edited = false, is_deleted = True
                 return CustomResponse ({"message": "File Approval Denied Successfully"}, status=status.HTTP_200_OK)
             else:
                 file.is_deleted=True

@@ -211,6 +211,7 @@ class Files(BaseModel):
     is_marked_deleted = models.BooleanField(default = False, null=True)
     is_deleted = models.BooleanField(default = False, null=True)
     is_edited = models.BooleanField(default = False, null=True)
+    disapproved_file_is_edited = models.BooleanField(default = False, null=True)
     deleted_at = models.DateTimeField(null=True, blank=True, verbose_name="File_Deleted_At")
     disapproved_on = models.DateTimeField(null=True, blank=True, verbose_name="File_Disapproved_on")
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_by_file', null=True)
