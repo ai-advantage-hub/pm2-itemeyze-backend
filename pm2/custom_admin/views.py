@@ -1954,7 +1954,7 @@ class UnapprovedUsersViewSet(viewsets.ViewSet):
             # type 1 for newly created users
             users = (
                 User.objects
-                .filter(is_admin_approved=False, is_email_verified=True, user_role=2)
+                .filter(is_admin_approved=False, is_email_verified=True, user_role=2, is_edited=False)
                 .exclude(email=None)
                 .order_by('-id', '-created_at')
                 .distinct('id')
@@ -2070,7 +2070,12 @@ class UnapprovedUsersViewSet(viewsets.ViewSet):
                     else:
                         # If the company exists, update user's company
                         c = Company.objects.filter(name=new_company).first()
-                        UserCompany.objects.filter(user_id=user_id).update(company_id=c.id)
+                        if UserCompany.objects.filter(user_id=user_id).exists():
+
+                            UserCompany.objects.filter(user_id=user_id).update(company_id=c.id)
+
+                        else:
+                            UserCompany.objects.create(user_id=user_id, company_id=c.id)
                 else:
                     # If new_company is not provided, use the existing company_name
                     if user.company_name:
