@@ -1651,6 +1651,26 @@ class DisapproveFileViewSet(viewsets.ViewSet):
             disapproved_file.disapproved_count=1
             disapproved_file.disapproved_on=timezone.now()
             disapproved_file.save() 
+            # Push Notification to users who created the project
+            title = f"Your File Has been Disapproved"
+            message = f"Hello!! Admin has Disapproved your file '{disapproved_file.file_name}'."
+            data = {
+                "title": title,
+                "message": message,
+            }
+
+            # notifyer = user
+            # if notifyer.is_notification_enabled == True:
+            print("line 1664 disapproved file created by=====",disapproved_file.created_by)
+            notification = UserNotification.objects.create(user=disapproved_file.created_by, title=title, message=message)
+            notification.save()
+            data.update({"notification_id": str(notification.id)})
+            print("notification id", notification.id)
+            print("data", data)
+            print("line 1670 disapproced file created by=====",disapproved_file.created_by.id)
+
+            send_notification_bulk(
+                user_ids=[disapproved_file.created_by.id], title=title, message=message, data=data)
             return CustomResponse({"message": "File disapproved successfully"}, status=status_code.HTTP_200_OK)
         else:
             return CustomResponse({"message": "Please provide valid status value."}, status=status.HTTP_400_BAD_REQUEST)
@@ -1951,18 +1971,18 @@ class ProjectViewSet(viewsets.ViewSet):
             return CustomResponse({"message": "Project Number already exists"}, status=status.HTTP_400_BAD_REQUEST)
         company = Company.objects.filter(id=company_id).first()
 
-        if Site.objects.filter(name=site_name.lower()).exists():
-            site = Site.objects.filter(name=site_name.lower()).first()
+        if Site.objects.filter(name=site_name).exists():
+            site = Site.objects.filter(name=site_name).first()
             print("site", site)
         else:
-            site = Site.objects.create(name=site_name.lower())
+            site = Site.objects.create(name=site_name)
             print("site2", site)
 
         # Create project without assigning users
         project = Project.objects.create(site_id_id=site.id, project_name=project_name, project_number=project_number, created_by_id=request.user.id,is_admin_approved=True)
         print("project 1 id", project.id)
         # project = Project.objects.filter(id=project1.id).first()
-        if site_name.lower()=='pm2':
+        if site_name=='PM2':
             project.is_internal=True
             project.save()
         else:
@@ -2082,14 +2102,14 @@ class ProjectViewSet(viewsets.ViewSet):
             c = Company.objects.filter(id=company_id).first()
 
         if site_name:
-            if Site.objects.filter(name=site_name.lower()).exists():
-                site = Site.objects.filter(name=site_name.lower()).first()
+            if Site.objects.filter(name=site_name).exists():
+                site = Site.objects.filter(name=site_name).first()
                 print("site", site)
             else:
-                site = Site.objects.create(name=site_name.lower())
+                site = Site.objects.create(name=site_name)
                 print("site2", site)
 
-            if site_name.lower()=='pm2':
+            if site_name=='PM2':
                 Project.objects.filter(id=project_id).update(is_internal=True)
             else:
                 Project.objects.filter(id=project_id).update(is_internal=False)

@@ -282,15 +282,15 @@ class ProjectViewSet(viewsets.ModelViewSet):
         if Project.objects.filter(project_name=project_name).exists():
             return CustomResponse({"message": "Project with this name already exists."}, status=status_code.HTTP_400_BAD_REQUEST)
         # site = Site.objects.create(name=site_name)
-        if Site.objects.filter(name=site_name.lower()).exists():
-            site = Site.objects.filter(name=site_name.lower()).first()
+        if Site.objects.filter(name=site_name).exists():
+            site = Site.objects.filter(name=site_name).first()
             print("site", site)
         else:
-            site = Site.objects.create(name=site_name.lower())
+            site = Site.objects.create(name=site_name)
             print("site2", site)
 
         project = Project.objects.create(created_by = request.user, project_name=project_name, site_id_id=site.id)
-        if site_name.lower()=='pm2':
+        if site_name=='PM2':
             project.is_internal=True
             project.save()
         else:
@@ -1811,12 +1811,13 @@ class UpdateFileWithImage(viewsets.ViewSet):
                 z = Files.objects.filter(id=file_id).first()
                 if z.is_file_disapproved==True:
                     z.disapproved_file_is_edited=True
+
                     z.save()
 
                 c = f"{project_id}_{file_instance.id}_filename"
                 e = ManufacturerName.objects.filter(id=new_manufacturer.id).first()
                 print("eee", e.name)
-                Files.objects.filter(id=file_instance.id).update(file_name=c, name_manufacturer=e.name)
+                Files.objects.filter(id=file_instance.id).update(file_name=c, name_manufacturer=e.name, manual_manufacturer_name=new_manufacturer, manufacturer_name_id=new_manufacturer.id)
                 if upload:
 
                     return {"message": "File updated with new Manufacturer Successfully", "file_id": file_instance.id, "thumbnail_url": thumbnail_url}
@@ -1863,7 +1864,7 @@ class UpdateFileWithImage(viewsets.ViewSet):
                 c = f"{project_id}_{file_instance.id}_filename"
                 e = ManufacturerName.objects.filter(id=manufacturer_name).first()
                 print("eee", e.name)
-                Files.objects.filter(id=file_instance.id).update(file_name=c, name_manufacturer=e.name)
+                Files.objects.filter(id=file_instance.id).update(file_name=c, name_manufacturer=e.name, manufacturer_name_id=manufacturer_name)
 
                 if upload:
                     return {"message": "File updated with existing Manufacturer successfully", "file_id": file_instance.id, "thumbnail_url": thumbnail_url}
