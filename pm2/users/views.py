@@ -46,6 +46,23 @@ from core.permissions import CheckUserRoleStatusPermission
 from django.db.models import Q
 from fcm_django.models import FCMDevice
 from core.pagination import CustomPagination
+from django.shortcuts import render
+from rest_framework import views
+from rest_framework.parsers import MultiPartParser
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework import status as status_code
+import boto3
+import uuid
+import os
+from PIL import Image
+from io import BytesIO
+import io 
+from pydub import AudioSegment
+from core.common_utils import check_file_size
+from config.local import AWS_S3_ACCESS_KEY_ID, AWS_S3_SECRET_ACCESS_KEY, AWS_STORAGE_BUCKET_NAME, AWS_S3_REGION_NAME
+from botocore.exceptions import NoCredentialsError
+from urllib.parse import urlparse
 
 
 #Onboarding
@@ -480,8 +497,7 @@ class FileDetailsViewSet(viewsets.ModelViewSet):
         file_id = data.get("file_id", [])
         if not file_id:
                 return CustomResponse({"message": "Please select file"}, status=status_code.HTTP_400_BAD_REQUEST)
-        # if not Files.objects.filter(id=file_id).exists():
-        #     return CustomResponse({"message": "File Not Found"}, status=status_code.HTTP_400_BAD_REQUEST)
+        
         for i in file_id:
             print("i",i)
             Files.objects.filter(id=i).update(submitted_to_admin=True)
@@ -517,7 +533,7 @@ class FileDetailsViewSet(viewsets.ModelViewSet):
 
         if list_type == '1':
             # type one for only created files that are not submitted to admin
-            # files = Files.objects.filter(project_id = id, created_by=request.user, submitted_to_admin=False, is_marked_deleted=False).all().values('id','file_name','thumbnail','manufacturer_name__full_name', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason')
+            
             if name == None:
                 files = Files.objects.filter(Q(created_by=request.user)|Q(created_by=None),project_id=id,submitted_to_admin=False, is_marked_deleted=False, is_deleted=False).all().values('id','file_name','created_at','thumbnail','name_manufacturer','manufacturer_name__name','manufacturer_name__id', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason','submitted_to_admin','disapproved_file_is_edited').order_by('-created_at')
             else:
@@ -527,7 +543,7 @@ class FileDetailsViewSet(viewsets.ModelViewSet):
                                         Q(created_by=request.user)|Q(created_by=None),project_id=id,submitted_to_admin=False, is_marked_deleted=False, is_deleted=False).all().values('id','file_name','created_at','thumbnail','name_manufacturer','manufacturer_name__name','manufacturer_name__id', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason','submitted_to_admin','disapproved_file_is_edited').order_by('-created_at')
         elif list_type == '2':
             # type 2 for those files which are submitted to admin
-            # files = Files.objects.filter(project_id=id, created_by=request.user, is_admin_approved=True, submitted_to_admin=True).all().values('id','file_name','thumbnail','manufacturer_name__full_name', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason')
+            
             if name == None:
                 files = Files.objects.filter(Q(created_by=request.user)|Q(created_by=None),project_id=id,is_admin_approved=True, submitted_to_admin=True, is_marked_deleted=False, is_deleted=False).all().values('id','file_name','created_at','thumbnail','name_manufacturer','manufacturer_name__name','manufacturer_name__id', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason','submitted_to_admin','disapproved_file_is_edited').order_by('-created_at')
 
@@ -540,13 +556,6 @@ class FileDetailsViewSet(viewsets.ModelViewSet):
         else:
             return CustomResponse({"message": "Invalid filter type"}, status=status_code.HTTP_400_BAD_REQUEST)
         
-        # file_obj = Files.objects.filter(Q(location__icontains=name) |
-        #                                 Q(manufacturer_name__full_name__icontains=name) |
-        #                                 Q(manufacturing_number__icontains=name),
-        #                                 project_id=id, is_admin_approved=True, is_marked_deleted=False, is_deleted=False).order_by('-created_at')
-
-        # if name:
-        #     files = files.filter(files_name__icontains=name)
 
         page = None
 
@@ -558,9 +567,7 @@ class FileDetailsViewSet(viewsets.ModelViewSet):
             return CustomResponse(pagination_class.get_paginated_response(page).data)
 
         return CustomResponse(files) 
-
-        # return CustomResponse(files)
-
+    
 
     def file_list2(self, request, id):
         """
@@ -571,7 +578,6 @@ class FileDetailsViewSet(viewsets.ModelViewSet):
         page_size = request.GET.get('page_size', '')
         data = request.data
         file_id = data.get("delete_file_id", [])
-        # delete_file_ids = request.GET.getlist('delete_file_ids', [])
         
         if not Project.objects.filter(id=id).exists():
             return CustomResponse({"message": "Project of this id does not exist"}, status=status_code.HTTP_400_BAD_REQUEST)
@@ -582,16 +588,9 @@ class FileDetailsViewSet(viewsets.ModelViewSet):
                 print("id", id2)
                 Files.objects.filter(id=id2).update(is_marked_deleted=True)
 
-        # if delete_file_ids:         
-        #     print("file ids", delete_file_ids)         
-        #     for file_id in delete_file_ids:             
-        #         print("id", file_id)             
-        #         Files.objects.filter(id=file_id).update(is_marked_deleted=True)
-
         print("list type", list_type)
         if list_type == '1':
             # type one for only created files that are not submitted to admin
-            # files = Files.objects.filter(project_id = id, created_by=request.user, submitted_to_admin=False, is_marked_deleted=False).all().values('id','file_name','thumbnail','manufacturer_name__full_name', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason')
             if name == None:
                 files = Files.objects.filter(project_id=id, created_by=request.user,submitted_to_admin=False, is_marked_deleted=False).all().values('id','file_name','thumbnail','name_manufacturer','manufacturer_name__name','manufacturer_name__id', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason','submitted_to_admin').order_by('-created_at')
             else:
@@ -602,7 +601,6 @@ class FileDetailsViewSet(viewsets.ModelViewSet):
 
         elif list_type == '2':
             # type 2 for those files which are submitted to admin
-            # files = Files.objects.filter(project_id=id, created_by=request.user, is_admin_approved=True, submitted_to_admin=True).all().values('id','file_name','thumbnail','manufacturer_name__full_name', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason')
             if name == None:
                 files = Files.objects.filter(project_id=id, created_by=request.user,is_admin_approved=True, submitted_to_admin=True, is_marked_deleted=False).all().values('id','file_name','thumbnail','name_manufacturer','manufacturer_name__name','manufacturer_name__id', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording','is_file_disapproved', 'disapproved_reason','submitted_to_admin').order_by('-created_at')
 
@@ -616,14 +614,6 @@ class FileDetailsViewSet(viewsets.ModelViewSet):
             return CustomResponse({"message": "Invalid filter type"}, status=status_code.HTTP_400_BAD_REQUEST)
         
         print("files", files)
-        
-        # file_obj = Files.objects.filter(Q(location__icontains=name) |
-        #                                 Q(manufacturer_name__full_name__icontains=name) |
-        #                                 Q(manufacturing_number__icontains=name),
-        #                                 project_id=id, is_admin_approved=True, is_marked_deleted=False, is_deleted=False).order_by('-created_at')
-
-        # if name:
-        #     files = files.filter(files_name__icontains=name)
 
         page = None
 
@@ -1214,24 +1204,6 @@ class ClearAllNotificationViewset(viewsets.ViewSet):
         return CustomResponse({"message":"All Notifications Cleared"}, status=status_code.HTTP_200_OK)
     
 
-from django.shortcuts import render
-from rest_framework import views
-from rest_framework.parsers import MultiPartParser
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-from rest_framework import status as status_code
-import boto3
-import uuid
-import os
-from PIL import Image
-from io import BytesIO
-import io 
-from pydub import AudioSegment
-from core.common_utils import check_file_size
-from config.local import AWS_S3_ACCESS_KEY_ID, AWS_S3_SECRET_ACCESS_KEY, AWS_STORAGE_BUCKET_NAME, AWS_S3_REGION_NAME
-from botocore.exceptions import NoCredentialsError
-from urllib.parse import urlparse
-
 
 class createfile(viewsets.ViewSet):
     
@@ -1783,24 +1755,9 @@ class UpdateFileWithImage(viewsets.ViewSet):
                 thumbnail_url = self.generate_signed_url(path_key)
                 print("thumbnail", thumbnail_url)
 
-            # else:
-            #     print("in else upload")
-            #     # If user wants to update the thumbnail to null
-            #     update_thumbnail_to_null = file_data.get('image_null', False)
-            #     if update_thumbnail_to_null:
-            #         thumbnail_url = None
-            #     else:
-            #         # Retrieve the old thumbnail URL from the database
-            #         file_id = file_data['file_id']
-            #         file_instance = Files.objects.get(id=file_id)
-            #         thumbnail_url = file_instance.thumbnail
             if thumbnail_null:
                 print("in if thumbnail null")
                 thumbnail_url = None
-                
-            # else:
-            #     print("in else upload")
-            #     thumbnail_url = None
 
             print("taking input")
             # Extract other necessary fields from file_data
@@ -1945,11 +1902,6 @@ class UpdateFileWithImage(viewsets.ViewSet):
                 if z.is_file_disapproved==True:
                     z.disapproved_file_is_edited=True
                     z.save()
-
-                # c = f"{project_id}_{file_instance.id}_filename"
-                # e = ManufacturerName.objects.filter(id=manufacturer_name).first()
-                # print("eee", e.name)
-                # Files.objects.filter(id=file_instance.id).update(file_name=c, name_manufacturer=e.name)
 
                 if upload:
                     return {"message": "File updated with successfully", "file_id": file_instance.id, "thumbnail_url": thumbnail_url}
