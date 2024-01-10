@@ -83,7 +83,7 @@ class SignupSerializer(serializers.ModelSerializer):
         with transaction.atomic():
             self.validate_email(validated_data.get('email'))
 
-            company_name = validated_data['company_name'].lower()
+            company_name = validated_data['company_name']
             user = User(email=validated_data['email'], full_name=validated_data['full_name'],
                         profile_pic=validated_data['profile_pic'])
             user.set_password(validated_data['password'])
