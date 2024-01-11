@@ -1817,7 +1817,7 @@ class UpdateFileWithImage(viewsets.ViewSet):
                 c = f"{project_id}_{file_instance.id}_filename"
                 e = ManufacturerName.objects.filter(id=new_manufacturer.id).first()
                 print("eee", e.name)
-                Files.objects.filter(id=file_instance.id).update(file_name=c, name_manufacturer=e.name, manual_manufacturer_name=new_manufacturer, manufacturer_name_id=new_manufacturer.id)
+                Files.objects.filter(id=file_instance.id).update(file_name=c, name_manufacturer=e.name, manual_manufacturer_name=e.name, manufacturer_name_id=new_manufacturer.id)
                 if upload:
 
                     return {"message": "File updated with new Manufacturer Successfully", "file_id": file_instance.id, "thumbnail_url": thumbnail_url}
