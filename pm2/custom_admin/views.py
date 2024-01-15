@@ -1727,6 +1727,26 @@ class DisapproveFileViewSet(viewsets.ViewSet):
                 disapproved_file.save()
                 print("disss2", disapproved_file.disapproved_count)
                 Files.objects.filter(id=file_id).update(is_admin_approved=False,submitted_to_admin=False, is_edited=False, disapproved_file_is_edited=False) #this will happen only when file is denied for 5 times, if file will be denied for 6th time, then - is_admin_approved = false , submitted_to_admin = false, is_edited = false, is_deleted = True
+                # Push Notification to users who created the project
+                title = f"Your File Has been Disapproved again"
+                message = f"Hello!! Admin has again Disapproved your file '{disapproved_file.file_name}'."
+                data = {
+                    "title": title,
+                    "message": message,
+                }
+
+                # notifyer = user
+                # if notifyer.is_notification_enabled == True:
+                print("line 1740 disapproved file created by=====",disapproved_file.created_by)
+                notification = UserNotification.objects.create(user=disapproved_file.created_by, title=title, message=message)
+                notification.save()
+                data.update({"notification_id": str(notification.id)})
+                print("notification id", notification.id)
+                print("data", data)
+                print("line 1746 disapproced file created by=====",disapproved_file.created_by.id)
+
+                send_notification_bulk(
+                    user_ids=[disapproved_file.created_by.id], title=title, message=message, data=data)
                 return CustomResponse ({"message": "File Approval Denied Successfully"}, status=status.HTTP_200_OK)
             else:
                 file.is_deleted=True
