@@ -83,7 +83,7 @@ class SignupSerializer(serializers.ModelSerializer):
         with transaction.atomic():
             self.validate_email(validated_data.get('email'))
 
-            company_name = validated_data['company_name'].lower()
+            company_name = validated_data['company_name']
             user = User(email=validated_data['email'], full_name=validated_data['full_name'],
                         profile_pic=validated_data['profile_pic'])
             user.set_password(validated_data['password'])
@@ -271,7 +271,7 @@ class FilesSerializer(serializers.ModelSerializer):
     class Meta:
         model = Files
         fields = ('id', 'manufacturer_name', 'thumbnail', 'file_name', 'manufacturing_number', 'location', 
-                  'quantity', 'project_details', 'is_marked_deleted', 'additional_details',
+                  'quantity', 'project_details', 'is_marked_deleted', 'additional_details', 'is_file_disapproved','disapproved_reason','submitted_to_admin','is_edited','disapproved_file_is_edited','created_at',
                   'recording', 'is_admin_approved', 'is_marked_deleted')
 
 
