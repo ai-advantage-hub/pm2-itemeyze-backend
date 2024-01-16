@@ -267,12 +267,17 @@ class FilesSerializer(serializers.ModelSerializer):
         FilesSerializer serializer to serialize through files model
     """
     manufacturer_name = ProjectManufacturerSerializer()
+    manufacturer_name__name = serializers.SerializerMethodField()
 
     class Meta:
         model = Files
-        fields = ('id', 'manufacturer_name', 'thumbnail', 'file_name', 'manufacturing_number', 'location', 
+        fields = ('id', 'manufacturer_name','manufacturer_name__name','name_manufacturer', 'thumbnail', 'file_name', 'manufacturing_number', 'location', 
                   'quantity', 'project_details', 'is_marked_deleted', 'additional_details', 'is_file_disapproved','disapproved_reason','submitted_to_admin','is_edited','disapproved_file_is_edited','created_at',
                   'recording', 'is_admin_approved', 'is_marked_deleted')
+        
+    def get_manufacturer_name__name(self, obj):
+        # Retrieve the manufacturer name from the related ManufacturerName model
+        return obj.manufacturer_name.name if obj.manufacturer_name else None
 
 
 class ProjectDetailsViewSerializer(serializers.ModelSerializer):
