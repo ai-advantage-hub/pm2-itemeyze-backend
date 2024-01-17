@@ -740,9 +740,45 @@ class ManageProjectViewSet(viewsets.ViewSet):
         return CustomResponse(serialized_file)   
         
     @action(detail=True, methods=['get'])
+    # def save_to_csv(self, request, pk=None):
+    #     """
+    #         method to export csv
+    #     """
+    #     # Retrieve the serialized data
+    #     queryset = Project.objects.all()
+    #     project = get_object_or_404(queryset, pk=pk)
+    #     serializer = ProjectDetailSerializer(project)
+    #     project_data = serializer.data
+    #     files_data = project_data.pop('files')
+    #     all_data = []
+    #     for file_data in files_data:
+    #         combined_data = {**project_data, **file_data}
+    #         all_data.append(combined_data) 
+    #     df = pd.DataFrame(all_data)
+    #     # Create a directory to store the CSV temporarily
+    #     export_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'exports')
+    #     if not os.path.exists(export_dir):
+    #         os.makedirs(export_dir)
+    #     csv_path = os.path.join(export_dir, f'project_detail_{pk}.csv')
+    #     df.to_csv(csv_path, index=False)
+    #     # Upload the CSV to AWS S3
+    #     s3 = boto3.resource('s3', aws_access_key_id=AWS_S3_ACCESS_KEY_ID, aws_secret_access_key=AWS_S3_SECRET_ACCESS_KEY)
+    #     file_name = f'project_detail_{pk}.csv'
+    #     path_key = f"csv/{uuid.uuid4()}_{file_name}"
+    #     try:
+    #         with open(csv_path, 'rb') as csv_file:
+    #             s3.Bucket(AWS_STORAGE_BUCKET_NAME).upload_fileobj(csv_file, path_key)
+    #         # After successful upload, delete local CSV (optional)
+    #         os.remove(csv_path)
+    #     except Exception:
+    #         return CustomResponse({"message": "Something went wrong during file uploading."},
+    #                               status=status_code.HTTP_400_BAD_REQUEST)
+    #     created_url = f'https://{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com/{path_key}'
+    #     return CustomResponse({"file_path": created_url})
+
     def save_to_csv(self, request, pk=None):
         """
-            method to export csv
+        method to export csv
         """
         # Retrieve the serialized data
         queryset = Project.objects.all()
@@ -750,31 +786,41 @@ class ManageProjectViewSet(viewsets.ViewSet):
         serializer = ProjectDetailSerializer(project)
         project_data = serializer.data
         files_data = project_data.pop('files')
-        all_data = []
-        for file_data in files_data:
-            combined_data = {**project_data, **file_data}
-            all_data.append(combined_data) 
-        df = pd.DataFrame(all_data)
-        # Create a directory to store the CSV temporarily
-        export_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'exports')
-        if not os.path.exists(export_dir):
-            os.makedirs(export_dir)
-        csv_path = os.path.join(export_dir, f'project_detail_{pk}.csv')
-        df.to_csv(csv_path, index=False)
-        # Upload the CSV to AWS S3
-        s3 = boto3.resource('s3', aws_access_key_id=AWS_S3_ACCESS_KEY_ID, aws_secret_access_key=AWS_S3_SECRET_ACCESS_KEY)
-        file_name = f'project_detail_{pk}.csv'
-        path_key = f"csv/{uuid.uuid4()}_{file_name}"
-        try:
-            with open(csv_path, 'rb') as csv_file:
-                s3.Bucket(AWS_STORAGE_BUCKET_NAME).upload_fileobj(csv_file, path_key)
-            # After successful upload, delete local CSV (optional)
-            os.remove(csv_path)
-        except Exception:
-            return CustomResponse({"message": "Something went wrong during file uploading."},
-                                  status=status_code.HTTP_400_BAD_REQUEST)
-        created_url = f'https://{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com/{path_key}'
-        return CustomResponse({"file_path": created_url})
+
+        # Check if there is any data before creating the DataFrame
+        if files_data:
+            all_data = []
+            for file_data in files_data:
+                combined_data = {**project_data, **file_data}
+                all_data.append(combined_data) 
+            df = pd.DataFrame(all_data)
+
+            # Create a directory to store the CSV temporarily
+            export_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'exports')
+            if not os.path.exists(export_dir):
+                os.makedirs(export_dir)
+            csv_path = os.path.join(export_dir, f'project_detail_{pk}.csv')
+            df.to_csv(csv_path, index=False)
+
+            # Upload the CSV to AWS S3
+            s3 = boto3.resource('s3', aws_access_key_id=AWS_S3_ACCESS_KEY_ID, aws_secret_access_key=AWS_S3_SECRET_ACCESS_KEY)
+            file_name = f'project_detail_{pk}.csv'
+            path_key = f"csv/{uuid.uuid4()}_{file_name}"
+            try:
+                with open(csv_path, 'rb') as csv_file:
+                    s3.Bucket(AWS_STORAGE_BUCKET_NAME).upload_fileobj(csv_file, path_key)
+                # After successful upload, delete local CSV (optional)
+                os.remove(csv_path)
+            except Exception as e:
+                return CustomResponse({"message": f"Something went wrong during file uploading. Error: {str(e)}"},
+                                    status=status_code.HTTP_400_BAD_REQUEST)
+
+            created_url = f'https://{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com/{path_key}'
+            return CustomResponse({"file_path": created_url})
+        else:
+            return CustomResponse({"message": "No data available for exporting to CSV."},
+                                status=status_code.HTTP_400_BAD_REQUEST)
+
     
 
 class ManageSubadminViewSet(viewsets.ViewSet):
