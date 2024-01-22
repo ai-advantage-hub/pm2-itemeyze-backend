@@ -1645,25 +1645,15 @@ class ApprovedFilesListingViewSet(viewsets.ViewSet):
             function to get list of approved files
         """
         page_size = request.GET.get('page_size', '')
-        # approved_files = Files.objects.filter(project_id=id, is_edited=False, is_deleted=False, submitted_to_admin=True).all().values('id','file_name', 'thumbnail','created_at','is_file_disapproved').order_by('-created_at')
-        # approved_files = Files.objects.filter(project_id=id, is_deleted=False, submitted_to_admin=True).all().values('id','file_name', 'thumbnail','created_at','is_file_disapproved').order_by('-created_at')
-        approved_files1 = Files.objects.filter(project_id=id, is_deleted=False, submitted_to_admin=True).all().values('id','file_name', 'thumbnail','created_at','is_file_disapproved').order_by('-created_at')
-        approved_files2 = Files.objects.filter(project_id=id, is_deleted=False, submitted_to_admin=False, is_file_disapproved=True).all().values('id','file_name', 'thumbnail','created_at','is_file_disapproved').order_by('-created_at')
-        d = Files.objects.filter(project_id=id, is_deleted=False, submitted_to_admin=True, is_marked_deleted=False).all().values_list('id',flat=True)
-        e = Files.objects.filter(project_id=id, is_deleted=False, submitted_to_admin=False, is_file_disapproved=True, is_marked_deleted=False).all().values_list('id',flat=True)
-        print("d",d)
-        print("d type",type(d))
-        print("e",e)
-        f = set(list(d)+list(e))
-        j = list(f)
-        print("jjjjj",len(j))
-        approved_files = Files.objects.filter(id__in=j).all().values('id','file_name', 'thumbnail','created_at','is_file_disapproved')
+        approved_files = Files.objects.filter(project_id=id, is_deleted=False, submitted_to_admin=True, is_marked_deleted=False,is_file_disapproved=False).order_by('-created_at').values('id','file_name', 'thumbnail','created_at','is_file_disapproved')
         page = None
         if page_size:
             pagination_class = self.pagination_class()
             page = pagination_class.paginate_queryset(approved_files, request)
 
         if page is not None:
+            pagination_class = self.pagination_class()
+            page = pagination_class.paginate_queryset(approved_files, request)
             return CustomResponse(pagination_class.get_paginated_response(page).data)
         return CustomResponse(approved_files)
 
@@ -1696,6 +1686,7 @@ class DisapproveFileViewSet(viewsets.ViewSet):
             print("disss", disapproved_file.disapproved_count)
             disapproved_file.disapproved_count=1
             disapproved_file.disapproved_on=timezone.now()
+            disapproved_file.status=1
             disapproved_file.save() 
             # Push Notification to users who created the project
             title = f"Your File Has been Disapproved"
@@ -1727,18 +1718,18 @@ class DisapproveFileViewSet(viewsets.ViewSet):
             function to give list of disapproved files
         """
         page_size = request.GET.get('page_size', '')
-        # disapproved_files = Files.objects.filter(project_id=id, is_admin_approved=False,is_file_disapproved=True, submitted_to_admin=True, is_edited=True, is_deleted=False).all().values('id','file_name','thumbnail','deleted_at')
-        disapproved_files = Files.objects.filter(project_id=id,is_file_disapproved=True, submitted_to_admin=True, is_edited=True, is_deleted=False).all().values('id','file_name','thumbnail','disapproved_on')
+        disapproved_files = Files.objects.filter(project_id=id,is_file_disapproved=True, is_deleted=False).values('id','file_name','thumbnail','disapproved_on','disapproved_status')
         page = None
         if page_size:
             pagination_class = self.pagination_class()
             page = pagination_class.paginate_queryset(disapproved_files, request)
 
         if page is not None:
+            pagination_class = self.pagination_class()
             return CustomResponse(pagination_class.get_paginated_response(page).data)
         return CustomResponse(disapproved_files)
     
-    def view_disapproved_file(self, request, id):
+    def view_disapproved_file(self,request,id):
         """
             function to view disapproved files
         """
@@ -1746,8 +1737,7 @@ class DisapproveFileViewSet(viewsets.ViewSet):
             return CustomResponse({"message":"file not found"}, status=status.HTTP_400_BAD_REQUEST)
         if Files.objects.filter(id=id, is_file_disapproved=False):
             return CustomResponse({"message":"this file is not disapproved"}, status=status.HTTP_400_BAD_REQUEST)
-        # disapproved_file = Files.objects.filter(id=id,is_admin_approved=False, is_file_disapproved=True, is_deleted=False).all().values('id', 'file_name', 'thumbnail','manufacturer_name','manufacturing_number','quantity','project_details','additional_details','recording', 'location', 'location_points','is_file_disapproved')
-        disapproved_file = Files.objects.filter(id=id,is_file_disapproved=True, is_deleted=False).all().values('id', 'file_name', 'thumbnail','name_manufacturer','manufacturer_name','manufacturing_number','quantity','project_details','additional_details','recording', 'location', 'location_points','is_file_disapproved')
+        disapproved_file = Files.objects.filter(id=id,is_file_disapproved=True, is_deleted=False).all().values('id', 'file_name', 'thumbnail','name_manufacturer','manufacturer_name','manufacturing_number','quantity','project_details','additional_details','recording', 'location', 'location_points','is_file_disapproved','disapproved_status')
         return CustomResponse(disapproved_file)
     
     def approve(self, request):
@@ -1762,7 +1752,7 @@ class DisapproveFileViewSet(viewsets.ViewSet):
         if not file:
             return CustomResponse({"message": "File not found."}, status=status.HTTP_400_BAD_REQUEST)
         if status_value==1:
-            Files.objects.filter(id=file_id).update(is_admin_approved=True,submitted_to_admin=True,is_edited=False,is_file_disapproved=False, disapproved_count=0, disapproved_reason=None, disapproved_file_is_edited=False)
+            Files.objects.filter(id=file_id).update(is_admin_approved=True,submitted_to_admin=True,is_edited=False,is_file_disapproved=False, disapproved_count=0, disapproved_reason=None, disapproved_file_is_edited=False,disapproved_status=0)
             return CustomResponse ({"message": "File Approved Successfully"}, status=status.HTTP_200_OK)
         if status_value==2:
             if file.disapproved_count<=4:
@@ -1772,7 +1762,7 @@ class DisapproveFileViewSet(viewsets.ViewSet):
                 disapproved_file.disapproved_count=disapproved_file.disapproved_count+1
                 disapproved_file.save()
                 print("disss2", disapproved_file.disapproved_count)
-                Files.objects.filter(id=file_id).update(is_admin_approved=False,submitted_to_admin=False, is_edited=False, disapproved_file_is_edited=False) #this will happen only when file is denied for 5 times, if file will be denied for 6th time, then - is_admin_approved = false , submitted_to_admin = false, is_edited = false, is_deleted = True
+                Files.objects.filter(id=file_id).update(is_admin_approved=False,submitted_to_admin=False, is_edited=False, disapproved_file_is_edited=False,disapproved_status=1) #this will happen only when file is denied for 5 times, if file will be denied for 6th time, then - is_admin_approved = false , submitted_to_admin = false, is_edited = false, is_deleted = True
                 # Push Notification to users who created the project
                 title = f"Your File Has been Disapproved again"
                 message = f"Hello!! Admin has again Disapproved your file '{disapproved_file.file_name}'."
@@ -1796,6 +1786,7 @@ class DisapproveFileViewSet(viewsets.ViewSet):
                 return CustomResponse ({"message": "File Approval Denied Successfully"}, status=status.HTTP_200_OK)
             else:
                 file.is_deleted=True
+                file.disapproved_status=0
                 file.save()
         else:
             return CustomResponse ({"message": "Please Provide Valid Status Value"}, status=status.HTTP_400_BAD_REQUEST)
@@ -2115,7 +2106,7 @@ class ProjectViewSet(viewsets.ViewSet):
         ).values('id', 'project_name', 'created_by__full_name', 'num_files', 'site_id_id','site_id__name').order_by("-created_at")
 
         if name:
-            projects = projects.filter(project_name__icontains=name)
+            projects = projects.filter(Q(project_name__icontains=name) | Q(site_id__name__icontains=name))
 
         page = None
 
@@ -2124,6 +2115,8 @@ class ProjectViewSet(viewsets.ViewSet):
             page = pagination_class.paginate_queryset(projects, request)
 
         if page is not None:
+            pagination_class = self.pagination_class()
+            page = pagination_class.paginate_queryset(projects, request)
             return CustomResponse(pagination_class.get_paginated_response(page).data)
 
         return CustomResponse(projects)   

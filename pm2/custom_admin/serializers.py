@@ -103,10 +103,11 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
     site_name = serializers.CharField(source='site_id.name', read_only=True)
     created_by = serializers.SerializerMethodField()
     files = serializers.SerializerMethodField()
+    files_count=serializers.SerializerMethodField()
 
     class Meta:
         model = Project
-        fields = ['id','project_name', 'project_number','created_by','created_at','site_id_id','site_name', 'files']
+        fields = ['id','project_name', 'project_number','created_by','created_at','site_id_id','site_name', 'files','files_count']
 
     def get_created_by(self, obj):
         try:
@@ -117,6 +118,13 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
     def get_files(self, obj):
         approved_files = obj.project_files.filter(is_marked_deleted=False, is_deleted=False, is_admin_approved=True)
         return FileSerializer(approved_files, many=True).data
+    
+    def get_files_count(self, obj):
+        disapproved_count = Files.objects.filter(project_id=obj.id,is_file_disapproved=True, is_deleted=False).count()
+        print(disapproved_count)
+        deleted_count = Files.objects.filter(project_id=obj.id,is_marked_deleted=True).count()
+        total_count=disapproved_count+deleted_count
+        return total_count 
 
 
 class FilesSerializer(serializers.ModelSerializer):
@@ -141,6 +149,7 @@ class FilesPointSerializer(serializers.ModelSerializer):
     """
 
     location_points = serializers.SerializerMethodField()
+    full_name = serializers.SerializerMethodField()
     
     class Meta:
         model = Files
@@ -151,6 +160,14 @@ class FilesPointSerializer(serializers.ModelSerializer):
             return {'longitude': obj.location_points.x, 'latitude': obj.location_points.y}
         return None
     
+    def get_full_name(self, obj):
+        try:
+            user = obj.created_by
+            return user.full_name if user else None
+        except AttributeError:
+            return None
+
+
 
 #Manage Users 
 

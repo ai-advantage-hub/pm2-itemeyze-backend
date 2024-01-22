@@ -190,6 +190,14 @@ class Files(BaseModel):
     """
         ProjecDetails model to see the details of the projects
     """
+    class DisapprovedType(models.IntegerChoices):
+        """
+            disapproved status type Models used for the disapproved status
+        """
+        No = 0
+        PENDING = 1
+        RESUBMITTED = 2
+
     # manufacturer_name = models.ForeignKey(ManufacturerName, on_delete=models.CASCADE, related_name='name_manufacture', null=True)
     manufacturer_name = models.ForeignKey(ManufacturerName,on_delete=models.SET_NULL,related_name='name_manufacture',null=True)
     name_manufacturer = models.CharField(blank=True, null=True, max_length=254, verbose_name='nae_manufacturer')
@@ -216,6 +224,7 @@ class Files(BaseModel):
     disapproved_on = models.DateTimeField(null=True, blank=True, verbose_name="File_Disapproved_on")
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_by_file', null=True)
     disapproved_count = models.IntegerField(default=0,blank=True, null=True, verbose_name='diaspproved_count')
+    disapproved_status= models.IntegerField(choices=DisapprovedType.choices,default=0,verbose_name='disapproved_status')
     
     # Add other fields as needed
 

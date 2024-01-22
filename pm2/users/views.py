@@ -738,6 +738,7 @@ class EditFileViewSet(viewsets.ModelViewSet):
             print("c id",c.is_file_disapproved)
             if c.is_file_disapproved==True:
                 c.disapproved_file_is_edited=True
+                c.disapproved_status=2
                 c.save()
             file_created = Files.objects.filter(id=id).all().values().first()
             file_details = {
@@ -757,6 +758,7 @@ class EditFileViewSet(viewsets.ModelViewSet):
             c = Files.objects.filter(id=id).first()
             if c.is_file_disapproved==True:
                 c.disapproved_file_is_edited=True
+                c.disapproved_status=2
                 c.save()
             file_created = Files.objects.filter(id=id).all().values().first()
             file_details = {
@@ -778,6 +780,7 @@ class EditFileViewSet(viewsets.ModelViewSet):
             print("c id",c.is_file_disapproved)
             if c.is_file_disapproved==True:
                 c.disapproved_file_is_edited=True
+                c.disapproved_status=2
                 c.save()
             file_created = Files.objects.filter(id=id).all().values().first()
             file_details = {
@@ -1806,6 +1809,7 @@ class UpdateFileWithImage(viewsets.ViewSet):
                 if is_file_disapproved:
                     file_instance.submitted_to_admin=True
                     file_instance.is_edited=True
+                    file_instance.disapproved_status=2
 
                 file_instance.save()
 
@@ -1854,6 +1858,7 @@ class UpdateFileWithImage(viewsets.ViewSet):
                 if is_file_disapproved:
                     file_instance.submitted_to_admin=True
                     file_instance.is_deleted=True
+                    file_instance.disapproved_status=2
 
                 file_instance.save()
 
@@ -1897,6 +1902,7 @@ class UpdateFileWithImage(viewsets.ViewSet):
                 if is_file_disapproved:
                     file_instance.submitted_to_admin=True
                     file_instance.is_deleted=True
+                    file_instance.disapproved_status=2
 
                 file_instance.save()
 
