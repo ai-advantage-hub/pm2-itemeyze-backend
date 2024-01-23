@@ -153,6 +153,7 @@ class Project(BaseModel):
     deleted_at = models.DateTimeField(null=True, blank=True, verbose_name="Project_Deleted_At")
     site_id = models.ForeignKey(Site,blank=True,on_delete=models.CASCADE, related_name='site_id', null=True)
     is_internal = models.BooleanField(default=False, null=True)
+    company = models.ForeignKey(Company,on_delete=models.SET_NULL, related_name='company_id', null=True)
 
     def __str__(self):
         return self.project_name

@@ -104,10 +104,11 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
     created_by = serializers.SerializerMethodField()
     files = serializers.SerializerMethodField()
     files_count=serializers.SerializerMethodField()
+    company_name = serializers.SerializerMethodField()
 
     class Meta:
         model = Project
-        fields = ['id','project_name', 'project_number','created_by','created_at','site_id_id','site_name', 'files','files_count']
+        fields = ['id','project_name', 'project_number','created_by','created_at','site_id_id','site_name', 'files','files_count','company_name']
 
     def get_created_by(self, obj):
         try:
@@ -125,7 +126,9 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
         deleted_count = Files.objects.filter(project_id=obj.id,is_marked_deleted=True).count()
         total_count=disapproved_count+deleted_count
         return total_count 
-
+    
+    def get_company_name(self, obj):
+        return obj.company.name if obj.company else None
 
 class FilesSerializer(serializers.ModelSerializer):
     manufacturer_name = serializers.PrimaryKeyRelatedField(queryset=ManufacturerName.objects.all())

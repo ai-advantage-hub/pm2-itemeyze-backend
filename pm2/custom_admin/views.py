@@ -25,7 +25,7 @@ from config.local import AWS_S3_ACCESS_KEY_ID, AWS_S3_SECRET_ACCESS_KEY, AWS_STO
 import boto3
 import uuid
 from rest_framework import status as status_code
-from django.db.models import Q
+from django.db.models import Q,F
 from core.pagination import CustomPagination
 from django.db import transaction
 from django.db.models import Count, F, IntegerField, ExpressionWrapper
@@ -2036,7 +2036,7 @@ class ProjectViewSet(viewsets.ViewSet):
             print("site2", site)
 
         # Create project without assigning users
-        project = Project.objects.create(site_id_id=site.id, project_name=project_name, project_number=project_number, created_by_id=request.user.id,is_admin_approved=True)
+        project = Project.objects.create(site_id_id=site.id, project_name=project_name, project_number=project_number, created_by_id=request.user.id,is_admin_approved=True,company_id=company.id)
         print("project 1 id", project.id)
         # project = Project.objects.filter(id=project1.id).first()
         if site_name=='PM2':
@@ -2088,25 +2088,28 @@ class ProjectViewSet(viewsets.ViewSet):
         name = request.GET.get('name', None)
         page_size = request.GET.get('page_size', '')
         project_type = request.GET.get('project_type', None)
-
+        common_fields = [
+            'id', 'project_name', 'created_by__full_name', 'num_files', 'site_id_id', 'site_id__name'
+        ]
         if project_type =='1':
-            projects = Project.objects.filter(is_admin_approved=True, is_marked_deleted=False, is_internal=True).annotate(
-            num_files=Count('project_files', filter=Q(project_files__is_admin_approved=True))
-        ).values('id', 'project_name', 'created_by__full_name', 'num_files','site_id_id','site_id__name').order_by("-created_at")
+              projects = Project.objects.filter(is_admin_approved=True, is_marked_deleted=False, is_internal=True).annotate(
+                    num_files=Count('project_files', filter=Q(project_files__is_admin_approved=True)),
+                    company_name=F('company__name')
+                ).values(*common_fields, 'company_name').order_by("-created_at")
             
         elif project_type == '2':
             projects = Project.objects.filter(is_admin_approved=True, is_marked_deleted=False, is_internal=False).annotate(
-            num_files=Count('project_files', filter=Q(project_files__is_admin_approved=True))
-        ).values('id', 'project_name', 'created_by__full_name', 'num_files','site_id_id','site_id__name').order_by("-created_at")
+            num_files=Count('project_files', filter=Q(project_files__is_admin_approved=True),company_name=F('company__name'))
+        ).values(*common_fields,'compnay_name').order_by("-created_at")
             
             
         else:
             projects = Project.objects.filter(is_admin_approved=True, is_marked_deleted=False).annotate(
-            num_files=Count('project_files', filter=Q(project_files__is_admin_approved=True))
-        ).values('id', 'project_name', 'created_by__full_name', 'num_files', 'site_id_id','site_id__name').order_by("-created_at")
+            num_files=Count('project_files', filter=Q(project_files__is_admin_approved=True),company_name=F('company_name'))
+        ).values(*common_fields,'company_name').order_by("-created_at")
 
         if name:
-            projects = projects.filter(Q(project_name__icontains=name) | Q(site_id__name__icontains=name))
+            projects = projects.filter(Q(project_name__icontains=name) | Q(site_id__name__icontains=name) | Q(company_id__name__icontains=name))
 
         page = None
 
@@ -2159,6 +2162,7 @@ class ProjectViewSet(viewsets.ViewSet):
         
         if company_id:
             c = Company.objects.filter(id=company_id).first()
+            Project.objects.filter(id=project_id).update(company_id=c.id)
 
         if site_name:
             if Site.objects.filter(name=site_name).exists():
