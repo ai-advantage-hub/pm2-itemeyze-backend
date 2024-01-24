@@ -1726,6 +1726,7 @@ class DisapproveFileViewSet(viewsets.ViewSet):
 
         if page is not None:
             pagination_class = self.pagination_class()
+            page = pagination_class.paginate_queryset(disapproved_files, request)
             return CustomResponse(pagination_class.get_paginated_response(page).data)
         return CustomResponse(disapproved_files)
     
