@@ -2099,13 +2099,13 @@ class ProjectViewSet(viewsets.ViewSet):
             
         elif project_type == '2':
             projects = Project.objects.filter(is_admin_approved=True, is_marked_deleted=False, is_internal=False).annotate(
-            num_files=Count('project_files', filter=Q(project_files__is_admin_approved=True),company_name=F('company__name'))
-        ).values(*common_fields,'compnay_name').order_by("-created_at")
+            num_files=Count('project_files', filter=Q(project_files__is_admin_approved=True)),company_name=F('company__name')
+        ).values(*common_fields,'company_name').order_by("-created_at")
             
             
         else:
             projects = Project.objects.filter(is_admin_approved=True, is_marked_deleted=False).annotate(
-            num_files=Count('project_files', filter=Q(project_files__is_admin_approved=True),company_name=F('company_name'))
+            num_files=Count('project_files', filter=Q(project_files__is_admin_approved=True)),company_name=F('company__name')
         ).values(*common_fields,'company_name').order_by("-created_at")
 
         if name:
