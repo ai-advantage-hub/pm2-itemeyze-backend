@@ -300,7 +300,7 @@ def send_company_approve_to_user(email,company_name):
         method used to send approve company to user
     """
     try:
-        ctx_dict = {"company": company_name}
+        ctx_dict = {"company_name": company_name}
         html_template = "approve_company.html"
         subject = f"YOUR COMPANY {company_name} HAS BEEN APPROVED"
         send_html_mail_to_single_user(subject, email, html_template, ctx_dict)
