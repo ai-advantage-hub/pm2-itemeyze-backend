@@ -1687,6 +1687,7 @@ class DisapproveFileViewSet(viewsets.ViewSet):
             disapproved_file.disapproved_count=1
             disapproved_file.disapproved_on=timezone.now()
             disapproved_file.status=1
+            disapproved_file.disapproved_status=1
             disapproved_file.save() 
             # Push Notification to users who created the project
             title = f"Your File Has been Disapproved"
@@ -1738,7 +1739,7 @@ class DisapproveFileViewSet(viewsets.ViewSet):
             return CustomResponse({"message":"file not found"}, status=status.HTTP_400_BAD_REQUEST)
         if Files.objects.filter(id=id, is_file_disapproved=False):
             return CustomResponse({"message":"this file is not disapproved"}, status=status.HTTP_400_BAD_REQUEST)
-        disapproved_file = Files.objects.filter(id=id,is_file_disapproved=True, is_deleted=False).all().values('id', 'file_name', 'thumbnail','name_manufacturer','manufacturer_name','manufacturing_number','quantity','project_details','additional_details','recording', 'location', 'location_points','is_file_disapproved','disapproved_status')
+        disapproved_file = Files.objects.filter(id=id,is_file_disapproved=True, is_deleted=False).annotate(full_name=F('created_by__full_name')).values('id', 'file_name', 'thumbnail','name_manufacturer','manufacturer_name','manufacturing_number','quantity','project_details','additional_details','recording', 'location', 'location_points','is_file_disapproved','disapproved_status','full_name')
         return CustomResponse(disapproved_file)
     
     def approve(self, request):
