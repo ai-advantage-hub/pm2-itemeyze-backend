@@ -294,3 +294,15 @@ def send_notification_bulk(user_ids, title, message, data):
     except Exception as e:
         print("HEREError", e)
     return True
+
+def send_company_approve_to_user(email,company_name):
+    """
+        method used to send approve company to user
+    """
+    try:
+        ctx_dict = {"company": company_name}
+        html_template = "approve_company.html"
+        subject = f"YOUR COMPANY {company_name} HAS BEEN APPROVED"
+        send_html_mail_to_single_user(subject, email, html_template, ctx_dict)
+    except Exception as e:
+        print("error", e)

@@ -10,7 +10,7 @@ from django.contrib.auth.hashers import check_password
 from custom_admin.models import *
 from core.response import CustomResponse
 from django.db.models import Count
-from core.common_utils import generate_otp, send_verification_email, send_subadmin_credentials, send_notification_bulk, logged_out_users, subadmin_deleted, send_updated_subadmin_credentials
+from core.common_utils import generate_otp, send_verification_email, send_subadmin_credentials, send_notification_bulk, logged_out_users, subadmin_deleted, send_updated_subadmin_credentials,send_company_approve_to_user
 from core.permissions import CheckAdminRoleStatusPermission, CheckAdminOrSubAdminRoleStatusPermission
 from rest_framework.permissions import IsAuthenticated
 from users.models import OTP
@@ -1970,6 +1970,10 @@ class UnapprovedUsersViewSet(viewsets.ViewSet):
                             UserCompany.objects.filter(user_id=user_id).update(company_id=created_company.id)
                         else:
                             UserCompany.objects.create(user_id=user_id, company_id=created_company.id)
+                        try:
+                            send_company_approve_to_user(user.email, new_company)
+                        except BaseException:
+                            pass
                     else:
                         # If the company exists, update user's company
                         c = Company.objects.filter(name=new_company).first()
@@ -1979,6 +1983,10 @@ class UnapprovedUsersViewSet(viewsets.ViewSet):
 
                         else:
                             UserCompany.objects.create(user_id=user_id, company_id=c.id)
+                        try:
+                            send_company_approve_to_user(user.email, c.name)
+                        except BaseException:
+                            pass
                 else:
                     # If new_company is not provided, use the existing company_name
                     if user.company_name:
@@ -1987,7 +1995,10 @@ class UnapprovedUsersViewSet(viewsets.ViewSet):
                             UserCompany.objects.filter(user_id=user_id).update(company_id=existing_company.id)
                         else:
                             UserCompany.objects.create(user_id=user_id, company_id=existing_company.id)
-
+                        try:
+                            send_company_approve_to_user(user.email, existing_company.name)
+                        except BaseException:
+                            pass
                 # Clear the user's company_name
                 user.company_name = None
                 user.save()
