@@ -1469,7 +1469,7 @@ class DeletedFilesViewSet(viewsets.ViewSet):
                 return CustomResponse({"message": "Please select file"}, status=status_code.HTTP_400_BAD_REQUEST)
         for i in file_id:
             print("i",i)        
-            Files.objects.filter(id=i).update(is_deleted=False, is_admin_approved=True, is_edited=False, disapproved_count=0,is_file_disapproved=False,disapproved_file_is_edited=False,disapprove_reason='')
+            Files.objects.filter(id=i).update(is_deleted=False, is_admin_approved=True, is_edited=False, disapproved_count=0,is_file_disapproved=False,disapproved_file_is_edited=False,disapproved_reason='')
         return CustomResponse({"Message": "File Restored Successfully"}, status=status_code.HTTP_200_OK)
 
 
