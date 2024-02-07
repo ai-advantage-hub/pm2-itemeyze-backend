@@ -17,6 +17,7 @@ from core.common_utils import check_file_size
 from config.local import AWS_S3_ACCESS_KEY_ID, AWS_S3_SECRET_ACCESS_KEY, AWS_STORAGE_BUCKET_NAME, AWS_S3_REGION_NAME
 from botocore.exceptions import NoCredentialsError
 from urllib.parse import urlparse
+import pillow_heif
 
 
 # Create your views here.
@@ -103,6 +104,10 @@ class UploadFileView(views.APIView):
            compress_image method to compress the images 
         """
         try:
+            if image.lower().endswith(('.heic', '.heif','HEIC')):
+                img = pillow_heif.read(image)
+            else:
+                img = Image.open(image)
             print("Compressing image...")
             img = Image.open(image)
             print("Compressing image 2...")
