@@ -63,7 +63,7 @@ class UploadFileView(views.APIView):
             file_extension = os.path.splitext(upload.name)[1].lower()
             file_full_name = upload.name
             updated_filename = file_full_name.replace(' ', '_')
-            if file_extension in [".jpg", ".jpeg", ".png"]:
+            if file_extension in [".jpg", ".jpeg", ".png",".heic",'.HEIC']:
                 path_key = "image/{}_{}".format(uuid.uuid4(), updated_filename)
                 # Compress the image
                 compressed_image = self.compress_image(upload)
