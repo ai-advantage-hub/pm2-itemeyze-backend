@@ -17,7 +17,7 @@ from core.common_utils import check_file_size
 from config.local import AWS_S3_ACCESS_KEY_ID, AWS_S3_SECRET_ACCESS_KEY, AWS_STORAGE_BUCKET_NAME, AWS_S3_REGION_NAME
 from botocore.exceptions import NoCredentialsError
 from urllib.parse import urlparse
-import pillow_heif
+from pillow_heif import register_heif_opener
 
 
 # Create your views here.
@@ -101,25 +101,29 @@ class UploadFileView(views.APIView):
 
     def compress_image(self, image):
         """
-           compress_image method to compress the images 
+           compress_image method to compress the images   
         """
         try:
-            if image.lower().endswith(('.heic', '.heif','HEIC')):
-                img = pillow_heif.read(image)
-            else:
-                img = Image.open(image)
-            print("Compressing image...")
+            # Register the HEIF opener with Pillow
+            register_heif_opener()
+
+            # Open the image with Pillow
             img = Image.open(image)
-            print("Compressing image 2...")
-            img.thumbnail((800, 800))
-            print("Compressing image 3...")
+
+            # Compress the image
+            print("Compressing image...")
+            img.thumbnail((800,   800))
+
+            # Save the compressed image to an in-memory buffer
             output_buffer = BytesIO()
-            print("Compressing image 4...")
+            print("Saving compressed image...")
             img.save(output_buffer, format="png")
             output_buffer.seek(0)
-            print("Compressed image...")
+
+            print("Compressed image ready.")
             return output_buffer
-        except Exception:
+        except Exception as e:
+            print(f"An error occurred: {e}")
             return None
 
     def compress_audio(self, audio):
