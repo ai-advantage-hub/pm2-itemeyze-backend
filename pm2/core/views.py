@@ -117,7 +117,7 @@ class UploadFileView(views.APIView):
             # Save the compressed image to an in-memory buffer
             output_buffer = BytesIO()
             print("Saving compressed image...")
-            img.save(output_buffer, format="png")
+            img.save(output_buffer, format="png",quailty=90)
             output_buffer.seek(0)
 
             print("Compressed image ready.")
