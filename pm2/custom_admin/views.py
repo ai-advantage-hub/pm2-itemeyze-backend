@@ -2178,11 +2178,43 @@ class ProjectViewSet(viewsets.ViewSet):
     
     def project_view(self, request, pk=None):
         """
-            method to retrieve project
+            method to view project
         """
         project = get_object_or_404(self.queryset, pk=pk)
         serializer = ProjectViewSerializer(project,context={'request': request})
 
+        return CustomResponse(serializer.data)
+    
+    def project_update(self, request, pk=None):
+        """
+            Method to update a project
+        """
+        project = get_object_or_404(self.queryset, pk=pk)
+        data = request.data
+
+        # Update the fields directly
+        project.project_name = data.get('project_name', project.project_name)
+        project.project_number = data.get('project_number', project.project_number)
+        project.company_id = data.get('company_id', project.company_id)
+
+        # Update ownership to admin if requested
+        if data.get('ownership_to_admin', False):
+            project.created_by = request.user
+
+        # Update users assignment
+        assigned_users_ids = data.get('assigned_to', [])
+        project.users.clear()
+        project.users.add(*User.objects.filter(id__in=assigned_users_ids))
+
+        # Update site assignment
+        site_name = data.get('site_name')
+        if site_name:
+            site, _ = Site.objects.get_or_create(name=site_name)
+            project.site_id = site
+
+        project.save()
+
+        serializer = ProjectViewSerializer(project, context={'request': request})
         return CustomResponse(serializer.data)
 
     def project_approve(self, request):

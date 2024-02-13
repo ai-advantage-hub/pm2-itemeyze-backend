@@ -110,6 +110,7 @@ urlpatterns = [
     path("project_list", views.ProjectViewSet.as_view({"get": "project_list"}), name="project_list"),
     path("project_details/<int:pk>", views.ProjectViewSet.as_view({"get": "project_details"}), name="project_details"),
     path("project_view/<int:pk>", views.ProjectViewSet.as_view({"get": "project_view"}), name="project_view"),
+    path("project_update/<int:pk>", views.ProjectViewSet.as_view({"put": "project_update"}), name="project_update"),
     path("project_approve", views.ProjectViewSet.as_view({"put": "project_approve"}), name="project_approve"),
 
     path("create_manufacturer", views.ManageManufacturerNameViewSet.as_view({"post": "create"}), name="create_manufacturer"),
