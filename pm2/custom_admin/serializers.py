@@ -130,6 +130,35 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
     def get_company_name(self, obj):
         return obj.company.name if obj.company else None
 
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'full_name']
+
+class ProjectViewSerializer(serializers.ModelSerializer):
+    site_name = serializers.CharField(source='site_id.name', read_only=True)
+    created_by = serializers.SerializerMethodField()
+    company_name = serializers.SerializerMethodField()
+    created_by_admin = serializers.SerializerMethodField()
+    project_users = UserSerializer(source='users', many=True, read_only=True)
+
+    class Meta:
+        model = Project
+        fields = ['id','project_name', 'project_number','created_by','created_at','site_id_id','site_name','company_name','company_id','created_by_admin','project_users']
+
+    def get_created_by(self, obj):
+        try:
+            return obj.created_by.full_name
+        except AttributeError:            
+            return None
+     
+    def get_company_name(self, obj):
+        return obj.company.name if obj.company else None
+    
+    def get_created_by_admin(self, obj):
+        request=self.context.get('request')
+        return obj.created_by == request.user
+
 class FilesSerializer(serializers.ModelSerializer):
     manufacturer_name = serializers.PrimaryKeyRelatedField(queryset=ManufacturerName.objects.all())
     #project = serializers.PrimaryKeyRelatedField(queryset=Project.objects.all())

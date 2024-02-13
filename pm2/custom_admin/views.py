@@ -2,7 +2,7 @@ from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, viewsets, mixins
-from custom_admin.serializers import AdminLoginSerializer,AdminResetPasswordSerializer, CreateFileDetailsSerializer, ForgotPasswordSerializer, ProjectDetailSerializer,FilesSerializer,FilesPointSerializer, UserListAdminSerializer,UserDetailSerializer, UserListingSerializer
+from custom_admin.serializers import AdminLoginSerializer,AdminResetPasswordSerializer, CreateFileDetailsSerializer, ForgotPasswordSerializer, ProjectDetailSerializer,FilesSerializer,FilesPointSerializer, UserListAdminSerializer,UserDetailSerializer, UserListingSerializer,ProjectViewSerializer
 from django.contrib.auth import authenticate
 from rest_framework.authtoken.models import Token
 from users.models import Company, UserCompany, User,Project,Files, UserNotification, Site, ManufacturerName
@@ -2173,6 +2173,15 @@ class ProjectViewSet(viewsets.ViewSet):
         """
         project = get_object_or_404(self.queryset, pk=pk)
         serializer = ProjectDetailSerializer(project)
+
+        return CustomResponse(serializer.data)
+    
+    def project_view(self, request, pk=None):
+        """
+            method to retrieve project
+        """
+        project = get_object_or_404(self.queryset, pk=pk)
+        serializer = ProjectViewSerializer(project,context={'request': request})
 
         return CustomResponse(serializer.data)
 
