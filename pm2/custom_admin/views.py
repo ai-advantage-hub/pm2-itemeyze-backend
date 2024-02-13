@@ -2105,21 +2105,49 @@ class ProjectViewSet(viewsets.ViewSet):
             'id', 'project_name', 'created_by__full_name', 'num_files', 'site_id_id', 'site_id__name'
         ]
         if project_type =='1':
-              projects = Project.objects.filter(is_admin_approved=True, is_marked_deleted=False, is_internal=True).annotate(
-                    num_files=Count('project_files', filter=Q(project_files__is_admin_approved=True)),
-                    company_name=F('company__name')
-                ).values(*common_fields, 'company_name').order_by("-created_at")
+            projects = Project.objects.filter(
+                is_admin_approved=True,
+                is_marked_deleted=False,
+                is_internal=True
+            ).annotate(
+                num_files=Count(
+                    'project_files',
+                    filter=Q(project_files__is_admin_approved=True,
+                              project_files__is_marked_deleted=False,
+                              project_files__is_deleted=False)
+                ),
+                company_name=F('company__name')
+            ).values(*common_fields, 'company_name').order_by("-created_at")
 
         elif project_type == '2':
-            projects = Project.objects.filter(is_admin_approved=True, is_marked_deleted=False, is_internal=False).annotate(
-            num_files=Count('project_files', filter=Q(project_files__is_admin_approved=True)),company_name=F('company__name')
-        ).values(*common_fields,'company_name').order_by("-created_at")
+            projects = Project.objects.filter(
+                is_admin_approved=True,
+                is_marked_deleted=False,
+                is_internal=False
+            ).annotate(
+                num_files=Count(
+                    'project_files',
+                    filter=Q(project_files__is_admin_approved=True,
+                              project_files__is_marked_deleted=False,
+                              project_files__is_deleted=False)
+                ),
+                company_name=F('company__name')
+            ).values(*common_fields, 'company_name').order_by("-created_at")
 
 
         else:
-            projects = Project.objects.filter(is_admin_approved=True, is_marked_deleted=False).annotate(
-            num_files=Count('project_files', filter=Q(project_files__is_admin_approved=True)),company_name=F('company__name')
-        ).values(*common_fields,'company_name').order_by("-created_at")
+            projects = Project.objects.filter(
+                is_admin_approved=True,
+                is_marked_deleted=False
+            ).annotate(
+                num_files=Count(
+                    'project_files',
+                    filter=Q(project_files__is_admin_approved=True,
+                              project_files__is_marked_deleted=False,
+                              project_files__is_deleted=False)
+                ),
+                company_name=F('company__name')
+            ).values(*common_fields, 'company_name').order_by("-created_at")
 
         if name:
             projects = projects.filter(Q(project_name__icontains=name) | Q(site_id__name__icontains=name) | Q(company_id__name__icontains=name))

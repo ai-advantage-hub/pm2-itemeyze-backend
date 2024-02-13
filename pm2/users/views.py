@@ -809,9 +809,12 @@ class EditFileViewSet(viewsets.ModelViewSet):
         user = Files.objects.filter(id = id, is_marked_deleted=False).first()
         if not user:
             return CustomResponse({"message": "File Not Found"}, status=status_code.HTTP_400_BAD_REQUEST)
-        user.is_marked_deleted = True
-        user.deleted_at = timezone.now()
-        user.save()
+        if user.submitted_to_admin == False:
+            user.delete()
+        else:
+            user.is_marked_deleted = True
+            user.deleted_at = timezone.now()
+            user.save()
         return CustomResponse({"message": gettext(SUCCESS_MESSAGES.get('FILE_DELETED'))}, status=status_code.HTTP_200_OK)
 
 
