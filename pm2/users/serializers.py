@@ -273,7 +273,7 @@ class FilesSerializer(serializers.ModelSerializer):
         model = Files
         fields = ('id', 'manufacturer_name','manufacturer_name__name','name_manufacturer', 'thumbnail', 'file_name', 'manufacturing_number', 'location', 
                   'quantity', 'project_details', 'is_marked_deleted', 'additional_details', 'is_file_disapproved','disapproved_reason','submitted_to_admin','is_edited','disapproved_file_is_edited','created_at',
-                  'recording', 'is_admin_approved', 'is_marked_deleted')
+                  'recording', 'is_admin_approved', 'is_marked_deleted','secondary_image')
         
     def get_manufacturer_name__name(self, obj):
         # Retrieve the manufacturer name from the related ManufacturerName model
