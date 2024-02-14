@@ -2112,9 +2112,10 @@ class ProjectViewSet(viewsets.ViewSet):
             ).annotate(
                 num_files=Count(
                     'project_files',
-                    filter=Q(project_files__is_admin_approved=True,
-                              project_files__is_marked_deleted=False,
-                              project_files__is_deleted=False)
+                    filter=Q(project_files__is_deleted=False,
+                              project_files__submitted_to_admin=True,
+                              project_files__is_file_disapproved=False,
+                              project_files__is_marked_deleted=False)
                 ),
                 company_name=F('company__name')
             ).values(*common_fields, 'company_name').order_by("-created_at")
@@ -2127,9 +2128,10 @@ class ProjectViewSet(viewsets.ViewSet):
             ).annotate(
                 num_files=Count(
                     'project_files',
-                    filter=Q(project_files__is_admin_approved=True,
-                              project_files__is_marked_deleted=False,
-                              project_files__is_deleted=False)
+                    filter=Q(project_files__is_deleted=False,
+                              project_files__submitted_to_admin=True,
+                              project_files__is_file_disapproved=False,
+                              project_files__is_marked_deleted=False)
                 ),
                 company_name=F('company__name')
             ).values(*common_fields, 'company_name').order_by("-created_at")
@@ -2142,9 +2144,10 @@ class ProjectViewSet(viewsets.ViewSet):
             ).annotate(
                 num_files=Count(
                     'project_files',
-                    filter=Q(project_files__is_admin_approved=True,
-                              project_files__is_marked_deleted=False,
-                              project_files__is_deleted=False)
+                    filter=Q(project_files__is_deleted=False,
+                              project_files__submitted_to_admin=True,
+                              project_files__is_file_disapproved=False,
+                              project_files__is_marked_deleted=False)
                 ),
                 company_name=F('company__name')
             ).values(*common_fields, 'company_name').order_by("-created_at")
