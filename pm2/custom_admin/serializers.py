@@ -133,7 +133,7 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'full_name']
+        fields = ['id', 'email']
 
 class ProjectViewSerializer(serializers.ModelSerializer):
     site_name = serializers.CharField(source='site_id.name', read_only=True)
