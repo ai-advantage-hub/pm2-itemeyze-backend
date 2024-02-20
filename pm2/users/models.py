@@ -206,7 +206,7 @@ class Files(BaseModel):
     manual_manufacturer_name = models.CharField(blank=True, null=True, max_length=254, verbose_name='manual_name')
     file_name = models.CharField(blank=True, null=True, max_length=254)
     thumbnail = models.TextField(blank=True, null=True)
-    manufacturing_number = models.CharField(max_length=254)
+    manufacturing_number = models.CharField(max_length=254,null=True)
     quantity = models.IntegerField(default=0,blank=True, null=True, verbose_name='Quantity')
     project_details = models.TextField(null=True, blank=True, verbose_name='Project Details')
     additional_details = models.TextField(null=True, blank=True, verbose_name='Additional Details')

@@ -540,10 +540,10 @@ class FileDetailsViewSet(viewsets.ModelViewSet):
             return filters
         
         def get_files(list_type, id, name=None):
-            base_filters = Q(created_by=request.user) | Q(created_by=None) | \
-                           Q(project_id=id) | \
-                           Q(is_marked_deleted=False) | \
-                           Q(is_deleted=False)
+            base_filters = (Q(created_by=None) | \
+                            Q(is_marked_deleted=False) | \
+                            Q(is_deleted=False)) & \
+                          Q(project_id=id)
 
             if list_type == '1':
                 # master type and submitted to admin 

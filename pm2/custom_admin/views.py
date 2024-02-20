@@ -1447,13 +1447,15 @@ class DeletedFilesViewSet(viewsets.ViewSet):
             function to give list of deleted files
         """
         page_size = request.GET.get('page_size', '')
-        files = Files.objects.filter(project_id=id, is_deleted=True).values('id', 'file_name', 'deleted_at').order_by("-created_at")
+        files = Files.objects.filter(project_id=id, is_deleted=True).values('id', 'file_name', 'deleted_at','thumbnail').order_by("-created_at")
         page = None
         if page_size:
             pagination_class = self.pagination_class()
             page = pagination_class.paginate_queryset(files, request)
 
         if page is not None:
+            pagination_class = self.pagination_class()
+            page = pagination_class.paginate_queryset(files, request)
             return CustomResponse(pagination_class.get_paginated_response(page).data)
 
         return CustomResponse(files)
