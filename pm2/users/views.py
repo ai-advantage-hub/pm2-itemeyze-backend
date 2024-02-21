@@ -560,7 +560,7 @@ class FileDetailsViewSet(viewsets.ModelViewSet):
                 return CustomResponse({"message": "Invalid filter type"}, status=status_code.HTTP_400_BAD_REQUEST)
 
             query = build_query(base_filters, name)
-            files = Files.objects.filter(query).values('id', 'file_name', 'created_at', 'thumbnail', 'name_manufacturer', 'manufacturer_name__name', 'manufacturer_name__id', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording', 'is_file_disapproved', 'disapproved_reason', 'submitted_to_admin', 'disapproved_file_is_edited', 'secondary_image').order_by('-created_at')
+            files = Files.objects.filter(query).values('id', 'file_name', 'created_at', 'thumbnail', 'name_manufacturer', 'manufacturer_name__name', 'manufacturer_name__id', 'manufacturing_number', 'location', 'quantity', 'project_details', 'additional_details', 'recording', 'is_file_disapproved', 'disapproved_reason', 'submitted_to_admin', 'disapproved_file_is_edited', 'secondary_image','created_by').order_by('-created_at')
             return files
 
         # Usage
