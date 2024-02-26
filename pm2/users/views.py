@@ -161,6 +161,8 @@ class UserLoginViewSet(viewsets.ViewSet):
                 response_data["msg"] = "User email is not verified. Please check your email inbox."
             else:
                 response_data["is_admin_approved"] = is_admin_approved
+                response_data["id"] = user.id
+                response_data["full_name"] = user.full_name
 
                 if is_email_verified and is_admin_approved:
                     if not UserCompany.objects.filter(user=user, company__is_active=True):
