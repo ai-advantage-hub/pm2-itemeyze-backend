@@ -144,7 +144,7 @@ class Project(BaseModel):
         Project model to save project details
     """
     users = models.ManyToManyField(User,blank=True,related_name='assigned_projects')
-    project_name = models.CharField(max_length=255, unique=True, null=True)
+    project_name = models.CharField(max_length=255, unique=False, null=True)
     project_description = models.TextField(null=True)
     is_admin_approved = models.BooleanField(default=False, null=True)
     is_marked_deleted = models.BooleanField(default = False, null=True)
