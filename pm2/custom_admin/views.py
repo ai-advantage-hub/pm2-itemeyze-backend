@@ -2037,10 +2037,6 @@ class ProjectViewSet(viewsets.ViewSet):
         if not site_name:
             return CustomResponse({"message": "Please provide Site Name"}, status=status.HTTP_400_BAD_REQUEST)
 
-        if Project.objects.filter(project_name=project_name).exists():
-            return CustomResponse({"message": "Project of this name already exists"}, status=status.HTTP_400_BAD_REQUEST)
-        if Project.objects.filter(project_number=project_number).exists():
-            return CustomResponse({"message": "Project Number already exists"}, status=status.HTTP_400_BAD_REQUEST)
         company = Company.objects.filter(id=company_id).first()
 
         if Site.objects.filter(name=site_name).exists():
@@ -2050,7 +2046,9 @@ class ProjectViewSet(viewsets.ViewSet):
             site = Site.objects.create(name=site_name)
             print("site2", site)
 
-        # Create project without assigning users
+        if Project.objects.filter(project_name=project_name,site_id_id=site.id).exists():
+            return CustomResponse({"message": "Project with this site name already exists."}, status=status_code.HTTP_400_BAD_REQUEST)
+            # Create project without assigning users
         project = Project.objects.create(site_id_id=site.id, project_name=project_name, project_number=project_number, created_by_id=request.user.id,is_admin_approved=True,company_id=company.id)
         print("project 1 id", project.id)
         # project = Project.objects.filter(id=project1.id).first()
