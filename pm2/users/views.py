@@ -288,7 +288,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
             site = Site.objects.create(name=site_name)
             print("site2", site)
         
-        if Project.objects.filter(project_name=project_name).exists() and Project.objects.filter(site_id=site.id).exists():
+        if Project.objects.filter(project_name=project_name,site_id_id=site.id).exists():
             return CustomResponse({"message": "Project with this site name already exists."}, status=status_code.HTTP_400_BAD_REQUEST)
 
         project = Project.objects.create(created_by = request.user, project_name=project_name, site_id_id=site.id)
