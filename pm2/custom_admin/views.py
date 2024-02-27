@@ -2216,6 +2216,16 @@ class ProjectViewSet(viewsets.ViewSet):
         if site_name:
             site, _ = Site.objects.get_or_create(name=site_name)
             project.site_id = site
+            # Check if another project with the same name and site already exists
+            existing_projects = Project.objects.filter(
+                project_name=project.project_name,
+                site_id=project.site_id,
+            ).exclude(
+                pk=pk  # Exclude the current project ID
+            )
+            if existing_projects.exists():
+                return CustomResponse({"message": "Project with site name already exist"}, status=status.HTTP_400_BAD_REQUEST)
+
 
         project.save()
 
@@ -2258,6 +2268,17 @@ class ProjectViewSet(viewsets.ViewSet):
             else:
                 site = Site.objects.create(name=site_name)
                 print("site2", site)
+            # Check if another project with the same name and site already exists
+            print('project id is ', type(project_id))
+            existing_projects = Project.objects.filter(
+                project_name=project_name,
+                site_id=site.id,
+            ).exclude(
+                id=project_id  # Exclude the current project ID
+            )
+            if existing_projects.exists():
+                return CustomResponse({"message": "Project with site name already exist"}, status=status.HTTP_400_BAD_REQUEST)
+
 
             if site_name=='PM2':
                 Project.objects.filter(id=project_id).update(is_internal=True)
@@ -2324,9 +2345,7 @@ class ProjectViewSet(viewsets.ViewSet):
 
                     return CustomResponse({"message": "Project approved successfully"})
             else:
-                if Project.objects.filter(project_name=project_name).exclude(id=project_id).exists():
-                    return CustomResponse({"message": "Project of this name already exists"}, status=status.HTTP_400_BAD_REQUEST)
-                elif Project.objects.filter(project_number=project_number).exclude(id=project_id).exists():
+                if Project.objects.filter(project_number=project_number).exclude(id=project_id).exists():
                     return CustomResponse({"message": "Project Number of this name already exists"}, status=status.HTTP_400_BAD_REQUEST)
                 else:
                     if assigned_to:
