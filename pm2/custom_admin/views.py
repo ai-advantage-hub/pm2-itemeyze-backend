@@ -33,6 +33,7 @@ from django.db.models.functions import TruncMonth, TruncDate
 from calendar import monthrange
 from datetime import date, timedelta
 import logging
+from urllib.parse import urlparse
 log = logging.getLogger(__name__)
 
 
@@ -631,6 +632,17 @@ class ManageProjectViewSet(viewsets.ViewSet):
             method to retrieve file
         """
         file = Files.objects.filter(id=id)
+        for file_data in file:
+            thumbnail_url = file_data.thumbnail
+            parsed_url = urlparse(thumbnail_url)
+            thumbnail_path = parsed_url.path if parsed_url.path else None 
+            file_data.thumbnail=thumbnail_path
+            secondary_url = file_data.secondary_image
+            parsed_url = urlparse(secondary_url)
+            secondary_path = parsed_url.path if parsed_url.path else None 
+            file_data.secondary_image=secondary_path
+
+
         if not file.exists():
             return CustomResponse({"error": "File not found."}, status=status.HTTP_400_BAD_REQUEST)
         serialized_file = FilesPointSerializer(file, many=True).data
@@ -1453,6 +1465,11 @@ class DeletedFilesViewSet(viewsets.ViewSet):
         """
         page_size = request.GET.get('page_size', '')
         files = Files.objects.filter(project_id=id, is_deleted=True).values('id', 'file_name', 'deleted_at','thumbnail').order_by("-created_at")
+        for file_data in files:
+            thumbnail_url = file_data['thumbnail']
+            parsed_url = urlparse(thumbnail_url)
+            thumbnail_path = parsed_url.path if parsed_url.path else None 
+            file_data['thumbnail']=(thumbnail_path)
         page = None
         if page_size:
             pagination_class = self.pagination_class()
@@ -1653,6 +1670,11 @@ class ApprovedFilesListingViewSet(viewsets.ViewSet):
         """
         page_size = request.GET.get('page_size', '')
         approved_files = Files.objects.filter(project_id=id, is_deleted=False, submitted_to_admin=True, is_marked_deleted=False,is_file_disapproved=False).order_by('-created_at').values('id','file_name', 'thumbnail','created_at','is_file_disapproved')
+        for file_data in approved_files:
+            thumbnail_url = file_data['thumbnail']
+            parsed_url = urlparse(thumbnail_url)
+            thumbnail_path = parsed_url.path if parsed_url.path else None 
+            file_data['thumbnail']=thumbnail_path
         page = None
         if page_size:
             pagination_class = self.pagination_class()
@@ -1727,6 +1749,11 @@ class DisapproveFileViewSet(viewsets.ViewSet):
         """
         page_size = request.GET.get('page_size', '')
         disapproved_files = Files.objects.filter(project_id=id,is_file_disapproved=True, is_deleted=False).values('id','file_name','thumbnail','disapproved_on','disapproved_status')
+        for file_data in disapproved_files:
+            thumbnail_url = file_data['thumbnail']
+            parsed_url = urlparse(thumbnail_url)
+            thumbnail_path = parsed_url.path if parsed_url.path else None 
+            file_data['thumbnail']=(thumbnail_path)
         page = None
         if page_size:
             pagination_class = self.pagination_class()
@@ -1747,6 +1774,15 @@ class DisapproveFileViewSet(viewsets.ViewSet):
         if Files.objects.filter(id=id, is_file_disapproved=False):
             return CustomResponse({"message":"this file is not disapproved"}, status=status.HTTP_400_BAD_REQUEST)
         disapproved_file = Files.objects.filter(id=id,is_file_disapproved=True, is_deleted=False).annotate(full_name=F('created_by__full_name')).values('id', 'file_name', 'thumbnail','name_manufacturer','manufacturer_name','manufacturing_number','quantity','project_details','additional_details','recording', 'location', 'location_points','is_file_disapproved','disapproved_status','full_name','secondary_image')
+        for file_data in disapproved_file:
+            thumbnail_url = file_data['thumbnail']
+            parsed_url = urlparse(thumbnail_url)
+            thumbnail_path = parsed_url.path if parsed_url.path else None 
+            file_data['thumbnail']=(thumbnail_path)
+            secondary_url = file_data['secondary_image']
+            parsed_url = urlparse(secondary_url)
+            secondary_path = parsed_url.path if parsed_url.path else None 
+            file_data['secondary_image']=secondary_path
         return CustomResponse(disapproved_file)
 
     def approve(self, request):
@@ -1814,6 +1850,11 @@ class MarkedForDeletedFilesViewSet(viewsets.ViewSet):
         """
         page_size = request.GET.get('page_size', '')
         files = Files.objects.filter(project_id=id, is_marked_deleted=True).all().values('id','file_name','thumbnail','deleted_at')
+        for file_data in files:
+            thumbnail_url = file_data['thumbnail']
+            parsed_url = urlparse(thumbnail_url)
+            thumbnail_path = parsed_url.path if parsed_url.path else None 
+            file_data['thumbnail']=(thumbnail_path)
         page = None
         if page_size:
             pagination_class = self.pagination_class()
