@@ -1712,17 +1712,17 @@ class ApprovedFilesListingViewSet(viewsets.ViewSet):
         file_names = []
         for file_data in approved_files:
             thumbnail_url = file_data['thumbnail']
-            if thumbnail_url:  # Check if thumbnail URL is not None
+            if thumbnail_url and file_data['file_name']:  # Check if thumbnail URL is not None
                 thumbnail_urls.append(thumbnail_url)
-                file_name = file_data['file_name']
-                if file_name:  # Check if file name is not None
+                get_file_name = file_data['file_name']
+                if get_file_name:  # Check if file name is not None
                     # Parse the URL
                     parsed_url = urlparse(thumbnail_url)
                     # Get the path component
                     path = parsed_url.path
                     filename_with_extension = os.path.basename(path)
                     get_filename, extension = os.path.splitext(filename_with_extension)
-                    file_names.append(file_name+extension)
+                    file_names.append(get_file_name+extension)
         # Define the zip filename
         zip_filename = f'{id}.zip'
 
