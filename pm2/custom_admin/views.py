@@ -1693,6 +1693,16 @@ class ApprovedFilesListingViewSet(viewsets.ViewSet):
             return CustomResponse(pagination_class.get_paginated_response(page).data)
         return CustomResponse(approved_files)
     
+    def download_thumbnail(self, url, filename):  # Corrected: Added self parameter
+        try:
+            response = requests.get(url)
+            response.raise_for_status()  # Raise HTTPError for bad responses
+            with open(filename, 'wb') as f:
+                f.write(response.content)
+        except requests.exceptions.RequestException as e:
+            # Log the error or handle it as per your application's needs
+            print(f"Error downloading thumbnail from {url}: {e}") 
+
     def download_files(self, request, id):
         """
         Function to download approved files
@@ -1752,6 +1762,9 @@ class ApprovedFilesListingViewSet(viewsets.ViewSet):
             try:
                 # Remove the temporary directory and its contents
                 shutil.rmtree(temp_dir)
+                # Remove the ZIP file if it exists
+                if os.path.exists(zip_filename):
+                    os.remove(zip_filename)
             except Exception as e:
                 print(f"Error cleaning up temporary directory: {e}")
 
