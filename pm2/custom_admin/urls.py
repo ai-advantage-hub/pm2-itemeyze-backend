@@ -92,6 +92,7 @@ urlpatterns = [
 
     #CR2 Points
     path("approved_files_list/<int:id>", views.ApprovedFilesListingViewSet.as_view({"get": "approved_files_list"}), name="approved_files_list"),
+    path("download_files/<int:id>", views.ApprovedFilesListingViewSet.as_view({"get": "download_files"}), name="download_files"),
 
     path("disapprove_file", views.DisapproveFileViewSet.as_view({"put": "disapprove_file"}), name="disapprove_file"),
     path("list_disapproved_file/<int:id>", views.DisapproveFileViewSet.as_view({"get": "list_disapproved_file"}), name="list_disapproved_file"),

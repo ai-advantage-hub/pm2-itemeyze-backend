@@ -34,6 +34,13 @@ from calendar import monthrange
 from datetime import date, timedelta
 import logging
 from urllib.parse import urlparse
+import zipfile
+import requests
+from django.http import HttpResponse
+from django.core.exceptions import SuspiciousOperation
+import shutil
+import concurrent.futures
+
 log = logging.getLogger(__name__)
 
 
@@ -1685,7 +1692,70 @@ class ApprovedFilesListingViewSet(viewsets.ViewSet):
             page = pagination_class.paginate_queryset(approved_files, request)
             return CustomResponse(pagination_class.get_paginated_response(page).data)
         return CustomResponse(approved_files)
+    
+    def download_files(self, request, id):
+        """
+        Function to download approved files
+        """
+        approved_files = Files.objects.filter(project_id=id, is_deleted=False, submitted_to_admin=True, is_marked_deleted=False, is_file_disapproved=False).order_by('-created_at').values('id', 'file_name', 'thumbnail', 'created_at', 'is_file_disapproved')
+        thumbnail_urls = []
+        file_names = []
+        for file_data in approved_files:
+            thumbnail_url = file_data['thumbnail']
+            if thumbnail_url:  # Check if thumbnail URL is not None
+                thumbnail_urls.append(thumbnail_url)
+                file_name = file_data['file_name']
+                if file_name:  # Check if file name is not None
+                    # Parse the URL
+                    parsed_url = urlparse(thumbnail_url)
+                    # Get the path component
+                    path = parsed_url.path
+                    filename_with_extension = os.path.basename(path)
+                    get_filename, extension = os.path.splitext(filename_with_extension)
+                    file_names.append(file_name+extension)
+        # Define the zip filename
+        zip_filename = f'{id}.zip'
 
+        # Create a temporary directory to store downloaded thumbnails
+        temp_dir = 'temp_thumbnails'
+        os.makedirs(temp_dir, exist_ok=True)
+
+        try:
+            # Download thumbnails concurrently
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                futures = []
+                for index, (url, file_name) in enumerate(zip(thumbnail_urls, file_names)):
+                    if file_name:
+                        filename = os.path.join(temp_dir, file_name)
+                        futures.append(executor.submit(self.download_thumbnail, url, filename))  # Corrected: Call instance method using self
+                # Wait for all tasks to complete
+                concurrent.futures.wait(futures)
+
+            # Create a ZIP file containing downloaded thumbnails
+            with zipfile.ZipFile(zip_filename, 'w') as zip_file:
+                for root, _, files in os.walk(temp_dir):
+                    for file in files:
+                        zip_file.write(os.path.join(root, file), arcname=file)
+
+            # Serve the ZIP file as a response
+            with open(zip_filename, 'rb') as f:
+                response = HttpResponse(f.read(), content_type='application/zip')
+                response['Content-Disposition'] = f'attachment; filename="{zip_filename}"'
+
+        except Exception as e:
+            # Handle any unexpected errors
+            print(f"An unexpected error occurred: {e}")
+            response = HttpResponse(status=500)  # Internal Server Error
+
+        finally:
+            # Clean up temporary files
+            try:
+                # Remove the temporary directory and its contents
+                shutil.rmtree(temp_dir)
+            except Exception as e:
+                print(f"Error cleaning up temporary directory: {e}")
+
+        return response
 
 
 class DisapproveFileViewSet(viewsets.ViewSet):
