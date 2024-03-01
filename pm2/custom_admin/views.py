@@ -446,9 +446,13 @@ class ManageProjectViewSet(viewsets.ViewSet):
             new_user = User.objects.create(full_name=manual_manufacturer_name)
             print("newwwwww", new_user.id)
             file = Files.objects.create(manufacturer_name_id=new_user.id, manual_manufacturer_name=manual_manufacturer_name, project_id=project_id, manufacturing_number=manufacturing_number, quantity=quantity, project_details=project_details, additional_details=additional_details,location=location,file_name=file_name, recording=recording, location_points=location_points,is_admin_approved=True)
+            create_file_name = str(project_id)+'_'+str(file.id)
+            Files.objects.filter(id=file.id).update(file_name=create_file_name)
             return CustomResponse({"message": "File Created with new user Successfully", "file_id": file.id})
         else:
             file = Files.objects.create(file_name=file_name, thumbnail=thumbnail, manufacturing_number=manufacturing_number, project_id=project_id, location=location, manufacturer_name_id=manufacturer_name, quantity=quantity, project_details=project_details, additional_details=additional_details, recording=recording, location_points=location_points, is_admin_approved=True)
+            create_file_name = str(project_id)+'_'+str(file.id)
+            Files.objects.filter(id=file.id).update(file_name=create_file_name)
             return CustomResponse({"message": "File created successfully", "file_id": file.id})
 
     def un_approved_project_count(self, request):

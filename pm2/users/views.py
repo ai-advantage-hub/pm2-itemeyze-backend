@@ -120,11 +120,11 @@ class VerifyOTPViewSet(viewsets.ViewSet):
         type = data.get('type')
 
         # will remove in future
-        if otp == "1234":
-            user = User.objects.filter(email=email.lower()).first()
-            user.is_email_verified = True
-            user.save()
-            return CustomResponse({"message": "OTP Verified, User created Successfully", "user_id": user.id}, status=status_code.HTTP_200_OK)
+        # if otp == "1234":
+        #     user = User.objects.filter(email=email.lower()).first()
+        #     user.is_email_verified = True
+        #     user.save()
+        #     return CustomResponse({"message": "OTP Verified, User created Successfully", "user_id": user.id}, status=status_code.HTTP_200_OK)
 
         user = OTP.objects.filter(otp=otp, otp_type=type, is_used=False).first()
         if not user:
@@ -281,8 +281,8 @@ class ProjectViewSet(viewsets.ModelViewSet):
             return CustomResponse({"message": "Site Name cannot be empty."}, status=status_code.HTTP_400_BAD_REQUEST)
 
         # site = Site.objects.create(name=site_name)
-        if Site.objects.filter(name=site_name).exists():
-            site = Site.objects.filter(name=site_name).first()
+        if Site.objects.filter(name__iexact=site_name).exists():
+            site = Site.objects.filter(name__iexact=site_name).first()
             print("site", site)
         else:
             site = Site.objects.create(name=site_name)
