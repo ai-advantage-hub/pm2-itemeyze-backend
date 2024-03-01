@@ -221,7 +221,7 @@ class ManageCompanyView(viewsets.ViewSet):
         company_title = data.get("company_title")
         if not company_title:
             return CustomResponse({"message": "Please provide company name"}, status=status.HTTP_400_BAD_REQUEST)
-        if Company.objects.filter(name=company_title).exists():
+        if Company.objects.filter(name=company_title.strip()).exists():
             return CustomResponse({"message": "this company name already registered"}, status=status.HTTP_400_BAD_REQUEST)
         else:
             company = Company.objects.create(name=company_title)
@@ -1025,9 +1025,9 @@ class DashBoardViewSet(viewsets.ViewSet):
         if year:
             filters['created_at__year'] = int(year)
 
-        total_users = User.all_objects.filter(is_admin_approved=True, is_email_verified=True, user_role=User.USER, **filters).count()
+        total_users = User.all_objects.filter(is_admin_approved=True, user_role=User.USER, **filters).count()
         total_subadmins = User.all_objects.filter(user_role=User.SUB_ADMIN, **filters).count()
-        total_projects = Project.objects.filter(**filters).count()
+        total_projects = Project.objects.filter(is_admin_approved=True,is_marked_deleted=False,**filters).count()
         total_companies = Company.objects.filter(**filters).count()
 
         data = {
@@ -2360,6 +2360,25 @@ class ProjectViewSet(viewsets.ViewSet):
 
         project.save()
 
+        # send notification
+        for id in assigned_users_ids:
+            user = User.objects.filter(id=id).first()
+            if user:
+                # Push Notification to users who created the project
+                title = f"Project assigned by Admin"
+                message = f"Hello!! Your project '{project.project_name}' has been assigned by Admin."
+                data = {
+                    "title": title,
+                    "message": message,
+                }
+
+                notifyer = user
+                if notifyer.is_notification_enabled == True:
+                    notification = UserNotification.objects.create(user=user, title=title, message=message)
+                    notification.save()
+                    send_notification_bulk(
+                        user_ids=[user.id], title=title, message=message, data=data)
+        
         serializer = ProjectViewSerializer(project, context={'request': request})
         return CustomResponse(serializer.data)
 
@@ -2738,8 +2757,6 @@ class FilesViewSet(viewsets.ViewSet):
         location_points = data.get('location_points')
         user_id = request.user.id
 
-        if Files.objects.filter(manufacturing_number=manufacturing_number).exists():
-             return CustomResponse({"message": "This manufacturing number already exists"}, status=status.HTTP_400_BAD_REQUEST)
         if manual_manufacturer_name:
             if ManufacturerName.objects.filter(name = manual_manufacturer_name).exists():
                 return CustomResponse({"message": "This manufacturer name already exists, please select from list"}, status=status_code.HTTP_400_BAD_REQUEST)
