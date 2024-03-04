@@ -2660,10 +2660,10 @@ class ManageManufacturerNameViewSet(viewsets.ViewSet):
         if not manufacturer_name:
             return CustomResponse({"message": "Please Enter Manufacturer Name"}, status=status_code.HTTP_400_BAD_REQUEST)
 
-        if ManufacturerName.objects.filter(name=manufacturer_name).exists():
+        if ManufacturerName.objects.filter(name=manufacturer_name.strip()).exists():
             return CustomResponse({"message": "This Manufacturer Name already exists"}, status=status_code.HTTP_400_BAD_REQUEST)
         else:
-            manufacturer = ManufacturerName.objects.create(name=manufacturer_name, added_by=1, users=request.user, is_read=True)
+            manufacturer = ManufacturerName.objects.create(name=manufacturer_name.strip(), added_by=1, users=request.user, is_read=True)
             return CustomResponse({"message": "Manufacturer Name added successfully","manufacturer_name_id":manufacturer.id}, status=status_code.HTTP_200_OK)
 
 
@@ -2681,7 +2681,7 @@ class ManageManufacturerNameViewSet(viewsets.ViewSet):
         if not new_manufacturer_name:
             return CustomResponse({"message": "Please Enter New Manufacturer Name"}, status=status_code.HTTP_400_BAD_REQUEST)
 
-        new_manufacturer = ManufacturerName.objects.filter(id=id).update(name = new_manufacturer_name)
+        new_manufacturer = ManufacturerName.objects.filter(id=id).update(name = new_manufacturer_name.strip())
         return CustomResponse({"message": "Manufacturer Name updated successfully"}, status=status_code.HTTP_200_OK)
 
 
