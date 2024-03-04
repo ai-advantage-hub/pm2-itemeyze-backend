@@ -1025,7 +1025,28 @@ class DashBoardViewSet(viewsets.ViewSet):
         if year:
             filters['created_at__year'] = int(year)
 
-        total_users = User.all_objects.filter(is_admin_approved=True, user_role=User.USER, **filters).count()
+        # total_users = User.all_objects.filter(is_admin_approved=True, user_role=User.USER, **filters).count() 
+        exclude_created_projects = Project.objects.filter(
+            created_by=OuterRef('pk')
+        ).values('id')
+        users = (
+            User.all_objects.filter(is_admin_approved=True, user_role=User.USER, **filters)
+            .annotate(
+                created_project_count=Count('created_by_project', distinct=True),
+                assigned_project_count=Count(
+                    'assigned_projects',
+                    filter=~Q(assigned_projects__in=Subquery(exclude_created_projects)),
+                    distinct=True
+                )
+            )
+            .annotate(
+                total_project_count=F('created_project_count') + F('assigned_project_count')
+            )
+            .values(
+                'id', 'user_company'
+            )
+        )
+        total_users=len(users)
         total_subadmins = User.all_objects.filter(user_role=User.SUB_ADMIN, **filters).count()
         total_projects = Project.objects.filter(is_admin_approved=True,is_marked_deleted=False,**filters).count()
         total_companies = Company.objects.filter(**filters).count()
@@ -2765,12 +2786,15 @@ class FilesViewSet(viewsets.ViewSet):
             file = Files.objects.create(thumbnail=thumbnail, manufacturer_name_id=new_manufacturer.id, manual_manufacturer_name=manual_manufacturer_name, project_id=project_id, manufacturing_number=manufacturing_number, quantity=quantity, project_details=project_details, additional_details=additional_details,location=location,file_name=file_name, recording=recording, location_points=location_points,is_admin_approved=True, submitted_to_admin=True,created_by_id=user_id)
             e = ManufacturerName.objects.filter(id=new_manufacturer.id).first()
             print("eee",e.name)
+            create_file_name = str(project_id)+'_'+str(file.id)
+            Files.objects.filter(id=file.id).update(file_name=create_file_name)
             f = Files.objects.filter(id=file.id).update(name_manufacturer= e.name)
             return CustomResponse({"message": "File Created with new Manufacturer Successfully", "file_id": file.id}, status=status_code.HTTP_200_OK)
         else:
             file = Files.objects.create(file_name=file_name, thumbnail=thumbnail, manufacturing_number=manufacturing_number, project_id=project_id, location=location, manufacturer_name_id=manufacturer_name, quantity=quantity, project_details=project_details, additional_details=additional_details, recording=recording, location_points=location_points, is_admin_approved=True, submitted_to_admin=True,created_by_id=user_id)
             e = ManufacturerName.objects.filter(id=manufacturer_name).first()
-            print("eee",e.name)
+            create_file_name = str(project_id)+'_'+str(file.id)
+            Files.objects.filter(id=file.id).update(file_name=create_file_name)
             f = Files.objects.filter(id=file.id).update(name_manufacturer= e.name)
             return CustomResponse({"message": "File created with existing Manufacturer Successfully", "file_id": file.id}, status=status_code.HTTP_200_OK)
 
@@ -2799,13 +2823,15 @@ class FilesViewSet(viewsets.ViewSet):
             manufacturer = ManufacturerName.objects.create(name=manual_manufacturer_name, added_by=1, is_read=True)
             file = Files.objects.filter(id=id).update(manufacturer_name_id=manufacturer.id,thumbnail=thumbnail, manual_manufacturer_name=manual_manufacturer_name, manufacturing_number=manufacturing_number, quantity=quantity, project_details=project_details, additional_details=additional_details,location=location, location_points=location_points)
             e = ManufacturerName.objects.filter(id=manufacturer.id).first()
-            print("eee",e.name)
+            create_file_name = str(project_id)+'_'+str(file.id)
+            Files.objects.filter(id=file.id).update(file_name=create_file_name)
             f = Files.objects.filter(id=id).update(name_manufacturer= e.name)
             return CustomResponse({"message": "File updated Successfully with new Manufacturer"}, status=status_code.HTTP_200_OK)
         else:
             file = Files.objects.filter(id=id).update(thumbnail=thumbnail, manufacturing_number=manufacturing_number, location=location, manufacturer_name_id=manufacturer_name, quantity=quantity, project_details=project_details, additional_details=additional_details, location_points=location_points)
             e = ManufacturerName.objects.filter(id=manufacturer_name).first()
-            print("eee",e.name)
+            create_file_name = str(project_id)+'_'+str(file.id)
+            Files.objects.filter(id=file.id).update(file_name=create_file_name)
             f = Files.objects.filter(id=id).update(name_manufacturer= e.name)
             return CustomResponse({"message": "File updated Successfully with existing Manufacturer"}, status=status_code.HTTP_200_OK)
 
