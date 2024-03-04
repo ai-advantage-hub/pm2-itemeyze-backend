@@ -1018,6 +1018,7 @@ class DashBoardViewSet(viewsets.ViewSet):
     def get(self, request, *args, **kwargs):
         month = self.request.query_params.get('month', None)
         year = self.request.query_params.get('year', None)
+        name = request.GET.get('name', '')
 
         filters = {}
         if month:
@@ -1025,7 +1026,7 @@ class DashBoardViewSet(viewsets.ViewSet):
         if year:
             filters['created_at__year'] = int(year)
 
-        total_users = User.all_objects.filter(is_admin_approved=True, user_role=User.USER, **filters).exclude(id=request.user.id).count() 
+        total_users = User.all_objects.filter(is_admin_approved=True, user_role=User.USER,full_name__icontains=name,**filters).count() 
         # exclude_created_projects = Project.objects.filter(
         #     created_by=OuterRef('pk')
         # ).values('id')
