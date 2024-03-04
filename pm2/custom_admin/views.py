@@ -1025,28 +1025,28 @@ class DashBoardViewSet(viewsets.ViewSet):
         if year:
             filters['created_at__year'] = int(year)
 
-        # total_users = User.all_objects.filter(is_admin_approved=True, user_role=User.USER, **filters).count() 
-        exclude_created_projects = Project.objects.filter(
-            created_by=OuterRef('pk')
-        ).values('id')
-        users = (
-            User.all_objects.filter(is_admin_approved=True, user_role=User.USER, **filters)
-            .annotate(
-                created_project_count=Count('created_by_project', distinct=True),
-                assigned_project_count=Count(
-                    'assigned_projects',
-                    filter=~Q(assigned_projects__in=Subquery(exclude_created_projects)),
-                    distinct=True
-                )
-            )
-            .annotate(
-                total_project_count=F('created_project_count') + F('assigned_project_count')
-            )
-            .values(
-                'id', 'user_company'
-            )
-        )
-        total_users=len(users)
+        total_users = User.all_objects.filter(is_admin_approved=True, user_role=User.USER, **filters).exclude(id=request.user.id).count() 
+        # exclude_created_projects = Project.objects.filter(
+        #     created_by=OuterRef('pk')
+        # ).values('id')
+        # users = (
+        #     User.all_objects.filter(is_admin_approved=True, user_role=User.USER, **filters)
+        #     .annotate(
+        #         created_project_count=Count('created_by_project', distinct=True),
+        #         assigned_project_count=Count(
+        #             'assigned_projects',
+        #             filter=~Q(assigned_projects__in=Subquery(exclude_created_projects)),
+        #             distinct=True
+        #         )
+        #     )
+        #     .annotate(
+        #         total_project_count=F('created_project_count') + F('assigned_project_count')
+        #     )
+        #     .values(
+        #         'id', 'user_company'
+        #     )
+        # )
+        # total_users=len(users)
         total_subadmins = User.all_objects.filter(user_role=User.SUB_ADMIN, **filters).count()
         total_projects = Project.objects.filter(is_admin_approved=True,is_marked_deleted=False,**filters).count()
         total_companies = Company.objects.filter(**filters).count()
