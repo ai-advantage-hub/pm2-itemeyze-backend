@@ -2824,15 +2824,17 @@ class FilesViewSet(viewsets.ViewSet):
             manufacturer = ManufacturerName.objects.create(name=manual_manufacturer_name, added_by=1, is_read=True)
             file = Files.objects.filter(id=id).update(manufacturer_name_id=manufacturer.id,thumbnail=thumbnail, manual_manufacturer_name=manual_manufacturer_name, manufacturing_number=manufacturing_number, quantity=quantity, project_details=project_details, additional_details=additional_details,location=location, location_points=location_points)
             e = ManufacturerName.objects.filter(id=manufacturer.id).first()
-            create_file_name = str(project_id)+'_'+str(file.id)
-            Files.objects.filter(id=file.id).update(file_name=create_file_name)
+            project_id = Files.objects.filter(id=id).values('project_id').first()['project_id']
+            create_file_name = str(project_id)+'_'+str(id)
+            Files.objects.filter(id=id).update(file_name=create_file_name)
             f = Files.objects.filter(id=id).update(name_manufacturer= e.name)
             return CustomResponse({"message": "File updated Successfully with new Manufacturer"}, status=status_code.HTTP_200_OK)
         else:
             file = Files.objects.filter(id=id).update(thumbnail=thumbnail, manufacturing_number=manufacturing_number, location=location, manufacturer_name_id=manufacturer_name, quantity=quantity, project_details=project_details, additional_details=additional_details, location_points=location_points)
             e = ManufacturerName.objects.filter(id=manufacturer_name).first()
-            create_file_name = str(project_id)+'_'+str(file.id)
-            Files.objects.filter(id=file.id).update(file_name=create_file_name)
+            project_id = Files.objects.filter(id=id).values('project_id').first()['project_id']
+            create_file_name = str(project_id)+'_'+str(id)
+            Files.objects.filter(id=id).update(file_name=create_file_name)
             f = Files.objects.filter(id=id).update(name_manufacturer= e.name)
             return CustomResponse({"message": "File updated Successfully with existing Manufacturer"}, status=status_code.HTTP_200_OK)
 
