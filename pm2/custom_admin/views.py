@@ -656,7 +656,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
 
         if not file.exists():
             return CustomResponse({"error": "File not found."}, status=status.HTTP_400_BAD_REQUEST)
-        serialized_file = FilesPointSerializer(file, many=True).data
+        serialized_file = FilesPointSerializer(file, many=True, context={'request': request}).data
         return CustomResponse(serialized_file)
 
     def destroy_file(self, request, id):

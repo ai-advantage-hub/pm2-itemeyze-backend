@@ -182,6 +182,7 @@ class FilesPointSerializer(serializers.ModelSerializer):
 
     location_points = serializers.SerializerMethodField()
     full_name = serializers.SerializerMethodField()
+    creted_by_admin = serializers.SerializerMethodField()
     
     class Meta:
         model = Files
@@ -199,6 +200,14 @@ class FilesPointSerializer(serializers.ModelSerializer):
         except AttributeError:
             return None
 
+    def get_creted_by_admin(self, obj):
+        request = self.context.get('request')
+        print(request.user.id)
+        print(obj.created_by)
+        if request:
+            if request.user == obj.created_by:
+                return True
+        return False
 
 
 #Manage Users 
