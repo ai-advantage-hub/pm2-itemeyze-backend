@@ -816,10 +816,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
             for file_data in files_data:
                 combined_data = {**project_data, **file_data}
                 thumbnail_url = combined_data.get('thumbnail')
-                if thumbnail_url:
-                    if '?' in thumbnail_url:
-                        thumbnail_url = thumbnail_url.split('?')[0]
-                        combined_data['thumbnail'] = f'=HYPERLINK("{thumbnail_url}")'
+                combined_data['thumbnail'] = f'=HYPERLINK("{thumbnail_url}")'
                 all_data.append(combined_data)
             df = pd.DataFrame(all_data)
 
