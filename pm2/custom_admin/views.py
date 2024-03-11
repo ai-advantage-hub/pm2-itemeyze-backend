@@ -351,7 +351,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
 
         projects = Project.objects.filter(is_admin_approved=True, is_marked_deleted=False).annotate(
             num_files=Count('project_files', filter=Q(project_files__is_admin_approved=True))
-        ).values('id', 'project_name', 'created_by__full_name', 'num_files').order_by("-created_at")
+        ).values('id', 'project_name', 'created_by__full_name', 'num_files','created_by','company_id','company_name').order_by("-created_at")
 
         if name:
             projects = projects.filter(project_name__icontains=name)
@@ -602,6 +602,67 @@ class ManageProjectViewSet(viewsets.ViewSet):
                             send_notification_bulk(
                                 user_ids=[created_by_id.id], title=title, message=message, data=data)
                         return CustomResponse({"message": "Project approved successfully"})
+    
+    def update_unapproved_project(self, request):
+        """
+            method to approve projects
+        """
+        data = request.data
+        project_id = data.get("project_id")
+        project_name = data.get("project_name")
+        project_number = data.get("project_number")
+        assigned_to = data.get("assigned_to", [])
+        status_value = data.get("status_value")
+
+        if not Project.objects.filter(id=project_id).first():
+            return CustomResponse({"message": "Project of this id don't exists"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if status_value == 2:
+            Project.objects.filter(id=project_id).delete()
+            return CustomResponse({"message": "Project deleted"}, status=status_code.HTTP_200_OK)
+
+        if not project_name:
+            return CustomResponse({"message": "Please provide project_name"}, status=status.HTTP_400_BAD_REQUEST)
+        if not project_number:
+            return CustomResponse({"message": "Please provide project_number"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if status_value == 1:
+            if Project.objects.filter(id=project_id, project_name=project_name, project_number=project_number).exists():
+                if assigned_to:
+                    project = Project.objects.filter(id=project_id, project_name=project_name, project_number=project_number).first()
+                    for email in assigned_to:
+                        user = User.objects.filter(email=email).first()
+                        if user:
+                            project.users.add(user)
+                            project.save()
+
+                    return CustomResponse({"message": "Project saved successfully"})
+                else:
+                    project = Project.objects.filter(id=project_id).first()
+                    project.save()
+
+                    return CustomResponse({"message": "Project saved successfully"})
+            else:
+                if Project.objects.filter(project_name=project_name).exclude(id=project_id).exists():
+                    return CustomResponse({"message": "Project of this name already exists"}, status=status.HTTP_400_BAD_REQUEST)
+                elif Project.objects.filter(project_number=project_number).exclude(id=project_id).exists():
+                    return CustomResponse({"message": "Project Number of this name already exists"}, status=status.HTTP_400_BAD_REQUEST)
+                else:
+                    if assigned_to:
+                        project = Project.objects.filter(id=project_id).update(project_name=project_name, project_number=project_number)
+                        project = Project.objects.filter(id=project_id).first()
+                        for email in assigned_to:
+                            user = User.objects.filter(email=email).first()
+                            if user:
+                                project.users.add(user)
+                                project.save()
+                        return CustomResponse({"message": "Project saved successfully"})
+                    else:
+                        project=Project.objects.filter(id=project_id).update(project_name=project_name, project_number=project_number)
+                        project=Project.objects.filter(id=project_id).first()
+                        created_by_id = project.created_by
+                        project.save()
+                        return CustomResponse({"message": "Project saved successfully"})
 
     def un_approved_file(self, request, id):
         """
@@ -622,7 +683,9 @@ class ManageProjectViewSet(viewsets.ViewSet):
             methof to get list of unapproved projects
         """
         page_size = request.GET.get('page_size', '')
-        projects = Project.objects.filter(is_admin_approved=False).annotate(num_files=Count('project_files')).values('id', 'project_name', 'created_by__full_name', 'num_files','created_at','site_id','site_id__name').order_by('-created_at')
+        projects = Project.objects.filter(is_admin_approved=False).prefetch_related(Prefetch('created_by__user_company',
+                                                queryset=UserCompany.objects.select_related('company'))).annotate(num_files=Count('project_files'),company_name=F('created_by__user_company__company__name'),
+                                get_company_id=F('created_by__user_company__company__id')).values('id', 'project_name', 'created_by__full_name', 'num_files','created_at','site_id','site_id__name','created_by','company_name','get_company_id').order_by('-created_at')
         page = None
         if page_size:
             pagination_class = self.pagination_class()
@@ -816,7 +879,9 @@ class ManageProjectViewSet(viewsets.ViewSet):
             for file_data in files_data:
                 combined_data = {**project_data, **file_data}
                 thumbnail_url = combined_data.get('thumbnail')
+                secondary_image_url = combined_data.get('secondary_image')
                 combined_data['thumbnail'] = f'=HYPERLINK("{thumbnail_url}")'
+                combined_data['secondary_image'] = f'=HYPERLINK("{secondary_image_url}")'
                 all_data.append(combined_data)
             df = pd.DataFrame(all_data)
 

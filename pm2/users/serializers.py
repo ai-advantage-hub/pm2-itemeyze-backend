@@ -268,16 +268,24 @@ class FilesSerializer(serializers.ModelSerializer):
     """
     manufacturer_name = ProjectManufacturerSerializer()
     manufacturer_name__name = serializers.SerializerMethodField()
+    project_name = serializers.SerializerMethodField()
+    site_name = serializers.SerializerMethodField()
 
     class Meta:
         model = Files
         fields = ('id', 'manufacturer_name','manufacturer_name__name','name_manufacturer', 'thumbnail', 'file_name', 'manufacturing_number', 'location', 
                   'quantity', 'project_details', 'is_marked_deleted', 'additional_details', 'is_file_disapproved','disapproved_reason','submitted_to_admin','is_edited','disapproved_file_is_edited','created_at','created_by',
-                  'recording', 'is_admin_approved', 'is_marked_deleted','secondary_image')
+                  'recording', 'is_admin_approved', 'is_marked_deleted','secondary_image','project_name','site_name')
         
     def get_manufacturer_name__name(self, obj):
         # Retrieve the manufacturer name from the related ManufacturerName model
         return obj.manufacturer_name.name if obj.manufacturer_name else None
+
+    def get_project_name(self, obj):
+        return obj.project.project_name
+
+    def get_site_name(self, obj):
+        return obj.project.site_id.name if obj.project.site_id else None
 
 
 class ProjectDetailsViewSerializer(serializers.ModelSerializer):

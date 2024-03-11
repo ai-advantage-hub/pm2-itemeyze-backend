@@ -94,9 +94,14 @@ class ForgotPasswordSerializer(serializers.Serializer):
     
 
 class FileSerializer(serializers.ModelSerializer):
+    manufacturer_name = serializers.SerializerMethodField()
     class Meta:
         model = Files
-        fields = ['id', 'file_name', 'thumbnail', 'manufacturing_number', 'quantity', 'project_details', 'additional_details', 'recording', 'location', 'location_points','created_at', 'is_file_disapproved', 'disapproved_reason']
+        fields = ['id', 'file_name', 'thumbnail','secondary_image', 'manufacturing_number', 'quantity', 'project_details', 'additional_details', 'recording', 'location', 'location_points','created_at', 'is_file_disapproved', 'disapproved_reason','manual_manufacturer_name','manufacturer_name']
+    
+    def get_manufacturer_name(self, obj):
+        return obj.manufacturer_name.name if obj.manufacturer_name else None
+
 
 
 class ProjectDetailSerializer(serializers.ModelSerializer):

@@ -36,6 +36,7 @@ urlpatterns = [
     path("un_approved_project", views.ManageProjectViewSet.as_view({"get": "un_approved_project"}), name="un_approved_project"),
     path("un_approved_project_count", views.ManageProjectViewSet.as_view({"get": "un_approved_project_count"}), name="un_approved_project_count"),
     path("approve_project", views.ManageProjectViewSet.as_view({"put": "approve_project"}), name="approve_project"),
+    path("update_unapproved_project", views.ManageProjectViewSet.as_view({"put": "update_unapproved_project"}), name="update_unapproved_project"),
     path("un_approved_file/<int:id>", views.ManageProjectViewSet.as_view({"get": "un_approved_file"}), name="un_approved_file"),
     path("un_approved_files_count/<int:id>", views.ManageProjectViewSet.as_view({"get": "un_approved_files_count"}), name="un_approved_files_count"),
     path("view_file/<int:id>", views.ManageProjectViewSet.as_view({"get": "view_file"}), name="view_file"),
