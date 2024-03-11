@@ -685,7 +685,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
         page_size = request.GET.get('page_size', '')
         projects = Project.objects.filter(is_admin_approved=False).prefetch_related(Prefetch('created_by__user_company',
                                                 queryset=UserCompany.objects.select_related('company'))).annotate(num_files=Count('project_files'),company_name=F('created_by__user_company__company__name'),
-                                get_company_id=F('created_by__user_company__company__id')).values('id', 'project_name', 'created_by__full_name', 'num_files','created_at','site_id','site_id__name','created_by','company_name','get_company_id').order_by('-created_at')
+                                get_company_id=F('created_by__user_company__company__id'),user_email=F('created_by__email')).values('id', 'project_name', 'created_by__full_name', 'num_files','created_at','site_id','site_id__name','created_by','company_name','get_company_id','user_email').order_by('-created_at')
         page = None
         if page_size:
             pagination_class = self.pagination_class()
