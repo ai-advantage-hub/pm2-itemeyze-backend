@@ -310,3 +310,31 @@ class UserListingSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('id', 'full_name', 'email')
+
+class TempProjectSerializer(serializers.ModelSerializer):
+    user_email = serializers.SerializerMethodField()
+    site_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = TempProject
+        fields = ['id', 'users', 'project_name', 'project_number', 'site', 'is_internal', 'company', 'user_email','site_name']
+
+    def get_user_email(self, obj):
+        return [user.email for user in obj.users.all()]
+    
+    def get_site_name(self, obj):
+        return obj.site.name if obj.site else None
+
+class RequestedProjectDataSerializer(serializers.ModelSerializer):
+    user_email = serializers.SerializerMethodField()
+    site_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Project
+        fields = ['id', 'users', 'project_name', 'project_number', 'site_id', 'is_internal', 'company', 'user_email','site_name']
+
+    def get_user_email(self, obj):
+        return [user.email for user in obj.users.all()]
+    
+    def get_site_name(self, obj):
+        return obj.site_id.name if obj.site_id else None

@@ -258,3 +258,18 @@ class UserNotification(BaseModel):
     
     def __str__(self):
         return self.title
+
+class TempProject(BaseModel):
+    """
+        Project model to save project details
+    """
+    users = models.ManyToManyField(User,blank=True,related_name='temp_assigned_projects')
+    project_name = models.CharField(max_length=255, unique=False, null=True)
+    project_number = models.TextField(verbose_name="project number", null=True)
+    site = models.ForeignKey(Site,blank=True,on_delete=models.CASCADE, related_name='temp_site_id', null=True)
+    is_internal = models.BooleanField(default=False, null=True)
+    company = models.ForeignKey(Company,on_delete=models.SET_NULL, related_name='temp_company_id', null=True)
+    class Meta:
+        db_table = "temp_project"
+        verbose_name = "TemporaryProject"
+        verbose_name_plural = "Temporary Projects"

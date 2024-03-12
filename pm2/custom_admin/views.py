@@ -2,10 +2,10 @@ from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, viewsets, mixins
-from custom_admin.serializers import AdminLoginSerializer,AdminResetPasswordSerializer, CreateFileDetailsSerializer, ForgotPasswordSerializer, ProjectDetailSerializer,FilesSerializer,FilesPointSerializer, UserListAdminSerializer,UserDetailSerializer, UserListingSerializer,ProjectViewSerializer
+from custom_admin.serializers import AdminLoginSerializer,AdminResetPasswordSerializer, CreateFileDetailsSerializer, ForgotPasswordSerializer, ProjectDetailSerializer,FilesSerializer,FilesPointSerializer, UserListAdminSerializer,UserDetailSerializer, UserListingSerializer,ProjectViewSerializer, TempProjectSerializer, RequestedProjectDataSerializer
 from django.contrib.auth import authenticate
 from rest_framework.authtoken.models import Token
-from users.models import Company, UserCompany, User,Project,Files, UserNotification, Site, ManufacturerName
+from users.models import Company, TempProject, UserCompany, User,Project,Files, UserNotification, Site, ManufacturerName
 from django.contrib.auth.hashers import check_password
 from custom_admin.models import *
 from core.response import CustomResponse
@@ -627,6 +627,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
         assigned_to = data.get("assigned_to", [])
         status_value = data.get("status_value")
         site_name = data.get("site_name")
+        company_id = data.get("company_id",None)
 
         if not Project.objects.filter(id=project_id).first():
             return CustomResponse({"message": "Project of this id don't exists"}, status=status.HTTP_400_BAD_REQUEST)
@@ -654,40 +655,62 @@ class ManageProjectViewSet(viewsets.ViewSet):
             return CustomResponse({"message": "Project with this site name already exists."}, status=status_code.HTTP_400_BAD_REQUEST)
 
         if status_value == 1:
-            if Project.objects.filter(id=project_id, project_name=project_name, project_number=project_number).exists():
-                if assigned_to:
-                    project = Project.objects.filter(id=project_id, project_name=project_name, project_number=project_number).first()
-                    for email in assigned_to:
-                        user = User.objects.filter(email=email).first()
-                        if user:
-                            project.users.add(user)
-                            project.save()
+            """
+                Method to update a project
+            """
+            project = TempProject.objects.filter(id=project_id).first()
+            if project:
 
-                    return CustomResponse({"message": "Project saved successfully"})
-                else:
-                    project = Project.objects.filter(id=project_id).first()
-                    project.save()
+                # Update the fields directly
+                project.project_name = project_name 
+                project.project_number = project_number 
+                project.company_id = company_id
 
-                    return CustomResponse({"message": "Project saved successfully"})
+                # Update users assignment
+                assigned_users_ids = assigned_to
+                project.users.clear()
+                project.users.add(*User.objects.filter(id__in=assigned_users_ids))
+
+                # Update site assignment
+                site_name = data.get('site_name')
+                if site_name:
+                    site, _ = Site.objects.get_or_create(name=site_name)
+                    project.site = site
+                    # Check if another project with the same name and site already exists
+                    existing_projects = Project.objects.filter(
+                        project_name=project.project_name,
+                        site_id=project.site_id,
+                    ).exclude(
+                        pk=project_id  # Exclude the current project ID
+                    )
+                    if existing_projects.exists():
+                        return CustomResponse({"message": "Project with site name already exist"}, status=status.HTTP_400_BAD_REQUEST)
+
+
+                project.save()
             else:
-                if Project.objects.filter(project_number=project_number).exclude(id=project_id).exists():
-                    return CustomResponse({"message": "Project Number of this name already exists"}, status=status.HTTP_400_BAD_REQUEST)
-                else:
-                    if assigned_to:
-                        project = Project.objects.filter(id=project_id).update(project_name=project_name, project_number=project_number)
-                        project = Project.objects.filter(id=project_id).first()
-                        for email in assigned_to:
-                            user = User.objects.filter(email=email).first()
-                            if user:
-                                project.users.add(user)
-                                project.save()
-                        return CustomResponse({"message": "Project saved successfully"})
-                    else:
-                        project=Project.objects.filter(id=project_id).update(project_name=project_name, project_number=project_number)
-                        project=Project.objects.filter(id=project_id).first()
-                        created_by_id = project.created_by
-                        project.save()
-                        return CustomResponse({"message": "Project saved successfully"})
+                project = TempProject.objects.create(id=project_id, project_name=project_name, project_number=project_number,site=site,company_id=company_id)
+                project.save()
+            return CustomResponse({"message": "Project saved successfully"})
+
+    def get_requested_project(self, request, id):
+        """
+            method to fetch requested project.
+        """
+        temp_project_exists = TempProject.objects.filter(id=id).first()
+        if temp_project_exists:
+            serializer = TempProjectSerializer(temp_project_exists)
+            project_data = serializer.data
+            # Assuming CustomResponse is imported properly and project_data is your data
+            return CustomResponse(project_data)
+        else:
+            project = Project.objects.filter(id=id,is_admin_approved=False).first()
+            serializer = RequestedProjectDataSerializer(project)
+            project_data = serializer.data
+            # Assuming CustomResponse is imported properly and project_data is your data
+            return CustomResponse(project_data)
+
+
 
     def un_approved_file(self, request, id):
         """
@@ -710,7 +733,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
         page_size = request.GET.get('page_size', '')
         projects = Project.objects.filter(is_admin_approved=False).prefetch_related(Prefetch('created_by__user_company',
                                                 queryset=UserCompany.objects.select_related('company'))).annotate(num_files=Count('project_files'),company_name=F('created_by__user_company__company__name'),
-                                get_company_id=F('created_by__user_company__company__id'),user_email=F('created_by__email')).values('id', 'project_name', 'created_by__full_name', 'num_files','created_at','site_id','site_id__name','created_by','company_name','get_company_id','user_email').order_by('-created_at')
+                                get_company_id=F('created_by__user_company__company__id'),user_email=F('created_by__email')).values('id', 'project_name', 'created_by__full_name', 'num_files','created_at','site_id','site_id__name','created_by','company_name','project_number','get_company_id','user_email').order_by('-created_at')
         page = None
         if page_size:
             pagination_class = self.pagination_class()
@@ -2561,7 +2584,7 @@ class ProjectViewSet(viewsets.ViewSet):
                             project.users.add(user)
                             project.is_admin_approved = True
                             project.save()
-
+                            TempProject.objects.filter(id=project_id).delete()
                             # Push Notification to users who created the project
                             title = f"Project Approved by Admin"
                             message = f"Hello!! Your project '{project_name}' has been approved by Admin."
@@ -2585,7 +2608,8 @@ class ProjectViewSet(viewsets.ViewSet):
                     project = Project.objects.filter(id=project_id).first()
                     project.is_admin_approved = True
                     project.save()
-
+                    TempProject.objects.filter(id=project_id).delete()
+                    
                     # Push Notification to users who created the project
                     title = f"Project Approved by Admin"
                     message = f"Hello!! Your project '{project_name}' has been approved by Admin."
@@ -2619,6 +2643,8 @@ class ProjectViewSet(viewsets.ViewSet):
                                 project.users.add(user)
                                 project.is_admin_approved = True
                                 project.save()
+                                TempProject.objects.filter(id=project_id).delete()
+                                
                                 # Push Notification to users who created the project
                                 title = f"Admin Assigned you a Project"
                                 message = f"Hello!! Admin Assigned you a project named '{project_name}'."
@@ -2674,6 +2700,8 @@ class ProjectViewSet(viewsets.ViewSet):
                         project.is_admin_approved = True
                         created_by_id = project.created_by
                         project.save()
+                        TempProject.objects.filter(id=project_id).delete()
+                        
                         # Push Notification to users who created the project
                         title = f"Project Approved by Admin"
                         message = f"Hello!! Your project '{project_name}' has been approved by Admin."
