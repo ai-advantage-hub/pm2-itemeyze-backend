@@ -697,16 +697,27 @@ class ManageProjectViewSet(viewsets.ViewSet):
         """
             method to fetch requested project.
         """
+
         temp_project_exists = TempProject.objects.filter(id=id).first()
         if temp_project_exists:
             serializer = TempProjectSerializer(temp_project_exists)
             project_data = serializer.data
-            # Assuming CustomResponse is imported properly and project_data is your data
+            company_name=Company.objects.filter(id=project_data['company']).values('name').first()
+            project_data['company_name'] = company_name['name'] if company_name else None
             return CustomResponse(project_data)
         else:
             project = Project.objects.filter(id=id,is_admin_approved=False).first()
             serializer = RequestedProjectDataSerializer(project)
             project_data = serializer.data
+            user_id=project_data['users'][0]
+            user_company_instance = UserCompany.objects.filter(user_id=user_id).first()
+            project_data['company'] = None 
+            project_data['company_name'] = None 
+            if user_company_instance:
+                company_id = user_company_instance.company_id
+                company_name = user_company_instance.company.name
+                project_data['company'] = company_id
+                project_data['company_name'] = company_name
             # Assuming CustomResponse is imported properly and project_data is your data
             return CustomResponse(project_data)
 

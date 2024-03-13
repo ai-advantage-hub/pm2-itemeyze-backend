@@ -326,6 +326,7 @@ class TempProjectSerializer(serializers.ModelSerializer):
         return obj.site.name if obj.site else None
 
 class RequestedProjectDataSerializer(serializers.ModelSerializer):
+    users = serializers.SerializerMethodField()
     user_email = serializers.SerializerMethodField()
     site_name = serializers.SerializerMethodField()
 
@@ -334,7 +335,16 @@ class RequestedProjectDataSerializer(serializers.ModelSerializer):
         fields = ['id', 'users', 'project_name', 'project_number', 'site_id', 'is_internal', 'company', 'user_email','site_name']
 
     def get_user_email(self, obj):
+        if not obj.users.exists():  # Check if users list is empty
+            created_by_email = obj.created_by.email if obj.created_by else None
+            return [created_by_email] if created_by_email else []
         return [user.email for user in obj.users.all()]
     
     def get_site_name(self, obj):
         return obj.site_id.name if obj.site_id else None
+
+    def get_users(self, obj):
+        if not obj.users.exists():  # Check if users list is empty
+            created_by_id = obj.created_by.id if obj.created_by else None
+            return [created_by_id] if created_by_id else []
+        return [user.id for user in obj.users.all()]
