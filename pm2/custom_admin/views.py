@@ -650,10 +650,6 @@ class ManageProjectViewSet(viewsets.ViewSet):
             site = Site.objects.create(name=site_name)
             print("site2", site)
 
-
-        if Project.objects.filter(project_name=project_name,site_id_id=site.id).exists():
-            return CustomResponse({"message": "Project with this site name already exists."}, status=status_code.HTTP_400_BAD_REQUEST)
-
         if status_value == 1:
             """
                 Method to update a project
@@ -681,16 +677,35 @@ class ManageProjectViewSet(viewsets.ViewSet):
                         project_name=project.project_name,
                         site_id=project.site_id,
                     ).exclude(
-                        pk=project_id  # Exclude the current project ID
+                        id=project_id  # Exclude the current project ID
                     )
+                    print('my existing project is ',existing_projects.query)
                     if existing_projects.exists():
                         return CustomResponse({"message": "Project with site name already exist"}, status=status.HTTP_400_BAD_REQUEST)
 
 
                 project.save()
+                update_orig_project = Project.objects.filter(id=project_id).update(project_name=project_name, project_number=project_number, site_id=site, company_id=company_id)
             else:
+                site_name = data.get('site_name')
+                if site_name:
+                    site, _ = Site.objects.get_or_create(name=site_name)
+                    site_id = site.id
+                    # Check if another project with the same name and site already exists
+                    existing_projects = Project.objects.filter(
+                        project_name=project_name,
+                        site_id=site_id,
+                    ).exclude(
+                        id=project_id  # Exclude the current project ID
+                    )
+                    if existing_projects.exists():
+                        return CustomResponse({"message": "Project with site name already exist"}, status=status.HTTP_400_BAD_REQUEST)
                 project = TempProject.objects.create(id=project_id, project_name=project_name, project_number=project_number,site=site,company_id=company_id)
+                assigned_users_ids = assigned_to
+                project.users.clear()
+                project.users.add(*User.objects.filter(id__in=assigned_users_ids))
                 project.save()
+                update_orig_project = Project.objects.filter(id=project_id).update(project_name=project_name, project_number=project_number, site_id=site, company_id=company_id)
             return CustomResponse({"message": "Project saved successfully"})
 
     def get_requested_project(self, request, id):
