@@ -961,6 +961,9 @@ class ManageProjectViewSet(viewsets.ViewSet):
                 all_data.append(combined_data)
             df = pd.DataFrame(all_data)
 
+            # CAPITALIZE COLUMN NAMES OF THE FIRST ROW AND REPLACE UNDERSCORES WITH SPACES
+            df.columns = df.columns.str.replace('_', ' ').str.title()
+
             # Create a directory to store the CSV temporarily
             export_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'exports')
             if not os.path.exists(export_dir):
