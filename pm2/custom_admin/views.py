@@ -685,7 +685,20 @@ class ManageProjectViewSet(viewsets.ViewSet):
 
 
                 project.save()
-                update_orig_project = Project.objects.filter(id=project_id).update(project_name=project_name, project_number=project_number, site_id=site, company_id=company_id)
+                # Update ownership to admin if requested
+                if data.get('ownership_to_admin', False):
+                    created_by = request.user
+                else:
+                    created_by = None
+                update_fields = {
+                    'project_name': project_name,
+                    'project_number': project_number,
+                    'site_id': site,
+                    'company_id': company_id
+                }
+                if created_by is not None:
+                    update_fields['created_by'] = created_by
+                update_orig_project = Project.objects.filter(id=project_id).update(**update_fields)
             else:
                 site_name = data.get('site_name')
                 if site_name:
@@ -705,7 +718,21 @@ class ManageProjectViewSet(viewsets.ViewSet):
                 project.users.clear()
                 project.users.add(*User.objects.filter(id__in=assigned_users_ids))
                 project.save()
-                update_orig_project = Project.objects.filter(id=project_id).update(project_name=project_name, project_number=project_number, site_id=site, company_id=company_id)
+
+                # Update ownership to admin if requested
+                if data.get('ownership_to_admin', False):
+                    created_by = request.user
+                else:
+                    created_by = None
+                update_fields = {
+                    'project_name': project_name,
+                    'project_number': project_number,
+                    'site_id': site,
+                    'company_id': company_id
+                }
+                if created_by is not None:
+                    update_fields['created_by'] = created_by
+                update_orig_project = Project.objects.filter(id=project_id).update(**update_fields)
             return CustomResponse({"message": "Project saved successfully"})
 
     def get_requested_project(self, request, id):
@@ -714,20 +741,25 @@ class ManageProjectViewSet(viewsets.ViewSet):
         """
 
         temp_project_exists = TempProject.objects.filter(id=id).first()
+        project = Project.objects.filter(id=id,is_admin_approved=False).first()
+        created_by_admin = False
+        if project.created_by == request.user:
+            created_by_admin = True
         if temp_project_exists:
             serializer = TempProjectSerializer(temp_project_exists)
             project_data = serializer.data
             company_name=Company.objects.filter(id=project_data['company']).values('name').first()
             project_data['company_name'] = company_name['name'] if company_name else None
+            project_data['created_by_admin'] = created_by_admin
             return CustomResponse(project_data)
         else:
-            project = Project.objects.filter(id=id,is_admin_approved=False).first()
             serializer = RequestedProjectDataSerializer(project)
             project_data = serializer.data
             user_id=project_data['users'][0]
             user_company_instance = UserCompany.objects.filter(user_id=user_id).first()
             project_data['company'] = None 
             project_data['company_name'] = None 
+            project_data['created_by_admin'] = created_by_admin
             if user_company_instance:
                 company_id = user_company_instance.company_id
                 company_name = user_company_instance.company.name
