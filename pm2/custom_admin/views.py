@@ -2382,8 +2382,14 @@ class ProjectViewSet(viewsets.ViewSet):
         # project = Project.objects.filter(id=project1.id).first()
         if site_name=='PM2':
             project.is_internal=True
+            # Update ownership to admin if requested
+            if data.get('ownership_to_admin', False):
+                project.created_by = request.user
             project.save()
         else:
+            # Update ownership to admin if requested
+            if data.get('ownership_to_admin', False):
+                project.created_by = request.user
             project.is_internal=False
             project.save()
 
