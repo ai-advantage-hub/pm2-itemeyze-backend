@@ -5,7 +5,7 @@ from rest_framework import status, viewsets, mixins
 from custom_admin.serializers import AdminLoginSerializer,AdminResetPasswordSerializer, CreateFileDetailsSerializer, ForgotPasswordSerializer, ProjectDetailSerializer,FilesSerializer,FilesPointSerializer, UserListAdminSerializer,UserDetailSerializer, UserListingSerializer,ProjectViewSerializer, TempProjectSerializer, RequestedProjectDataSerializer
 from django.contrib.auth import authenticate
 from rest_framework.authtoken.models import Token
-from users.models import Company, TempProject, UserCompany, User,Project,Files, UserNotification, Site, ManufacturerName
+from users.models import Company, TempProject, UserCompany, User,Project,Files, UserNotification, Site, ManufacturerName , Settings
 from django.contrib.auth.hashers import check_password
 from custom_admin.models import *
 from core.response import CustomResponse
@@ -3061,4 +3061,27 @@ class UploadexcelViewSet(viewsets.ViewSet):
             print("error:", e)
         return CustomResponse({"message": "Excel file uploaded Successfully"})
 
-
+class SettingsViewSet(viewsets.ViewSet):
+    """
+       SettingsViewSet to update and retrieve settings
+    "
+    """
+    def create_or_update_android_ios_versions(self, request):
+        """
+            Create or update android and ios version
+        """
+        data = request.data
+        name = data.get("name")
+        value = data.get("value")
+        if Settings.objects.filter(name = name).exists():
+            Settings.objects.filter(name=name).update(value=value)
+        else:
+            Settings.objects.create(name=name,value=value)
+        return CustomResponse({"message": "Version Updated successfully"})
+ 
+    def get_android_ios_versions(self, request):
+        """
+            Create andorid ios versions
+        """
+        settings = Settings.objects.filter(Q(name='ios') | Q(name='android')).values("name", "value")
+        return CustomResponse(settings)

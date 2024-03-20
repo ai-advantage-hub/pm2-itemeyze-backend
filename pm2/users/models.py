@@ -273,3 +273,14 @@ class TempProject(BaseModel):
         db_table = "temp_project"
         verbose_name = "TemporaryProject"
         verbose_name_plural = "Temporary Projects"
+
+class Settings(BaseModel):
+    """
+       Settings model used to define basic settings of the project
+    """
+    name = models.CharField(max_length=255, unique=False, null=True)
+    value = models.TextField(verbose_name="project number", null=True)
+    class Meta:
+        db_table = "settings"
+        verbose_name = "Settings"
+        verbose_name_plural = "Settings"

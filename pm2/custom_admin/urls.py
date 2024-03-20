@@ -138,4 +138,9 @@ urlpatterns = [
     #TotalUsers
     path("total_users", views.TotalUserCountViewSet.as_view({"get": "list"}), name="total_users"),
 
+    #Settings
+    path("update_versions", views.SettingsViewSet.as_view({"post": "create_or_update_android_ios_versions"}), name="create_or_update_android_ios_versions"),
+    path("get_versions", views.SettingsViewSet.as_view({"get": "get_android_ios_versions"}), name="get_android_ios_versions"),
+
+
 ]
