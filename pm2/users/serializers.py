@@ -8,7 +8,8 @@ from .models import (
     Files,
     UserNotification,
     Site,
-    ManufacturerName
+    ManufacturerName,
+    Settings
 
 )
 from custom_admin.models import ContentManagement
@@ -21,6 +22,7 @@ from django.db import transaction
 from django.contrib.auth.hashers import check_password
 from fcm_django.models import FCMDevice
 from datetime import datetime, timedelta
+from django.db.models import Q
 
 
 
@@ -325,10 +327,10 @@ class UserCompanySerializer(serializers.ModelSerializer):
 class ViewProfileSerializer(serializers.ModelSerializer):
     # user_company = UserCompanySerializer(many=True)
     user_company = serializers.SerializerMethodField()
-
+    os_versions = serializers.SerializerMethodField()
     class Meta:
         model = User
-        fields = ('full_name', 'email', 'profile_pic', 'user_company')
+        fields = ('full_name', 'email', 'profile_pic', 'user_company', 'os_versions')
 
     def get_user_company(self, obj):
         print("validate")
@@ -340,6 +342,10 @@ class ViewProfileSerializer(serializers.ModelSerializer):
             if company:
                 company_list.append({'id': company.id, 'name': company.name})
         return company_list
+    
+    def get_os_versions(self, obj):
+        settings = Settings.objects.filter(Q(name='ios') | Q(name='android')).values("name", "value")
+        return settings
 
 
 class UserListingSerializer(serializers.ModelSerializer):
