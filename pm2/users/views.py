@@ -420,17 +420,20 @@ class FileDetailsViewSet(viewsets.ModelViewSet):
             function to give list of manufacturers
         """
         name = request.GET.get('name', None)
-        manufacturers = ManufacturerName.objects.all().values('id', 'name').annotate(
-            sorted_name=Case(
-                When(name__icontains='na', then=Value('na')),
-                default='name',
-                output_field=CharField(),
-            )
-        ).order_by('sorted_name')
+        manufacturers = ManufacturerName.objects.all()
 
         if name:
-            manufacturers = manufacturers.filter(name__icontains=name)
-        return CustomResponse(manufacturers)
+            manufacturers = manufacturers.filter(name__icontains=name).annotate(
+                is_na=Case(
+                    When(name="NA", then=Value(1)),
+                    default=Value(0),
+                    output_field=CharField(),
+                )
+            ).order_by('-is_na', 'name')
+        else:
+            manufacturers = manufacturers.order_by('name')
+
+        return CustomResponse(manufacturers.values('id', 'name'))
 
 
     def create_file(self, request, *args, **kwargs):
