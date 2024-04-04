@@ -43,7 +43,7 @@ from core.messages import SUCCESS_MESSAGES
 from django.utils.translation import gettext
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from core.permissions import CheckUserRoleStatusPermission
-from django.db.models import Q
+from django.db.models import Q, Case, Value, When, CharField
 from fcm_django.models import FCMDevice
 from core.pagination import CustomPagination
 from django.shortcuts import render
@@ -420,7 +420,14 @@ class FileDetailsViewSet(viewsets.ModelViewSet):
             function to give list of manufacturers
         """
         name = request.GET.get('name', None)
-        manufacturers = ManufacturerName.objects.all().values('id','name')
+        manufacturers = ManufacturerName.objects.all().values('id', 'name').annotate(
+            sorted_name=Case(
+                When(name__icontains='na', then=Value('na')),
+                default='name',
+                output_field=CharField(),
+            )
+        ).order_by('sorted_name')
+
         if name:
             manufacturers = manufacturers.filter(name__icontains=name)
         return CustomResponse(manufacturers)
