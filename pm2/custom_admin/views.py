@@ -29,7 +29,7 @@ from django.db.models import Q,F
 from core.pagination import CustomPagination
 from django.db import transaction
 from django.db.models import Count, F, IntegerField, ExpressionWrapper
-from django.db.models.functions import TruncMonth, TruncDate, Upper
+from django.db.models.functions import TruncMonth, TruncDate
 from calendar import monthrange
 from datetime import date, timedelta
 import logging
@@ -3092,9 +3092,3 @@ class SettingsViewSet(viewsets.ViewSet):
         settings = Settings.objects.filter(Q(name='ios') | Q(name='android')).values("name", "value")
         return CustomResponse(settings)
 
-    def upper_case(self, request):
-        """
-           Upper case manufacturing name 
-        """
-        ManufacturerName.objects.update(name=Upper('name')) 
-        return CustomResponse({"message": "upper case done successfully"})

@@ -141,7 +141,4 @@ urlpatterns = [
     #Settings
     path("update_versions", views.SettingsViewSet.as_view({"post": "create_or_update_android_ios_versions"}), name="create_or_update_android_ios_versions"),
     path("get_versions", views.SettingsViewSet.as_view({"get": "get_android_ios_versions"}), name="get_android_ios_versions"),
-    path("upper_case", views.SettingsViewSet.as_view({"get": "upper_case"}), name="upper_case"),
-
-
 ]
