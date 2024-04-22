@@ -9,7 +9,7 @@ from users.models import Company, TempProject, UserCompany, User,Project,Files, 
 from django.contrib.auth.hashers import check_password
 from custom_admin.models import *
 from core.response import CustomResponse
-from django.db.models import Count
+from django.db.models import Count, Sum
 from core.common_utils import generate_otp, send_verification_email, send_subadmin_credentials, send_notification_bulk, logged_out_users, subadmin_deleted, send_updated_subadmin_credentials,send_company_approve_to_user
 from core.permissions import CheckAdminRoleStatusPermission, CheckAdminOrSubAdminRoleStatusPermission
 from rest_framework.permissions import IsAuthenticated
@@ -1554,7 +1554,6 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
         year = request.GET.get('year')
         month = request.GET.get('month')
         selected_project_id = request.GET.get('selected_project_id', None)
-
         user = User.all_objects.filter(id=id).first()
         if not user:
             return CustomResponse({"message": "User not found"}, status=status.HTTP_400_BAD_REQUEST)
@@ -1577,12 +1576,20 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
 
             # Fill in months with zero count
             result = []
+            files_sum=0
             for m in range(1, 13):
                 dt = date(int(year), m, 1)
                 count = next((item for item in monthly_files_count if item['month'].month == m), None)
+                files_sum += (count['files_count'] if count else 0)
                 result.append({'month': dt, 'files_count': count['files_count'] if count else 0})
+            response = {
+                "data": result,
+                "total_count": files_sum,
+                "status": 200
+            }
 
-            return CustomResponse(result)
+            return CustomResponse(response)
+
 
         elif month and year:
             # If both year and month are given, show counts for each day of the month
@@ -1598,22 +1605,40 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
 
             # Fill in days with zero count
             result = []
+            files_sum=0
             current_day = start_date
             while current_day <= end_date:
                 count = next((item for item in daily_files_count if item['day'] == current_day), None)
+                files_sum=files_sum+(count['files_count'] if count else 0)
                 result.append({'day': current_day, 'files_count': count['files_count'] if count else 0})
                 current_day += timedelta(days=1)
+            response = {
+                "data": result,
+                "total_count": files_sum,
+                "status": 200
+            }
 
-            return CustomResponse(result)
+            return CustomResponse(response)
 
         else:
             # Original code for when neither year nor month is specified
+            response={}
             monthly_files_count = (file_query
                                 .annotate(month=TruncMonth('created_at'))
                                 .values('month')
                                 .annotate(files_count=Count('id')))
+            files_sum=0
+            for mon in monthly_files_count:
+                files_sum += mon['files_count']
+                
 
-            return CustomResponse(monthly_files_count)
+            response = {
+                "data": monthly_files_count,
+                "total_count": files_sum,
+                "status": 200
+            }
+
+            return CustomResponse(response)
 
 
 
