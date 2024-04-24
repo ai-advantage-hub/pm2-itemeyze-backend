@@ -1558,7 +1558,7 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
         if not user:
             return CustomResponse({"message": "User not found"}, status=status.HTTP_400_BAD_REQUEST)
 
-        file_query = Files.objects.filter(Q(created_by_id=id)|Q(project__users__id=id), project__is_admin_approved=True, project__created_by_id=id)
+        file_query = Files.objects.filter(Q(created_by_id=id)|Q(project__users__id=id), project__is_admin_approved=True, project__created_by_id=id, is_deleted=False, is_file_disapproved=False, submitted_to_admin=True)
 
         if selected_project_id:
             file_query = file_query.filter(project__is_admin_approved=True, project_id=selected_project_id).filter(Q(created_by_id=id)|Q(created_by_id=None))
@@ -2389,6 +2389,10 @@ class ProjectViewSet(viewsets.ViewSet):
             return CustomResponse({"message": "Please provide project number"}, status=status.HTTP_400_BAD_REQUEST)
         if not site_name:
             return CustomResponse({"message": "Please provide Site Name"}, status=status.HTTP_400_BAD_REQUEST)
+        if not company_id:
+            return CustomResponse({"message": "Please choose company name"}, status=status.HTTP_400_BAD_REQUEST)
+        if not assigned_to:
+            return CustomResponse({"message": "Please choose assigned to"}, status=status.HTTP_400_BAD_REQUEST)
 
         company = Company.objects.filter(id=company_id).first()
 
