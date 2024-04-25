@@ -1597,7 +1597,7 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
             start_date = date(int(year), int(month), 1)
             end_date = date(int(year), int(month), last_day)
 
-            daily_files_count = (file_query.filter(created_at__range=[start_date, end_date])
+            daily_files_count = (file_query.filter(created_at__date__range=[start_date, end_date])
                                 .annotate(day=TruncDate('created_at'))
                                 .values('day')
                                 .annotate(files_count=Count('id'))
