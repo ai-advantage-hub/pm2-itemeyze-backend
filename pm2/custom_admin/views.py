@@ -1558,7 +1558,7 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
         if not user:
             return CustomResponse({"message": "User not found"}, status=status.HTTP_400_BAD_REQUEST)
 
-        file_query = Files.objects.filter(Q(created_by_id=id)|Q(project__users__id=id), project__is_admin_approved=True, is_deleted=False, is_file_disapproved=False, submitted_to_admin=True)
+        file_query = Files.objects.filter(Q(created_by_id=id)|Q(project__users__id=id), project__is_admin_approved=True, is_deleted=False, is_file_disapproved=False, submitted_to_admin=True, is_marked_deleted=False)
 
         if selected_project_id:
             file_query = file_query.filter(project__is_admin_approved=True, project_id=selected_project_id).filter(Q(created_by_id=id)|Q(created_by_id=None))
