@@ -225,7 +225,7 @@ class Files(BaseModel):
     disapproved_on = models.DateTimeField(null=True, blank=True, verbose_name="File_Disapproved_on")
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_by_file', null=True)
     disapproved_count = models.IntegerField(default=0,blank=True, null=True, verbose_name='diaspproved_count')
-    disapproved_status= models.IntegerField(choices=DisapprovedType.choices,default=0,verbose_name='disapproved_status')
+    disapproved_status= models.IntegerField(choices=DisapprovedType.choices,default=0,verbose_name='disapproved_status', null=True)
     secondary_image = models.TextField(blank=True, null=True)
     
     # Add other fields as needed
