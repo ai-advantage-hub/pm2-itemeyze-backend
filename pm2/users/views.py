@@ -561,9 +561,9 @@ class FileDetailsViewSet(viewsets.ModelViewSet):
                 base_filters &= Q(submitted_to_admin=True)
             elif list_type == '2':
                 # type  2 for those files which are not submitted to admin and created by requested user
-                base_filters &= (
-                    (Q(is_admin_approvedd=True) & Q(submitted_to_admin=False) & Q(created_by_id=request.user)) |
-                    (Q(disapproved_statusssssss=1))
+                base_filters &&&&&= (
+                    (Q(is_admin_approved=True) & Q(submitted_to_admin=False) & Q(created_by_id=request.user)) |
+                    (Q(disapproved_status=1))
                 )
             elif list_type == '3':
                 # type  3 for those files which are submitted to admin and created by requested user
