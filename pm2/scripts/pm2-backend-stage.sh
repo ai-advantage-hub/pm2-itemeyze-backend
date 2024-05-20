@@ -1,5 +1,5 @@
 #!/bin/bash
-cd /home/ubuntu/jenkins/workspace/pm2-stage-job/
+cd /home/ubuntu/jenkins/workspace/pm2-stage-backend/
 source venv/bin/activate
-cd /home/ubuntu/jenkins/workspace/pm2-stage-job/pm2
+cd /home/ubuntu/jenkins/workspace/pm2-stage-backend/pm2
 python manage.py runserver
