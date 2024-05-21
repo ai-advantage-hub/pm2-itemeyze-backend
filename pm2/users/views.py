@@ -1546,7 +1546,7 @@ class CreateFileWithImage2(viewsets.ViewSet):
             c = f"{project_id}_{file.id}_filename"
             e = ManufacturerName.objects.filter(id=new_manufacturer.id).first()
             print("eee",e.name)
-            b = Files.objects.filter(id=file.id).update(file_name=c, name_manufacturer= e.name)
+            b = Files.objects.filter(id=file.id).update(file_name=c, name_manufacturer= e.name,disapproved_status=2)
             # b = Files.objects.filter(id=file.id).update(file_name=c)
             return {"message": "File Created with new Manufacturer Successfully","temp_file_id": temp_file_id ,"file_id": file.id, "thumbnail_url": thumbnail,'secondary_image': secondary_image}
         elif manufacturer_name:
@@ -1554,7 +1554,7 @@ class CreateFileWithImage2(viewsets.ViewSet):
             c = f"{project_id}_{file.id}_filename"
             e = ManufacturerName.objects.filter(id=manufacturer_name).first()
             print("eee",e.name)
-            b = Files.objects.filter(id=file.id).update(file_name=c, name_manufacturer= e.name)
+            b = Files.objects.filter(id=file.id).update(file_name=c, name_manufacturer= e.name,disapproved_status=2)
             # b = Files.objects.filter(id=file.id).update(file_name=c)
             return {"message": "File created with existing Manufacturer Successfully","temp_file_id": temp_file_id ,"file_id": file.id, "thumbnail_url": thumbnail,'secondary_image': secondary_image}
 
