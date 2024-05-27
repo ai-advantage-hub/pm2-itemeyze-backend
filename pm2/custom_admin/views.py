@@ -40,9 +40,6 @@ from django.http import HttpResponse
 from django.core.exceptions import SuspiciousOperation
 import shutil
 import concurrent.futures
-import multiprocessing import Process
-import zipstream
-from django.http import StreamingHttpResponse
 
 log = logging.getLogger(__name__)
 
@@ -1930,59 +1927,7 @@ class ApprovedFilesListingViewSet(viewsets.ViewSet):
             # Log the error or handle it as per your application's needs
             print(f"Error downloading thumbnail from {url}: {e}")
 
-    
     def download_files(self, request, id):
-        """
-        Function to download approved files
-        """
-        approved_files = Files.objects.filter(
-            project_id=id,
-            is_deleted=False,
-            submitted_to_admin=True,
-            is_marked_deleted=False,
-            is_file_disapproved=False
-        ).order_by('-created_at').values('id', 'file_name', 'thumbnail', 'created_at', 'is_file_disapproved')
-
-        thumbnail_urls = []
-        file_names = []
-
-        for file_data in approved_files:
-            thumbnail_url = file_data['thumbnail']
-            if thumbnail_url and file_data['file_name']:  # Check if thumbnail URL is not None
-                thumbnail_urls.append(thumbnail_url)
-                get_file_name = file_data['file_name']
-                if get_file_name:  # Check if file name is not None
-                    # Parse the URL
-                    parsed_url = urlparse(thumbnail_url)
-                    # Get the path component
-                    path = parsed_url.path
-                    filename_with_extension = os.path.basename(path)
-                    get_filename, extension = os.path.splitext(filename_with_extension)
-                    file_names.append(get_file_name + extension)
-
-        zip_filename = f'{id}.zip'
-
-        try:
-            # Create a streaming ZIP file response
-            zip_stream = zipstream.ZipFile(mode='w', compression=zipstream.ZIP_DEFLATED)
-
-            for index, (url, file_name) in enumerate(zip(thumbnail_urls, file_names)):
-                if file_name:
-                    zip_stream.writestr(file_name, self.download_thumbnail(url, file_name))
-
-            # Create the response object
-            response = StreamingHttpResponse(zip_stream, content_type='application/zip')
-            response['Content-Disposition'] = f'attachment; filename="{zip_filename}"'
-
-        except Exception as e:
-            # Handle any unexpected errors
-            print(f"An unexpected error occurred: {e}")
-            response = HttpResponse(status=500)  # Internal Server Error
-
-        return response
-
-
-    def download_files__(self, request, id):
         """
         Function to download approved files
         """
