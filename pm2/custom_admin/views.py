@@ -40,6 +40,9 @@ from django.http import HttpResponse
 from django.core.exceptions import SuspiciousOperation
 import shutil
 import concurrent.futures
+import multiprocessing import Process
+import zipstream
+from django.http import StreamingHttpResponse
 
 log = logging.getLogger(__name__)
 
@@ -486,7 +489,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
             return CustomResponse({"message": "Please provide project_name"}, status=status.HTTP_400_BAD_REQUEST)
         if not project_number:
             return CustomResponse({"message": "Please provide project_number"}, status=status.HTTP_400_BAD_REQUEST)
-        
+
         if not site_name:
             return CustomResponse({"message": "Please provide site name"}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -615,7 +618,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
                             send_notification_bulk(
                                 user_ids=[created_by_id.id], title=title, message=message, data=data)
                         return CustomResponse({"message": "Project approved successfully"})
-    
+
     def update_unapproved_project(self, request):
         """
             method to approve projects
@@ -658,8 +661,8 @@ class ManageProjectViewSet(viewsets.ViewSet):
             if project:
 
                 # Update the fields directly
-                project.project_name = project_name 
-                project.project_number = project_number 
+                project.project_name = project_name
+                project.project_number = project_number
                 project.company_id = company_id
 
                 # Update users assignment
@@ -757,8 +760,8 @@ class ManageProjectViewSet(viewsets.ViewSet):
             project_data = serializer.data
             user_id=project_data['users'][0]
             user_company_instance = UserCompany.objects.filter(user_id=user_id).first()
-            project_data['company'] = None 
-            project_data['company_name'] = None 
+            project_data['company'] = None
+            project_data['company_name'] = None
             project_data['created_by_admin'] = created_by_admin
             if user_company_instance:
                 company_id = user_company_instance.company_id
@@ -815,11 +818,11 @@ class ManageProjectViewSet(viewsets.ViewSet):
         for file_data in file:
             thumbnail_url = file_data.thumbnail
             parsed_url = urlparse(thumbnail_url)
-            thumbnail_path = parsed_url.path if parsed_url.path else None 
+            thumbnail_path = parsed_url.path if parsed_url.path else None
             file_data.thumbnail=thumbnail_path
             secondary_url = file_data.secondary_image
             parsed_url = urlparse(secondary_url)
-            secondary_path = parsed_url.path if parsed_url.path else None 
+            secondary_path = parsed_url.path if parsed_url.path else None
             file_data.secondary_image=secondary_path
 
 
@@ -1199,7 +1202,7 @@ class DashBoardViewSet(viewsets.ViewSet):
         if year:
             filters['created_at__year'] = int(year)
 
-        total_users = User.all_objects.filter(is_admin_approved=True, user_role=User.USER,full_name__icontains=name,**filters).count() 
+        total_users = User.all_objects.filter(is_admin_approved=True, user_role=User.USER,full_name__icontains=name,**filters).count()
         # exclude_created_projects = Project.objects.filter(
         #     created_by=OuterRef('pk')
         # ).values('id')
@@ -1630,7 +1633,7 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
             files_sum=0
             for mon in monthly_files_count:
                 files_sum += mon['files_count']
-                
+
 
             response = {
                 "data": monthly_files_count,
@@ -1699,7 +1702,7 @@ class DeletedFilesViewSet(viewsets.ViewSet):
         for file_data in files:
             thumbnail_url = file_data['thumbnail']
             parsed_url = urlparse(thumbnail_url)
-            thumbnail_path = parsed_url.path if parsed_url.path else None 
+            thumbnail_path = parsed_url.path if parsed_url.path else None
             file_data['thumbnail']=(thumbnail_path)
         page = None
         if page_size:
@@ -1904,7 +1907,7 @@ class ApprovedFilesListingViewSet(viewsets.ViewSet):
         for file_data in approved_files:
             thumbnail_url = file_data['thumbnail']
             parsed_url = urlparse(thumbnail_url)
-            thumbnail_path = parsed_url.path if parsed_url.path else None 
+            thumbnail_path = parsed_url.path if parsed_url.path else None
             file_data['thumbnail']=thumbnail_path
         page = None
         if page_size:
@@ -1916,7 +1919,7 @@ class ApprovedFilesListingViewSet(viewsets.ViewSet):
             page = pagination_class.paginate_queryset(approved_files, request)
             return CustomResponse(pagination_class.get_paginated_response(page).data)
         return CustomResponse(approved_files)
-    
+
     def download_thumbnail(self, url, filename):  # Corrected: Added self parameter
         try:
             response = requests.get(url)
@@ -1925,9 +1928,61 @@ class ApprovedFilesListingViewSet(viewsets.ViewSet):
                 f.write(response.content)
         except requests.exceptions.RequestException as e:
             # Log the error or handle it as per your application's needs
-            print(f"Error downloading thumbnail from {url}: {e}") 
+            print(f"Error downloading thumbnail from {url}: {e}")
 
+    
     def download_files(self, request, id):
+        """
+        Function to download approved files
+        """
+        approved_files = Files.objects.filter(
+            project_id=id,
+            is_deleted=False,
+            submitted_to_admin=True,
+            is_marked_deleted=False,
+            is_file_disapproved=False
+        ).order_by('-created_at').values('id', 'file_name', 'thumbnail', 'created_at', 'is_file_disapproved')
+
+        thumbnail_urls = []
+        file_names = []
+
+        for file_data in approved_files:
+            thumbnail_url = file_data['thumbnail']
+            if thumbnail_url and file_data['file_name']:  # Check if thumbnail URL is not None
+                thumbnail_urls.append(thumbnail_url)
+                get_file_name = file_data['file_name']
+                if get_file_name:  # Check if file name is not None
+                    # Parse the URL
+                    parsed_url = urlparse(thumbnail_url)
+                    # Get the path component
+                    path = parsed_url.path
+                    filename_with_extension = os.path.basename(path)
+                    get_filename, extension = os.path.splitext(filename_with_extension)
+                    file_names.append(get_file_name + extension)
+
+        zip_filename = f'{id}.zip'
+
+        try:
+            # Create a streaming ZIP file response
+            zip_stream = zipstream.ZipFile(mode='w', compression=zipstream.ZIP_DEFLATED)
+
+            for index, (url, file_name) in enumerate(zip(thumbnail_urls, file_names)):
+                if file_name:
+                    zip_stream.writestr(file_name, self.download_thumbnail(url, file_name))
+
+            # Create the response object
+            response = StreamingHttpResponse(zip_stream, content_type='application/zip')
+            response['Content-Disposition'] = f'attachment; filename="{zip_filename}"'
+
+        except Exception as e:
+            # Handle any unexpected errors
+            print(f"An unexpected error occurred: {e}")
+            response = HttpResponse(status=500)  # Internal Server Error
+
+        return response
+
+
+    def download_files__(self, request, id):
         """
         Function to download approved files
         """
@@ -2059,7 +2114,7 @@ class DisapproveFileViewSet(viewsets.ViewSet):
         for file_data in disapproved_files:
             thumbnail_url = file_data['thumbnail']
             parsed_url = urlparse(thumbnail_url)
-            thumbnail_path = parsed_url.path if parsed_url.path else None 
+            thumbnail_path = parsed_url.path if parsed_url.path else None
             file_data['thumbnail']=(thumbnail_path)
         page = None
         if page_size:
@@ -2084,11 +2139,11 @@ class DisapproveFileViewSet(viewsets.ViewSet):
         for file_data in disapproved_file:
             thumbnail_url = file_data['thumbnail']
             parsed_url = urlparse(thumbnail_url)
-            thumbnail_path = parsed_url.path if parsed_url.path else None 
+            thumbnail_path = parsed_url.path if parsed_url.path else None
             file_data['thumbnail']=(thumbnail_path)
             secondary_url = file_data['secondary_image']
             parsed_url = urlparse(secondary_url)
-            secondary_path = parsed_url.path if parsed_url.path else None 
+            secondary_path = parsed_url.path if parsed_url.path else None
             file_data['secondary_image']=secondary_path
         return CustomResponse(disapproved_file)
 
@@ -2160,7 +2215,7 @@ class MarkedForDeletedFilesViewSet(viewsets.ViewSet):
         for file_data in files:
             thumbnail_url = file_data['thumbnail']
             parsed_url = urlparse(thumbnail_url)
-            thumbnail_path = parsed_url.path if parsed_url.path else None 
+            thumbnail_path = parsed_url.path if parsed_url.path else None
             file_data['thumbnail']=(thumbnail_path)
         page = None
         if page_size:
@@ -2541,7 +2596,7 @@ class ProjectViewSet(viewsets.ViewSet):
         serializer = ProjectDetailSerializer(project)
 
         return CustomResponse(serializer.data)
-    
+
     def project_view(self, request, pk=None):
         """
             method to view project
@@ -2550,7 +2605,7 @@ class ProjectViewSet(viewsets.ViewSet):
         serializer = ProjectViewSerializer(project,context={'request': request})
 
         return CustomResponse(serializer.data)
-    
+
     def project_update(self, request, pk=None):
         """
             Method to update a project
@@ -2608,7 +2663,7 @@ class ProjectViewSet(viewsets.ViewSet):
                     notification.save()
                     send_notification_bulk(
                         user_ids=[user.id], title=title, message=message, data=data)
-        
+
         serializer = ProjectViewSerializer(project, context={'request': request})
         return CustomResponse(serializer.data)
 
@@ -2705,7 +2760,7 @@ class ProjectViewSet(viewsets.ViewSet):
                     project.is_admin_approved = True
                     project.save()
                     TempProject.objects.filter(id=project_id).delete()
-                    
+
                     # Push Notification to users who created the project
                     title = f"Project Approved by Admin"
                     message = f"Hello!! Your project '{project_name}' has been approved by Admin."
@@ -2740,7 +2795,7 @@ class ProjectViewSet(viewsets.ViewSet):
                                 project.is_admin_approved = True
                                 project.save()
                                 TempProject.objects.filter(id=project_id).delete()
-                                
+
                                 # Push Notification to users who created the project
                                 title = f"Admin Assigned you a Project"
                                 message = f"Hello!! Admin Assigned you a project named '{project_name}'."
@@ -2797,7 +2852,7 @@ class ProjectViewSet(viewsets.ViewSet):
                         created_by_id = project.created_by
                         project.save()
                         TempProject.objects.filter(id=project_id).delete()
-                        
+
                         # Push Notification to users who created the project
                         title = f"Project Approved by Admin"
                         message = f"Hello!! Your project '{project_name}' has been approved by Admin."
@@ -3113,7 +3168,7 @@ class SettingsViewSet(viewsets.ViewSet):
         else:
             Settings.objects.create(name=name,value=value)
         return CustomResponse({"message": "Version Updated successfully"})
- 
+
     def get_android_ios_versions(self, request):
         """
             Create andorid ios versions
