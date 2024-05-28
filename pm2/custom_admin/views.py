@@ -1929,13 +1929,16 @@ class ApprovedFilesListingViewSet(viewsets.ViewSet):
             # Log the error or handle it as per your application's needs
             print(f"Error downloading thumbnail from {url}: {e}")
     def download_files(self, request, id):
-        try:
-            p = Process(target=self.download_files_v1,
-                        args=(self, request, id))
-            p.start()
-        except:
-            pass
-        return HttpResponse(status=200)  
+        """
+        Function to download approved files
+        """
+        approved_files = Files.objects.filter(project_id=id, is_deleted=False, submitted_to_admin=True, is_marked_deleted=False, is_file_disapproved=False).order_by('-created_at').values('id', 'file_name', 'thumbnail', 'created_at', 'is_file_disapproved')
+        files=[]
+        for file_data in approved_files:
+            files.append({'file_name':file_data['file_name'],'thumbnail':file_data['thumbnail']})
+        return CustomResponse(files)
+
+
 
     def download_files_v1(self, request, id):
         """
