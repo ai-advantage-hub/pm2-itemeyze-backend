@@ -1,4 +1,5 @@
 from django.shortcuts import render
+from django.urls.exceptions import Http404
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, viewsets, mixins
@@ -1934,7 +1935,8 @@ class ApprovedFilesListingViewSet(viewsets.ViewSet):
             p.start()
         except:
             pass
-        return True
+        return HttpResponse(status=200)  
+
     def download_files_v1(self, request, id):
         """
         Function to download approved files
