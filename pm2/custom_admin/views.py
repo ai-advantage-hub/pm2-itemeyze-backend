@@ -40,6 +40,7 @@ from django.http import HttpResponse
 from django.core.exceptions import SuspiciousOperation
 import shutil
 import concurrent.futures
+from multiprocessing import Process
 
 log = logging.getLogger(__name__)
 
@@ -1926,8 +1927,15 @@ class ApprovedFilesListingViewSet(viewsets.ViewSet):
         except requests.exceptions.RequestException as e:
             # Log the error or handle it as per your application's needs
             print(f"Error downloading thumbnail from {url}: {e}")
-
     def download_files(self, request, id):
+        try:
+            p = Process(target=self.download_files_v1,
+                        args=(self, request, id))
+            p.start()
+        except:
+            pass
+        return True
+    def download_files_v1(self, request, id):
         """
         Function to download approved files
         """
@@ -1991,7 +1999,6 @@ class ApprovedFilesListingViewSet(viewsets.ViewSet):
                     os.remove(zip_filename)
             except Exception as e:
                 print(f"Error cleaning up temporary directory: {e}")
-
         return response
 
 
