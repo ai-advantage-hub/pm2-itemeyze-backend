@@ -980,6 +980,8 @@ class ManageProjectViewSet(viewsets.ViewSet):
         serializer = ProjectDetailSerializer(project)
         project_data = serializer.data
         files_data = project_data.pop('files')
+        if 'project_details' in project_data:
+            project_data['product_details'] = project_data.pop('project_details')
 
         # Check if there is any data before creating the DataFrame
         if files_data:
