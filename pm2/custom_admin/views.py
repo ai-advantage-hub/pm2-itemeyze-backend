@@ -980,8 +980,6 @@ class ManageProjectViewSet(viewsets.ViewSet):
         serializer = ProjectDetailSerializer(project)
         project_data = serializer.data
         files_data = project_data.pop('files')
-        if 'project_details' in project_data:
-            project_data['product_details'] = project_data.pop('project_details')
 
         # Check if there is any data before creating the DataFrame
         if files_data:
@@ -996,6 +994,8 @@ class ManageProjectViewSet(viewsets.ViewSet):
                 combined_data['recording'] = f'=HYPERLINK("{recording_url}")'
                 all_data.append(combined_data)
             df = pd.DataFrame(all_data)
+
+            df.columns = df.columns.str.replace('project_details', 'product_details')
 
             # CAPITALIZE COLUMN NAMES OF THE FIRST ROW AND REPLACE UNDERSCORES WITH SPACES
             df.columns = df.columns.str.replace('_', ' ').str.title()
