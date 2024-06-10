@@ -11,7 +11,7 @@ from django.contrib.auth.hashers import check_password
 from custom_admin.models import *
 from core.response import CustomResponse
 from django.db.models import Count, Sum
-from core.common_utils import generate_otp, send_verification_email, send_subadmin_credentials, send_notification_bulk, logged_out_users, subadmin_deleted, send_updated_subadmin_credentials,send_company_approve_to_user
+from core.common_utils import generate_otp, send_verification_email, send_subadmin_credentials, send_notification_bulk, logged_out_users, subadmin_deleted, send_updated_subadmin_credentials,send_company_approve_to_user, send_images_on_email
 from core.permissions import CheckAdminRoleStatusPermission, CheckAdminOrSubAdminRoleStatusPermission
 from rest_framework.permissions import IsAuthenticated
 from users.models import OTP
@@ -1987,9 +1987,14 @@ class ApprovedFilesListingViewSet(viewsets.ViewSet):
 
             # Upload the CSV to AWS S3
             s3 = boto3.resource('s3', aws_access_key_id=AWS_S3_ACCESS_KEY_ID, aws_secret_access_key=AWS_S3_SECRET_ACCESS_KEY)
-            path_key = f"id/{zip_filename}"
+            s3_client=boto3.client('s3',aws_access_key_id=AWS_S3_ACCESS_KEY_ID, aws_secret_access_key=AWS_S3_SECRET_ACCESS_KEY)
+            path_key = f"zip/{zip_filename}"
             with open(zip_filename, 'rb') as zip_file:
                 s3.Bucket(AWS_STORAGE_BUCKET_NAME).upload_fileobj(zip_file, path_key)
+                link = s3_client.generate_presigned_url('get_object',
+                                                    Params={'Bucket': AWS_STORAGE_BUCKET_NAME, 'Key': path_key},
+                                                    ExpiresIn=3600000)
+                send_images_on_email(link)
                 # After successful upload, delete local CSV (optional)
 
             # Serve the ZIP file as a response
@@ -2012,7 +2017,7 @@ class ApprovedFilesListingViewSet(viewsets.ViewSet):
                     os.remove(zip_filename)
             except Exception as e:
                 print(f"Error cleaning up temporary directory: {e}")
-        return CustomResponse({"message": "zip downloaded successfully"}, status=status_code.HTTP_200_OK)
+        return CustomResponse({"message": "Zip images link are send on email. If no. of images is large it wil take time to receive email"}, status=status_code.HTTP_200_OK)
     
     def download_files_v1(self, request, id):
         def background_task():
@@ -2023,7 +2028,7 @@ class ApprovedFilesListingViewSet(viewsets.ViewSet):
         thread.start()
         
         # Return an immediate response
-        return CustomResponse({"message": "The file processing is running in the background."}, status=status_code.HTTP_200_OK)
+        return CustomResponse({"message": "Your images are on their way! Since there are a large number of images, it may take a bit longer for the email to arrive in your inbox"}, status=status_code.HTTP_200_OK)
 
 
 
