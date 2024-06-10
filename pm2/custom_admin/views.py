@@ -42,6 +42,7 @@ from django.core.exceptions import SuspiciousOperation
 import shutil
 import concurrent.futures
 from multiprocessing import Process
+import threading
 
 log = logging.getLogger(__name__)
 
@@ -1940,9 +1941,7 @@ class ApprovedFilesListingViewSet(viewsets.ViewSet):
             files.append({'file_name':file_data['file_name'],'thumbnail':file_data['thumbnail']})
         return CustomResponse(files)
 
-
-
-    def download_files_v1(self, request, id):
+    def download_files_task(self, request, id):
         """
         Function to download approved files
         """
@@ -1986,10 +1985,17 @@ class ApprovedFilesListingViewSet(viewsets.ViewSet):
                     for file in files:
                         zip_file.write(os.path.join(root, file), arcname=file)
 
+            # Upload the CSV to AWS S3
+            s3 = boto3.resource('s3', aws_access_key_id=AWS_S3_ACCESS_KEY_ID, aws_secret_access_key=AWS_S3_SECRET_ACCESS_KEY)
+            path_key = f"id/{zip_filename}"
+            with open(zip_filename, 'rb') as zip_file:
+                s3.Bucket(AWS_STORAGE_BUCKET_NAME).upload_fileobj(zip_file, path_key)
+                # After successful upload, delete local CSV (optional)
+
             # Serve the ZIP file as a response
-            with open(zip_filename, 'rb') as f:
-                response = HttpResponse(f.read(), content_type='application/zip')
-                response['Content-Disposition'] = f'attachment; filename="{zip_filename}"'
+            # with open(zip_filename, 'rb') as f:
+            #     response = HttpResponse(f.read(), content_type='application/zip')
+            #     response['Content-Disposition'] = f'attachment; filename="{zip_filename}"'
 
         except Exception as e:
             # Handle any unexpected errors
@@ -2006,7 +2012,19 @@ class ApprovedFilesListingViewSet(viewsets.ViewSet):
                     os.remove(zip_filename)
             except Exception as e:
                 print(f"Error cleaning up temporary directory: {e}")
-        return response
+        return CustomResponse({"message": "zip downloaded successfully"}, status=status_code.HTTP_200_OK)
+    
+    def download_files_v1(self, request, id):
+        def background_task():
+            self.download_files_task(request, id)
+        
+        # Start the background thread
+        thread = threading.Thread(target=background_task)
+        thread.start()
+        
+        # Return an immediate response
+        return CustomResponse({"message": "The file processing is running in the background."}, status=status_code.HTTP_200_OK)
+
 
 
 class DisapproveFileViewSet(viewsets.ViewSet):
