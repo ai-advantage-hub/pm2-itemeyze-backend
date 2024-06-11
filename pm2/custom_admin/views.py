@@ -1994,7 +1994,8 @@ class ApprovedFilesListingViewSet(viewsets.ViewSet):
                 link = s3_client.generate_presigned_url('get_object',
                                                     Params={'Bucket': AWS_STORAGE_BUCKET_NAME, 'Key': path_key},
                                                     ExpiresIn=3600000)
-                send_images_on_email(link)
+                user_email = request.user.email
+                send_images_on_email(link,user_email)
                 # After successful upload, delete local CSV (optional)
 
             # Serve the ZIP file as a response

@@ -145,11 +145,10 @@ def send_reset_password_email(email):
     except Exception as e:
         print("error", e)
 
-def send_images_on_email(link):
+def send_images_on_email(link,email):
     """
         method used to send images link on email
     """
-    email='bhaveshverma333@gmail.com'
     try:
         ctx_dict = {"link": link}
         html_template = "images_download_template.html"
