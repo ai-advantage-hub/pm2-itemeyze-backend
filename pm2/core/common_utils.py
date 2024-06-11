@@ -149,7 +149,7 @@ def send_images_on_email(link):
     """
         method used to send images link on email
     """
-    email='bhavesh.verma@algoworks.com'
+    email='bhaveshverma333@gmail.com'
     try:
         ctx_dict = {"link": link}
         html_template = "images_download_template.html"
