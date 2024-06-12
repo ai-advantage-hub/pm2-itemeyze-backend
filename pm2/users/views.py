@@ -80,6 +80,12 @@ class SignUpViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
         data = request.data
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
+        try:
+            user = User.objects.get(Q(email__iexact=serializer.validated_data['email']))
+            if user is None or not user.is_active:
+                return CustomResponse({"msg": "User is deactive by admin."}, status=status_code.HTTP_400_BAD_REQUEST)
+        except User.DoesNotExist:
+            return CustomResponse({"msg": "User does not exist or deactivate by admin."}, status=status_code.HTTP_400_BAD_REQUEST)
         serializer.save()
         return CustomResponse({"message": gettext(SUCCESS_MESSAGES.get('OTP_SENT'))}, status=status_code.HTTP_200_OK)
 
