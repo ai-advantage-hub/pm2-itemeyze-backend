@@ -85,7 +85,7 @@ class SignUpViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
             if user is None or not user.is_active:
                 return CustomResponse({"msg": "User is deactive by admin."}, status=status_code.HTTP_400_BAD_REQUEST)
         except User.DoesNotExist:
-            return CustomResponse({"message": "User does not exist or deactivate by admin."}, status=status_code.HTTP_400_BAD_REQUEST)
+            raise CustomException(status_code=400, message="User does not exist or deactivate by admin.", location="LOCATION")
         serializer.save()
         return CustomResponse({"message": gettext(SUCCESS_MESSAGES.get('OTP_SENT'))}, status=status_code.HTTP_200_OK)
 
