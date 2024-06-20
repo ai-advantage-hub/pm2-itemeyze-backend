@@ -936,12 +936,12 @@ class UserEditProfileViewSet(viewsets.ViewSet):
         # Update profile picture if provided
         if profile_pic:
             update_data["profile_pic"] = profile_pic
-        if company_name:
-                User.objects.filter(id=request.user.id).update(company_name=company_name, is_edited=True)
-                return CustomResponse({"message": "Company Updated, Request Sent to Admin for Approval"}, status=status_code.HTTP_200_OK)
 
         # Perform the update in a single query
         User.objects.filter(id=request.user.id).update(**update_data)
+        if company_name:
+                User.objects.filter(id=request.user.id).update(company_name=company_name, is_edited=True)
+                return CustomResponse({"message": "Company Updated, Request Sent to Admin for Approval"}, status=status_code.HTTP_200_OK)
         if email and email != d.email:
             return CustomResponse({"message": "Email changed, otp sent successfully."}, status=status_code.HTTP_200_OK)
 
