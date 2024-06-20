@@ -1,3 +1,4 @@
+from enum import unique
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, UserManager, BaseUserManager
 from django.utils import timezone
@@ -31,7 +32,7 @@ class MyUserManager(BaseUserManager):
 
 class ActiveUserManager(UserManager):
     def get_queryset(self):
-        return super(ActiveUserManager, self).get_queryset().filter(is_active=True, is_deleted=False)
+        return super(ActiveUserManager, self).get_queryset().filter(is_deleted=False)
 
 
 class ActiveObjectsManager(UserManager):
@@ -51,7 +52,7 @@ class User(AbstractBaseUser, BaseModel):
     )
 
     full_name = models.CharField(max_length=50, blank=False, null=True, verbose_name='Full Name')
-    email = models.EmailField("Email", max_length=70, unique=True, blank=True, null=True)
+    email = models.EmailField("Email", max_length=70,unique=True ,blank=True, null=True)
     company_name = models.CharField(max_length=255, null = True, blank=True, verbose_name='company_name')
     user_role = models.IntegerField("User role", choices=ROLE, default=USER)
     profile_pic = models.CharField(blank=True, null=True, max_length=254)
