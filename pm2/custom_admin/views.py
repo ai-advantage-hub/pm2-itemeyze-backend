@@ -2601,6 +2601,10 @@ class ProjectViewSet(viewsets.ViewSet):
         project.project_number = data.get('project_number', project.project_number)
         project.company_id = data.get('company_id', project.company_id)
 
+        # check if company_id is there or not
+        if not project.company_id:
+            project.company_id=None
+
         # Update ownership to admin if requested
         if data.get('ownership_to_admin', False):
             project.created_by = request.user
@@ -2646,7 +2650,6 @@ class ProjectViewSet(viewsets.ViewSet):
                     notification.save()
                     send_notification_bulk(
                         user_ids=[user.id], title=title, message=message, data=data)
-
         serializer = ProjectViewSerializer(project, context={'request': request})
         return CustomResponse(serializer.data)
 
