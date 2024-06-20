@@ -61,7 +61,10 @@ class SignupSerializer(serializers.ModelSerializer):
         """
         validate_email method to validate email
         """
-        if User.objects.filter(email=email.lower()).exists():
+        user = User.objects.filter(email=email.lower()).first()
+        if user:
+            if not user.is_active:
+                raise CustomException(status_code=400, message="This account has been deactivated by the admin.", location="LOCATION")
             raise CustomException(status_code=400, message="This Email already exists.", location="LOCATION")
         return email.lower()
     
