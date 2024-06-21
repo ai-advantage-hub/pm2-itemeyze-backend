@@ -2178,6 +2178,7 @@ class DisapproveFileViewSet(viewsets.ViewSet):
                 file.is_deleted=True
                 file.disapproved_status=0
                 file.save()
+                return CustomResponse({"message": "File has been deleted due to multiple disapprovals"}, status=status.HTTP_200_OK)
         else:
             return CustomResponse ({"message": "Please Provide Valid Status Value"}, status=status.HTTP_400_BAD_REQUEST)
 
