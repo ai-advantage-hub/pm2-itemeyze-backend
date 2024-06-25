@@ -5,7 +5,7 @@ import sendgrid
 from django.template.loader import render_to_string
 from sendgrid.helpers.mail import Content, Email, Mail, To, From
 # from config.local import FROM_NAME, FROM_EMAIL, SEND_GRID_API_KEY
-from config.local import FROM_NAME, FROM_EMAIL
+from config.local import FROM_NAME, FROM_EMAIL, RESET_PASSWORD_LINK
 
 from sendgrid.helpers.mail import Content, Email, Mail, To
 from users.templates import *
@@ -164,7 +164,7 @@ def send_verification_link(email, otp):
     user = User.objects.filter(email=email).first()
     c = user.full_name
     try:
-        reset_link = f"http://d29zp2hclzhanw.cloudfront.net/reset-password?otp={otp}"
+        reset_link = f"{RESET_PASSWORD_LINK}={otp}"
         ctx_dict = {"email": c, "verification_code": otp, "reset_link": reset_link}
         html_template = "forgot_password_admin.html"
         subject = "YOUR LOGIN Link"
