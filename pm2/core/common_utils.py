@@ -165,7 +165,8 @@ def send_verification_link(email, otp):
     c = user.full_name
     try:
         reset_link = f"{RESET_PASSWORD_LINK}={otp}"
-        ctx_dict = {"email": c, "verification_code": otp, "reset_link": reset_link}
+        logo_link="https://d3cf36wpdph1rt.cloudfront.net/Logo.svg"
+        ctx_dict = {"email": c, "verification_code": otp, "reset_link": reset_link, "logo_link":logo_link}
         html_template = "forgot_password_admin.html"
         subject = "YOUR LOGIN Link"
         send_html_mail_to_single_user(subject, email, html_template, ctx_dict)
