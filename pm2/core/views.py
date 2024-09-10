@@ -17,6 +17,7 @@ from core.common_utils import check_file_size
 from config.local import AWS_S3_ACCESS_KEY_ID, AWS_S3_SECRET_ACCESS_KEY, AWS_STORAGE_BUCKET_NAME, AWS_S3_REGION_NAME
 from botocore.exceptions import NoCredentialsError
 from urllib.parse import urlparse
+from pillow_heif import register_heif_opener
 
 
 # Create your views here.
@@ -63,7 +64,7 @@ class UploadFileView(views.APIView):
             file_extension = os.path.splitext(upload.name)[1].lower()
             file_full_name = upload.name
             updated_filename = file_full_name.replace(' ', '_')
-            if file_extension in [".jpg", ".jpeg", ".png"]:
+            if file_extension in [".jpg", ".jpeg", ".png",".heic",'.HEIC']:
                 path_key = "image/{}_{}".format(uuid.uuid4(), updated_filename)
                 # Compress the image
                 compressed_image = self.compress_image(upload)
@@ -100,21 +101,29 @@ class UploadFileView(views.APIView):
 
     def compress_image(self, image):
         """
-           compress_image method to compress the images 
+           compress_image method to compress the images   
         """
         try:
-            print("Compressing image...")
+            # Register the HEIF opener with Pillow
+            register_heif_opener()
+
+            # Open the image with Pillow
             img = Image.open(image)
-            print("Compressing image 2...")
-            img.thumbnail((800, 800))
-            print("Compressing image 3...")
+
+            # Compress the image
+            print("Compressing image...")
+            img.thumbnail((800,   800))
+
+            # Save the compressed image to an in-memory buffer
             output_buffer = BytesIO()
-            print("Compressing image 4...")
-            img.save(output_buffer, format="png")
+            print("Saving compressed image...")
+            img.save(output_buffer, format="png",quailty=90)
             output_buffer.seek(0)
-            print("Compressed image...")
+
+            print("Compressed image ready.")
             return output_buffer
-        except Exception:
+        except Exception as e:
+            print(f"An error occurred: {e}")
             return None
 
     def compress_audio(self, audio):

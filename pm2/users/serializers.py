@@ -8,7 +8,8 @@ from .models import (
     Files,
     UserNotification,
     Site,
-    ManufacturerName
+    ManufacturerName,
+    Settings
 
 )
 from custom_admin.models import ContentManagement
@@ -21,6 +22,7 @@ from django.db import transaction
 from django.contrib.auth.hashers import check_password
 from fcm_django.models import FCMDevice
 from datetime import datetime, timedelta
+from django.db.models import Q
 
 
 
@@ -59,7 +61,10 @@ class SignupSerializer(serializers.ModelSerializer):
         """
         validate_email method to validate email
         """
-        if User.objects.filter(email=email.lower()).exists():
+        user = User.all_objects.filter(email=email.lower()).first()
+        if user:
+            if not user.is_active:
+                raise CustomException(status_code=400, message="This account has been deactivated by the admin.", location="LOCATION")
             raise CustomException(status_code=400, message="This Email already exists.", location="LOCATION")
         return email.lower()
     
@@ -267,12 +272,25 @@ class FilesSerializer(serializers.ModelSerializer):
         FilesSerializer serializer to serialize through files model
     """
     manufacturer_name = ProjectManufacturerSerializer()
+    manufacturer_name__name = serializers.SerializerMethodField()
+    project_name = serializers.SerializerMethodField()
+    site_name = serializers.SerializerMethodField()
 
     class Meta:
         model = Files
-        fields = ('id', 'manufacturer_name', 'thumbnail', 'file_name', 'manufacturing_number', 'location', 
-                  'quantity', 'project_details', 'is_marked_deleted', 'additional_details', 'is_file_disapproved','disapproved_reason','submitted_to_admin','is_edited','disapproved_file_is_edited','created_at',
-                  'recording', 'is_admin_approved', 'is_marked_deleted')
+        fields = ('id', 'manufacturer_name','manufacturer_name__name','name_manufacturer', 'thumbnail', 'file_name', 'manufacturing_number', 'location', 
+                  'quantity', 'project_details', 'is_marked_deleted', 'additional_details', 'is_file_disapproved','disapproved_reason','submitted_to_admin','is_edited','disapproved_file_is_edited','created_at','created_by',
+                  'recording', 'is_admin_approved', 'is_marked_deleted','secondary_image','project_name','site_name')
+        
+    def get_manufacturer_name__name(self, obj):
+        # Retrieve the manufacturer name from the related ManufacturerName model
+        return obj.manufacturer_name.name if obj.manufacturer_name else None
+
+    def get_project_name(self, obj):
+        return obj.project.project_name
+
+    def get_site_name(self, obj):
+        return obj.project.site_id.name if obj.project.site_id else None
 
 
 class ProjectDetailsViewSerializer(serializers.ModelSerializer):
@@ -312,10 +330,10 @@ class UserCompanySerializer(serializers.ModelSerializer):
 class ViewProfileSerializer(serializers.ModelSerializer):
     # user_company = UserCompanySerializer(many=True)
     user_company = serializers.SerializerMethodField()
-
+    os_versions = serializers.SerializerMethodField()
     class Meta:
         model = User
-        fields = ('full_name', 'email', 'profile_pic', 'user_company')
+        fields = ('full_name', 'email', 'profile_pic', 'user_company', 'os_versions')
 
     def get_user_company(self, obj):
         print("validate")
@@ -327,6 +345,10 @@ class ViewProfileSerializer(serializers.ModelSerializer):
             if company:
                 company_list.append({'id': company.id, 'name': company.name})
         return company_list
+    
+    def get_os_versions(self, obj):
+        settings = Settings.objects.filter(Q(name='ios') | Q(name='android')).values("name", "value")
+        return settings
 
 
 class UserListingSerializer(serializers.ModelSerializer):

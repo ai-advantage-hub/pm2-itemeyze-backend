@@ -1,0 +1,50 @@
+<!DOCTYPE>
+<html lang="en" xml:lang="en">
+<head>
+    {% load i18n %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>{% blocktranslate %}OTP Verification{% endblocktranslate %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@200;300;400;500&display=swap" rel="stylesheet">
+    <style>
+        body{font-family: 'Noto Sans', sans-serif;
+             background: #FFDCA2;
+             margin: 30px 20px;
+            }
+    </style>
+</head>
+    <p style="font-family: 'Noto Sans', sans-serif;">
+        <div class="container-fluid", style="background: #034C9E; border-radius: 20px; margin-bottom: 20px; width:300px; height: 150px;">
+            <div class="logo">
+				<img src="{{ logo_link }}" alt="app logo" style='margin-top:20px; margin-left:25px'>
+            </div>
+        </div>
+        <div class="container-fluid",
+        style= "padding: 20px 30px;
+                background: white;
+                border:5px solid #FFBD71;
+                border-radius: 20px;">
+            {% blocktranslate %}Hi {% endblocktranslate %}<strong>{{email}}</strong>,
+            <br><br>
+            {% blocktranslate %}Welcome to PM2!{% endblocktranslate %}
+            <br><br>
+            {% blocktranslate %}Here is the Link to download images{% endblocktranslate %}
+            <br><br>
+            <a href="{{ link }}">Click here to download images</a>
+            <br><br>
+            <strong>{% blocktranslate %} Thank You {% endblocktranslate %}</strong><br>
+            <strong>Team PM2</strong>
+            <br><br><br><br>
+            <small style="color: gray">The information in this email is confidential and intended solely for the attention and use of the named addressee(s).
+            Any documents attached to this e-mail message are confidential and have been prepared solely for the information of the person(s) to whom they have been delivered by or on behalf of PM2 affiliates.
+            If you are not the intended recipient, please notify the sender immediately by email.
+            You are not authorized to and must not disclose, copy, distribute, or retain this message or any part of it.
+            <br><br>© 2023 PM2 LLC. All rights reserved </small>
+        </div>
+    </p>
+
+</body>
+</html>

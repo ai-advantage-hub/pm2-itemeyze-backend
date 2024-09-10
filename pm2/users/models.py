@@ -1,3 +1,4 @@
+from enum import unique
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, UserManager, BaseUserManager
 from django.utils import timezone
@@ -31,7 +32,7 @@ class MyUserManager(BaseUserManager):
 
 class ActiveUserManager(UserManager):
     def get_queryset(self):
-        return super(ActiveUserManager, self).get_queryset().filter(is_active=True, is_deleted=False)
+        return super(ActiveUserManager, self).get_queryset().filter(is_deleted=False)
 
 
 class ActiveObjectsManager(UserManager):
@@ -51,7 +52,7 @@ class User(AbstractBaseUser, BaseModel):
     )
 
     full_name = models.CharField(max_length=50, blank=False, null=True, verbose_name='Full Name')
-    email = models.EmailField("Email", max_length=70, unique=True, blank=True, null=True)
+    email = models.EmailField("Email", max_length=70,unique=True ,blank=True, null=True)
     company_name = models.CharField(max_length=255, null = True, blank=True, verbose_name='company_name')
     user_role = models.IntegerField("User role", choices=ROLE, default=USER)
     profile_pic = models.CharField(blank=True, null=True, max_length=254)
@@ -144,7 +145,7 @@ class Project(BaseModel):
         Project model to save project details
     """
     users = models.ManyToManyField(User,blank=True,related_name='assigned_projects')
-    project_name = models.CharField(max_length=255, unique=True, null=True)
+    project_name = models.CharField(max_length=255, unique=False, null=True)
     project_description = models.TextField(null=True)
     is_admin_approved = models.BooleanField(default=False, null=True)
     is_marked_deleted = models.BooleanField(default = False, null=True)
@@ -153,6 +154,7 @@ class Project(BaseModel):
     deleted_at = models.DateTimeField(null=True, blank=True, verbose_name="Project_Deleted_At")
     site_id = models.ForeignKey(Site,blank=True,on_delete=models.CASCADE, related_name='site_id', null=True)
     is_internal = models.BooleanField(default=False, null=True)
+    company = models.ForeignKey(Company,on_delete=models.SET_NULL, related_name='company_id', null=True)
 
     def __str__(self):
         return self.project_name
@@ -190,6 +192,14 @@ class Files(BaseModel):
     """
         ProjecDetails model to see the details of the projects
     """
+    class DisapprovedType(models.IntegerChoices):
+        """
+            disapproved status type Models used for the disapproved status
+        """
+        No = 0
+        PENDING = 1
+        RESUBMITTED = 2
+
     # manufacturer_name = models.ForeignKey(ManufacturerName, on_delete=models.CASCADE, related_name='name_manufacture', null=True)
     manufacturer_name = models.ForeignKey(ManufacturerName,on_delete=models.SET_NULL,related_name='name_manufacture',null=True)
     name_manufacturer = models.CharField(blank=True, null=True, max_length=254, verbose_name='nae_manufacturer')
@@ -197,7 +207,7 @@ class Files(BaseModel):
     manual_manufacturer_name = models.CharField(blank=True, null=True, max_length=254, verbose_name='manual_name')
     file_name = models.CharField(blank=True, null=True, max_length=254)
     thumbnail = models.TextField(blank=True, null=True)
-    manufacturing_number = models.CharField(max_length=254)
+    manufacturing_number = models.CharField(max_length=254,null=True)
     quantity = models.IntegerField(default=0,blank=True, null=True, verbose_name='Quantity')
     project_details = models.TextField(null=True, blank=True, verbose_name='Project Details')
     additional_details = models.TextField(null=True, blank=True, verbose_name='Additional Details')
@@ -216,6 +226,8 @@ class Files(BaseModel):
     disapproved_on = models.DateTimeField(null=True, blank=True, verbose_name="File_Disapproved_on")
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_by_file', null=True)
     disapproved_count = models.IntegerField(default=0,blank=True, null=True, verbose_name='diaspproved_count')
+    disapproved_status= models.IntegerField(choices=DisapprovedType.choices,default=0,verbose_name='disapproved_status', null=True)
+    secondary_image = models.TextField(blank=True, null=True)
     
     # Add other fields as needed
 
@@ -247,3 +259,29 @@ class UserNotification(BaseModel):
     
     def __str__(self):
         return self.title
+
+class TempProject(BaseModel):
+    """
+        Project model to save project details
+    """
+    users = models.ManyToManyField(User,blank=True,related_name='temp_assigned_projects')
+    project_name = models.CharField(max_length=255, unique=False, null=True)
+    project_number = models.TextField(verbose_name="project number", null=True)
+    site = models.ForeignKey(Site,blank=True,on_delete=models.CASCADE, related_name='temp_site_id', null=True)
+    is_internal = models.BooleanField(default=False, null=True)
+    company = models.ForeignKey(Company,on_delete=models.SET_NULL, related_name='temp_company_id', null=True)
+    class Meta:
+        db_table = "temp_project"
+        verbose_name = "TemporaryProject"
+        verbose_name_plural = "Temporary Projects"
+
+class Settings(BaseModel):
+    """
+       Settings model used to define basic settings of the project
+    """
+    name = models.CharField(max_length=255, unique=False, null=True)
+    value = models.TextField(verbose_name="project number", null=True)
+    class Meta:
+        db_table = "settings"
+        verbose_name = "Settings"
+        verbose_name_plural = "Settings"

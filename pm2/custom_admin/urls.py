@@ -36,6 +36,8 @@ urlpatterns = [
     path("un_approved_project", views.ManageProjectViewSet.as_view({"get": "un_approved_project"}), name="un_approved_project"),
     path("un_approved_project_count", views.ManageProjectViewSet.as_view({"get": "un_approved_project_count"}), name="un_approved_project_count"),
     path("approve_project", views.ManageProjectViewSet.as_view({"put": "approve_project"}), name="approve_project"),
+    path("get_requested_project/<int:id>", views.ManageProjectViewSet.as_view({"get": "get_requested_project"}), name="get_requested_project"),
+    path("update_unapproved_project", views.ManageProjectViewSet.as_view({"put": "update_unapproved_project"}), name="update_unapproved_project"),
     path("un_approved_file/<int:id>", views.ManageProjectViewSet.as_view({"get": "un_approved_file"}), name="un_approved_file"),
     path("un_approved_files_count/<int:id>", views.ManageProjectViewSet.as_view({"get": "un_approved_files_count"}), name="un_approved_files_count"),
     path("view_file/<int:id>", views.ManageProjectViewSet.as_view({"get": "view_file"}), name="view_file"),
@@ -92,6 +94,8 @@ urlpatterns = [
 
     #CR2 Points
     path("approved_files_list/<int:id>", views.ApprovedFilesListingViewSet.as_view({"get": "approved_files_list"}), name="approved_files_list"),
+    path("download_files/<int:id>", views.ApprovedFilesListingViewSet.as_view({"get": "download_files"}), name="download_files"),
+    path("download_files_background/<int:id>", views.ApprovedFilesListingViewSet.as_view({"get": "download_files_v1"}), name="download_files_v1"),
 
     path("disapprove_file", views.DisapproveFileViewSet.as_view({"put": "disapprove_file"}), name="disapprove_file"),
     path("list_disapproved_file/<int:id>", views.DisapproveFileViewSet.as_view({"get": "list_disapproved_file"}), name="list_disapproved_file"),
@@ -109,6 +113,8 @@ urlpatterns = [
     path("project_create", views.ProjectViewSet.as_view({"post": "create"}), name="project_create"),
     path("project_list", views.ProjectViewSet.as_view({"get": "project_list"}), name="project_list"),
     path("project_details/<int:pk>", views.ProjectViewSet.as_view({"get": "project_details"}), name="project_details"),
+    path("project_view/<int:pk>", views.ProjectViewSet.as_view({"get": "project_view"}), name="project_view"),
+    path("project_update/<int:pk>", views.ProjectViewSet.as_view({"put": "project_update"}), name="project_update"),
     path("project_approve", views.ProjectViewSet.as_view({"put": "project_approve"}), name="project_approve"),
 
     path("create_manufacturer", views.ManageManufacturerNameViewSet.as_view({"post": "create"}), name="create_manufacturer"),
@@ -133,4 +139,7 @@ urlpatterns = [
     #TotalUsers
     path("total_users", views.TotalUserCountViewSet.as_view({"get": "list"}), name="total_users"),
 
+    #Settings
+    path("update_versions", views.SettingsViewSet.as_view({"post": "create_or_update_android_ios_versions"}), name="create_or_update_android_ios_versions"),
+    path("get_versions", views.SettingsViewSet.as_view({"get": "get_android_ios_versions"}), name="get_android_ios_versions"),
 ]

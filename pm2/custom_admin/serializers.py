@@ -94,19 +94,26 @@ class ForgotPasswordSerializer(serializers.Serializer):
     
 
 class FileSerializer(serializers.ModelSerializer):
+    manufacturer_name = serializers.SerializerMethodField()
     class Meta:
         model = Files
-        fields = ['id', 'file_name', 'thumbnail', 'manufacturing_number', 'quantity', 'project_details', 'additional_details', 'recording', 'location', 'location_points','created_at', 'is_file_disapproved', 'disapproved_reason']
+        fields = ['id', 'file_name', 'thumbnail','secondary_image', 'manufacturing_number', 'manufacturer_name','quantity', 'project_details', 'additional_details', 'recording', 'location','created_at', 'is_file_disapproved', 'disapproved_reason']
+    
+    def get_manufacturer_name(self, obj):
+        return obj.manufacturer_name.name if obj.manufacturer_name else None
+
 
 
 class ProjectDetailSerializer(serializers.ModelSerializer):
     site_name = serializers.CharField(source='site_id.name', read_only=True)
     created_by = serializers.SerializerMethodField()
     files = serializers.SerializerMethodField()
+    files_count=serializers.SerializerMethodField()
+    company_name = serializers.SerializerMethodField()
 
     class Meta:
         model = Project
-        fields = ['id','project_name', 'project_number','created_by','created_at','site_id_id','site_name', 'files']
+        fields = ['id','project_name', 'project_number','created_by','created_at','site_id_id','site_name', 'files','company_name','files_count']
 
     def get_created_by(self, obj):
         try:
@@ -115,9 +122,47 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
             return None
     
     def get_files(self, obj):
-        approved_files = obj.project_files.filter(is_marked_deleted=False, is_deleted=False, is_admin_approved=True)
+        approved_files = obj.project_files.filter(is_deleted=False, submitted_to_admin=True, is_marked_deleted=False,is_file_disapproved=False)
         return FileSerializer(approved_files, many=True).data
+    
+    def get_files_count(self, obj):
+        disapproved_count = Files.objects.filter(project_id=obj.id,is_file_disapproved=True, is_deleted=False).count()
+        print(disapproved_count)
+        deleted_count = Files.objects.filter(project_id=obj.id,is_marked_deleted=True).count()
+        total_count=disapproved_count+deleted_count
+        return total_count 
+    
+    def get_company_name(self, obj):
+        return obj.company.name if obj.company else None
 
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'email']
+
+class ProjectViewSerializer(serializers.ModelSerializer):
+    site_name = serializers.CharField(source='site_id.name', read_only=True)
+    created_by = serializers.SerializerMethodField()
+    company_name = serializers.SerializerMethodField()
+    created_by_admin = serializers.SerializerMethodField()
+    project_users = UserSerializer(source='users', many=True, read_only=True)
+
+    class Meta:
+        model = Project
+        fields = ['id','project_name', 'project_number','created_by','created_at','site_id_id','site_name','company_name','company_id','created_by_admin','project_users']
+
+    def get_created_by(self, obj):
+        try:
+            return obj.created_by.full_name
+        except AttributeError:            
+            return None
+     
+    def get_company_name(self, obj):
+        return obj.company.name if obj.company else None
+    
+    def get_created_by_admin(self, obj):
+        request=self.context.get('request')
+        return obj.created_by == request.user
 
 class FilesSerializer(serializers.ModelSerializer):
     manufacturer_name = serializers.PrimaryKeyRelatedField(queryset=ManufacturerName.objects.all())
@@ -141,6 +186,8 @@ class FilesPointSerializer(serializers.ModelSerializer):
     """
 
     location_points = serializers.SerializerMethodField()
+    full_name = serializers.SerializerMethodField()
+    creted_by_admin = serializers.SerializerMethodField()
     
     class Meta:
         model = Files
@@ -151,6 +198,22 @@ class FilesPointSerializer(serializers.ModelSerializer):
             return {'longitude': obj.location_points.x, 'latitude': obj.location_points.y}
         return None
     
+    def get_full_name(self, obj):
+        try:
+            user = obj.created_by
+            return user.full_name if user else None
+        except AttributeError:
+            return None
+
+    def get_creted_by_admin(self, obj):
+        request = self.context.get('request')
+        print(request.user.id)
+        print(obj.created_by)
+        if request:
+            if request.user == obj.created_by:
+                return True
+        return False
+
 
 #Manage Users 
 
@@ -247,3 +310,41 @@ class UserListingSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('id', 'full_name', 'email')
+
+class TempProjectSerializer(serializers.ModelSerializer):
+    user_email = serializers.SerializerMethodField()
+    site_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = TempProject
+        fields = ['id', 'users', 'project_name', 'project_number', 'site', 'is_internal', 'company', 'user_email','site_name']
+
+    def get_user_email(self, obj):
+        return [user.email for user in obj.users.all()]
+    
+    def get_site_name(self, obj):
+        return obj.site.name if obj.site else None
+
+class RequestedProjectDataSerializer(serializers.ModelSerializer):
+    users = serializers.SerializerMethodField()
+    user_email = serializers.SerializerMethodField()
+    site_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Project
+        fields = ['id', 'users', 'project_name', 'project_number', 'site_id', 'is_internal', 'company', 'user_email','site_name']
+
+    def get_user_email(self, obj):
+        if not obj.users.exists():  # Check if users list is empty
+            created_by_email = obj.created_by.email if obj.created_by else None
+            return [created_by_email] if created_by_email else []
+        return [user.email for user in obj.users.all()]
+    
+    def get_site_name(self, obj):
+        return obj.site_id.name if obj.site_id else None
+
+    def get_users(self, obj):
+        if not obj.users.exists():  # Check if users list is empty
+            created_by_id = obj.created_by.id if obj.created_by else None
+            return [created_by_id] if created_by_id else []
+        return [user.id for user in obj.users.all()]

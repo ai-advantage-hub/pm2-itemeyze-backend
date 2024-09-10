@@ -5,7 +5,7 @@ import sendgrid
 from django.template.loader import render_to_string
 from sendgrid.helpers.mail import Content, Email, Mail, To, From
 # from config.local import FROM_NAME, FROM_EMAIL, SEND_GRID_API_KEY
-from config.local import FROM_NAME, FROM_EMAIL
+from config.local import FROM_NAME, FROM_EMAIL, RESET_PASSWORD_LINK
 
 from sendgrid.helpers.mail import Content, Email, Mail, To
 from users.templates import *
@@ -112,7 +112,8 @@ def send_verification_email(email, otp):
         method used to send verification email
     """
     try:
-        ctx_dict = {"email": email, "verification_code": otp}
+        logo_link="https://d3cf36wpdph1rt.cloudfront.net/Logo.svg"
+        ctx_dict = {"email": email, "verification_code": otp, "logo_link": logo_link}
         html_template = "forgot_password.html"
         subject = "YOUR LOGIN OTP"
         send_html_mail_to_single_user(subject, email, html_template, ctx_dict)
@@ -125,7 +126,8 @@ def send_edit_profile_verification_email(email, otp, old_email):
         method used to send verification email 
     """
     try:
-        ctx_dict = {"email": email, "verification_code": otp, "old_email": old_email}
+        logo_link="https://d3cf36wpdph1rt.cloudfront.net/Logo.svg"
+        ctx_dict = {"email": email, "verification_code": otp, "old_email": old_email, "logo_link": logo_link}
         html_template = "edit_email_verification.html"
         subject = "YOUR OTP VERIFICATION FOR NEW EMAIL"
         send_html_mail_to_single_user(subject, email, html_template, ctx_dict)
@@ -138,13 +140,26 @@ def send_reset_password_email(email):
         method used to send reset password email
     """
     try:
-        ctx_dict = {"email": email}
+        logo_link="https://d3cf36wpdph1rt.cloudfront.net/Logo.svg"
+        ctx_dict = {"email": email, "logo_link": logo_link}
         html_template = "password_reset.html"
         subject = "YOUR ACCOUNT PASSWORD WAS CHANGED"
         send_html_mail_to_single_user(subject, email, html_template, ctx_dict)
     except Exception as e:
         print("error", e)
 
+def send_images_on_email(link,email):
+    """
+        method used to send images link on email
+    """
+    try:
+        logo_link="https://d3cf36wpdph1rt.cloudfront.net/Logo.svg"
+        ctx_dict = {"link": link, "logo_link": logo_link}
+        html_template = "images_download_template.html"
+        subject = "Image download link"
+        send_html_mail_to_single_user(subject, email, html_template, ctx_dict)
+    except Exception as e:
+        print("error", e)
 
 def send_verification_link(email, otp):
     """
@@ -153,8 +168,9 @@ def send_verification_link(email, otp):
     user = User.objects.filter(email=email).first()
     c = user.full_name
     try:
-        reset_link = f"http://d29zp2hclzhanw.cloudfront.net/reset-password?otp={otp}"
-        ctx_dict = {"email": c, "verification_code": otp, "reset_link": reset_link}
+        reset_link = f"{RESET_PASSWORD_LINK}={otp}"
+        logo_link="https://d3cf36wpdph1rt.cloudfront.net/Logo.svg"
+        ctx_dict = {"email": c, "verification_code": otp, "reset_link": reset_link, "logo_link":logo_link}
         html_template = "forgot_password_admin.html"
         subject = "YOUR LOGIN Link"
         send_html_mail_to_single_user(subject, email, html_template, ctx_dict)
@@ -167,7 +183,8 @@ def send_subadmin_credentials(email, temporary_password):
         method used to send email to newly created subadmins
     """
     try:
-        ctx_dict = {"email": email, "temporary_password": temporary_password}
+        logo_link="https://d3cf36wpdph1rt.cloudfront.net/Logo.svg"
+        ctx_dict = {"email": email, "temporary_password": temporary_password, "logo_link": logo_link}
         html_template = "send_subadmin.html"
         subject = "You are Subadmin now"
         send_html_mail_to_single_user(subject, email, html_template, ctx_dict)
@@ -181,7 +198,8 @@ def send_updated_subadmin_credentials(old_email, email):
         method used to send email to those subadmin whose credentials are changed
     """
     try:
-        ctx_dict = {"old_email": old_email, "new_email": email}
+        logo_link="https://d3cf36wpdph1rt.cloudfront.net/Logo.svg"
+        ctx_dict = {"old_email": old_email, "new_email": email, "logo_link": logo_link}
         html_template = "update_subadmin.html"
         subject = "You are Subadmin now"
         send_html_mail_to_single_user(subject, old_email, html_template, ctx_dict)
@@ -196,7 +214,8 @@ def logged_out_users(email):
         method used to send email to those users whose company is deactivated by admin
     """
     try:
-        ctx_dict = {"email": email}
+        logo_link="https://d3cf36wpdph1rt.cloudfront.net/Logo.svg"
+        ctx_dict = {"email": email, "logo_link": logo_link}
         html_template = "log_out_users.html"
         subject = "Company has been Deactivated by Admin"
         send_html_mail_to_single_user(subject, email, html_template, ctx_dict)
@@ -294,3 +313,16 @@ def send_notification_bulk(user_ids, title, message, data):
     except Exception as e:
         print("HEREError", e)
     return True
+
+def send_company_approve_to_user(email,company_name):
+    """
+        method used to send approve company to user
+    """
+    try:
+        logo_link="https://d3cf36wpdph1rt.cloudfront.net/Logo.svg"
+        ctx_dict = {"company_name": company_name, "logo_link": logo_link}
+        html_template = "approve_company.html"
+        subject = f"YOUR COMPANY {company_name} HAS BEEN APPROVED"
+        send_html_mail_to_single_user(subject, email, html_template, ctx_dict)
+    except Exception as e:
+        print("error", e)
