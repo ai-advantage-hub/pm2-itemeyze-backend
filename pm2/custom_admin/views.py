@@ -2,7 +2,7 @@ from django.shortcuts import render
 from django.urls.exceptions import Http404
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status, viewsets, mixins
+from rest_framework import status, viewsets, mixins, filters
 from custom_admin.serializers import AdminLoginSerializer,AdminResetPasswordSerializer, CreateFileDetailsSerializer, ForgotPasswordSerializer, ProjectDetailSerializer,FilesSerializer,FilesPointSerializer, UserListAdminSerializer,UserDetailSerializer, UserListingSerializer,ProjectViewSerializer, TempProjectSerializer, RequestedProjectDataSerializer
 from django.contrib.auth import authenticate
 from rest_framework.authtoken.models import Token
@@ -31,6 +31,7 @@ from core.pagination import CustomPagination
 from django.db import transaction
 from django.db.models import Count, F, IntegerField, ExpressionWrapper
 from django.db.models.functions import TruncMonth, TruncDate
+from django_filters.rest_framework import DjangoFilterBackend
 from calendar import monthrange
 from datetime import date, timedelta
 import logging
@@ -1893,33 +1894,57 @@ class TotalUserCountViewSet(viewsets.ViewSet):
 
 #CR 2 Points
 
-class ApprovedFilesListingViewSet(viewsets.ViewSet):
+class ApprovedFilesListingViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     """
         ApprovedFilesListingViewSet to get the listing of approved files
     """
     permission_classes = (IsAuthenticated, CheckAdminOrSubAdminRoleStatusPermission,)
     pagination_class = CustomPagination
+    filter_backends = (DjangoFilterBackend,
+                       filters.SearchFilter, filters.OrderingFilter)
+    # search
+    search_fields = ('file_name','created_at__date',)
+    # sorting
+    ordering_fields = ("file_name", "created_at__date",)
 
     def approved_files_list(self, request, id):
         """
             function to get list of approved files
         """
-        page_size = request.GET.get('page_size', '')
-        approved_files = Files.objects.filter(project_id=id, is_deleted=False, submitted_to_admin=True, is_marked_deleted=False,is_file_disapproved=False).order_by('-created_at').values('id','file_name', 'thumbnail','created_at','is_file_disapproved')
+        # page_size = request.GET.get('page_size', '')
+        # approved_files = Files.objects.filter(project_id=id, is_deleted=False, submitted_to_admin=True, is_marked_deleted=False,is_file_disapproved=False).order_by('-created_at').values('id','file_name', 'thumbnail','created_at','is_file_disapproved')
+        # for file_data in approved_files:
+        #     thumbnail_url = file_data['thumbnail']
+        #     parsed_url = urlparse(thumbnail_url)
+        #     thumbnail_path = parsed_url.path if parsed_url.path else None
+        #     file_data['thumbnail']=thumbnail_path
+        # page = None
+        # if page_size:
+        #     pagination_class = self.pagination_class()
+        #     page = pagination_class.paginate_queryset(approved_files, request)
+
+        # if page is not None:
+        #     pagination_class = self.pagination_class()
+        #     page = pagination_class.paginate_queryset(approved_files, request)
+        #     return CustomResponse(pagination_class.get_paginated_response(page).data)
+        # return CustomResponse(approved_files)
+
+        queryset = Files.objects.filter(project_id=id, is_deleted=False,
+            submitted_to_admin=True, is_marked_deleted=False, is_file_disapproved=False,
+            ).order_by("-created_at")
+        queryset = self.filter_queryset(queryset)
+        approved_files = queryset.values("id", "file_name", "thumbnail", "created_at", "is_file_disapproved")
+
         for file_data in approved_files:
-            thumbnail_url = file_data['thumbnail']
+            thumbnail_url = file_data["thumbnail"]
             parsed_url = urlparse(thumbnail_url)
             thumbnail_path = parsed_url.path if parsed_url.path else None
-            file_data['thumbnail']=thumbnail_path
-        page = None
-        if page_size:
-            pagination_class = self.pagination_class()
-            page = pagination_class.paginate_queryset(approved_files, request)
+            file_data["thumbnail"] = thumbnail_path
 
-        if page is not None:
+        if self.request.GET.get("page_size"):
             pagination_class = self.pagination_class()
             page = pagination_class.paginate_queryset(approved_files, request)
-            return CustomResponse(pagination_class.get_paginated_response(page).data)
+            approved_files = pagination_class.get_paginated_response(page).data
         return CustomResponse(approved_files)
 
     def download_thumbnail(self, url, filename):  # Corrected: Added self parameter
@@ -2019,15 +2044,15 @@ class ApprovedFilesListingViewSet(viewsets.ViewSet):
             except Exception as e:
                 print(f"Error cleaning up temporary directory: {e}")
         return CustomResponse({"message": "Zip images link are send on email. If no. of images is large it wil take time to receive email"}, status=status_code.HTTP_200_OK)
-    
+
     def download_files_v1(self, request, id):
         def background_task():
             self.download_files_task(request, id)
-        
+
         # Start the background thread
         thread = threading.Thread(target=background_task)
         thread.start()
-        
+
         # Return an immediate response
         return CustomResponse({"message": "Your images are on their way! Since there are a large number of images, it may take a bit longer for the email to arrive in your inbox"}, status=status_code.HTTP_200_OK)
 
