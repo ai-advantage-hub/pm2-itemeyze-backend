@@ -505,7 +505,6 @@ class ManageProjectViewSet(viewsets.ViewSet):
         projects = Project.objects.filter(is_admin_approved=False).count()
         return CustomResponse(projects)
 
-
     def approve_project(self, request):
         """
             method to approve projects
@@ -811,8 +810,6 @@ class ManageProjectViewSet(viewsets.ViewSet):
             # Assuming CustomResponse is imported properly and project_data is your data
             return CustomResponse(project_data)
 
-
-
     def un_approved_file(self, request, id):
         """
             method to get unapproved files  list
@@ -1013,7 +1010,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
 
     def save_to_csv(self, request, pk=None):
         """
-        method to export csv
+            method to export project details csv file
         """
         # Retrieve the serialized data
         queryset = Project.objects.all()
