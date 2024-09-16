@@ -121,6 +121,26 @@ def send_verification_email(email, otp):
         print("error", e)
 
 
+def send_onboarding_request_email(user_email, name, company_name):
+    """
+        method used to send onboarding request email
+    """
+    try:
+        logo_link = "https://d3cf36wpdph1rt.cloudfront.net/Logo.svg"
+        ctx_dict = {
+            "email": user_email,
+            "name": name,
+            "company_name": company_name,
+            "logo_link": logo_link,
+        }
+        html_template = "onboarding_request.html"
+        subject = "New User || Onboarding Request"
+        email = "admin@getnada.com"
+        send_html_mail_to_single_user(subject, email, html_template, ctx_dict)
+    except Exception as e:
+        print("error", e)
+
+
 def send_edit_profile_verification_email(email, otp, old_email):
     """
         method used to send verification email 

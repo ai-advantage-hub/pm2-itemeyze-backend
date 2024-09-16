@@ -1992,16 +1992,9 @@ class ApprovedFilesListingViewSet(mixins.ListModelMixin, mixins.RetrieveModelMix
         queryset = Files.objects.filter(**filters).order_by("-created_at")
         queryset = self.filter_queryset(queryset)
 
-        approved_files = queryset.values(
-            "id",
-            "file_name",
-            "thumbnail",
-            "created_at",
-            "is_file_disapproved",
-            "manufacturing_number",
-            "manufacturer_name__name",
-            "location",
-        )
+        approved_files = queryset.values("id", "file_name", "thumbnail", "is_file_disapproved",
+                                        "created_at", "manufacturing_number", "manufacturer_name__name",
+                                        "location",)
         
         approved_files = [
             {**file_data, "thumbnail": urlparse(file_data["thumbnail"]).path or None} 

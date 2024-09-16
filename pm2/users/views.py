@@ -34,7 +34,7 @@ from .serializers import (
 
 )
 from rest_framework.authtoken.models import Token
-from core.common_utils import generate_otp, send_verification_email, send_notification_bulk, send_edit_profile_verification_email
+from core.common_utils import generate_otp, send_onboarding_request_email, send_verification_email, send_notification_bulk, send_edit_profile_verification_email
 from core.response import CustomResponse
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 from rest_framework import status as status_code
@@ -124,6 +124,14 @@ class VerifyOTPViewSet(viewsets.ViewSet):
             user = User.objects.filter(email=email.lower()).first()
             user.is_email_verified = True
             user.save()
+            
+            #send onboarding request email to admin
+            try:
+                send_onboarding_request_email(user.email, user.full_name, user.company_name)
+            except Exception as e:
+                print("Error:", e)
+
+
             return CustomResponse({"message": "OTP Verified, User created Successfully", "user_id": user.id}, status=status_code.HTTP_200_OK)
 
         user = OTP.objects.filter(otp=otp, otp_type=type, is_used=False).first()
