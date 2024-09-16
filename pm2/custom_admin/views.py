@@ -1030,7 +1030,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
                 combined_data['thumbnail'] = f'=HYPERLINK("{thumbnail_url}")'
                 combined_data['secondary_image'] = f'=HYPERLINK("{secondary_image_url}")'
                 combined_data['recording'] = f'=HYPERLINK("{recording_url}")'
-                combined_data['created_by'] = combined_data.get('created_by', 'N/A')
+                combined_data['file_created_by'] = combined_data.get('created_by', 'N/A')
                 all_data.append(combined_data)
             df = pd.DataFrame(all_data)
 
