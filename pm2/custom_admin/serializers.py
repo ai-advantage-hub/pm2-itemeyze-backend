@@ -97,7 +97,7 @@ class FileSerializer(serializers.ModelSerializer):
     manufacturer_name = serializers.SerializerMethodField()
     class Meta:
         model = Files
-        fields = ['id', 'file_name', 'thumbnail','secondary_image', 'manufacturing_number', 'manufacturer_name','quantity', 'project_details', 'additional_details', 'recording', 'location','created_at', 'is_file_disapproved', 'disapproved_reason']
+        fields = ['id', 'file_name', 'thumbnail','secondary_image', 'manufacturing_number', 'manufacturer_name','quantity', 'project_details', 'additional_details', 'recording', 'location','created_at', 'created_by' 'is_file_disapproved', 'disapproved_reason']
     
     def get_manufacturer_name(self, obj):
         return obj.manufacturer_name.name if obj.manufacturer_name else None
@@ -107,7 +107,6 @@ class FileSerializer(serializers.ModelSerializer):
 class ProjectDetailSerializer(serializers.ModelSerializer):
     site_name = serializers.CharField(source='site_id.name', read_only=True)
     created_by = serializers.SerializerMethodField()
-    file_created_by = serializers.SerializerMethodField()
     files = serializers.SerializerMethodField()
     files_count=serializers.SerializerMethodField()
     company_name = serializers.SerializerMethodField()
@@ -125,14 +124,6 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
     def get_files(self, obj):
         approved_files = obj.project_files.filter(is_deleted=False, submitted_to_admin=True, is_marked_deleted=False,is_file_disapproved=False)
         return FileSerializer(approved_files, many=True).data
-    
-    # Method to get 'created_by' from the Files model
-    def get_file_created_by(self, obj):
-        # Access the related files using the 'related_name' project_files
-        approved_files = obj.project_files.filter(is_deleted=False, submitted_to_admin=True, is_marked_deleted=False, is_file_disapproved=False)
-        # Extract and return the 'created_by' field for each file
-        created_by_users = [file.created_by.full_name for file in approved_files if file.created_by]
-        return created_by_users if created_by_users else None
     
     def get_files_count(self, obj):
         disapproved_count = Files.objects.filter(project_id=obj.id,is_file_disapproved=True, is_deleted=False).count()
