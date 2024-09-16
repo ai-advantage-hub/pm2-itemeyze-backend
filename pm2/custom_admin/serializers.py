@@ -114,7 +114,7 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Project
-        fields = ['id','project_name', 'project_number','created_by','created_at','site_id_id','site_name', 'files','company_name','files_count']
+        fields = ['id','project_name', 'project_number','created_by','file_created_by', 'created_at','site_id_id','site_name', 'files','company_name','files_count']
 
     def get_created_by(self, obj):
         try:
