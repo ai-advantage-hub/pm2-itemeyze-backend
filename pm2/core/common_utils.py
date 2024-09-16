@@ -71,7 +71,7 @@ def send_html_mail_to_single_user(subject, email, html_template, ctx_dict):
     logging.info("send email to user")
     email_body = render_to_string(html_template, ctx_dict)
     # SES Configuration
-    AWS_REGION = "us-east-1" # change this to the appropriate region
+    AWS_REGION = "us-east-1"
     CHARSET = "UTF-8"
     client = boto3.client('ses', region_name=AWS_REGION, 
                           aws_access_key_id=AWS_S3_ACCESS_KEY_ID, 
@@ -82,6 +82,53 @@ def send_html_mail_to_single_user(subject, email, html_template, ctx_dict):
         response = client.send_email(
             Destination={
                 'ToAddresses': [email], # Recipient email address
+            },
+            Message={
+                'Body': {
+                    'Html': {
+                        'Charset': CHARSET,
+                        'Data': email_body,
+                    },
+                },
+                'Subject': {
+                    'Charset': CHARSET,
+                    'Data': subject,
+                },
+            },
+            Source=SENDER, # Sender's email address
+        )
+        logging.info("Email sent! Message ID:"),
+        print("email sent")
+        logging.info(response['MessageId'])
+    except Exception as e:
+        print("in except")
+        logging.info("exception:", e)
+        logging.info("ERROR_IN_SENDING_MAIL")
+    return True
+
+
+def send_html_mail_to_multiple_users(subject, emails, html_template, ctx_dict):
+    """
+        Method used to send the email.
+        :param subject:
+        :param email:
+        :param html_template:
+        :param ctx_dict:
+    """
+    logging.info("send email to mutiple user")
+    email_body = render_to_string(html_template, ctx_dict)
+    # SES Configuration
+    AWS_REGION = "us-east-1"
+    CHARSET = "UTF-8"
+    client = boto3.client('ses', region_name=AWS_REGION, 
+                          aws_access_key_id=AWS_S3_ACCESS_KEY_ID, 
+                          aws_secret_access_key=AWS_S3_SECRET_ACCESS_KEY)
+    SENDER = f"{FROM_NAME} <{FROM_EMAIL}>"
+    try:
+        print("in try")
+        response = client.send_email(
+            Destination={
+                'ToAddresses': emails, # List of recipient email addresses
             },
             Message={
                 'Body': {
@@ -135,10 +182,14 @@ def send_onboarding_request_email(user_email, name, company_name):
         }
         html_template = "onboarding_request.html"
         subject = "New User || Onboarding Request"
-        email = "admin@getnada.com"
-        send_html_mail_to_single_user(subject, email, html_template, ctx_dict)
+        admin_email = [User.objects.filter(user_role=1, is_active=True, is_deleted=False).values_list('email', flat=True)]
+        if admin_email:
+            send_html_mail_to_multiple_users(subject, admin_email, html_template, ctx_dict)
+        else:
+            logging.info(f"No active admin users found to send the onboarding request email.")
     except Exception as e:
         print("error", e)
+        logging.info(f"Error sending onboarding request email: {e}")
 
 
 def send_edit_profile_verification_email(email, otp, old_email):
