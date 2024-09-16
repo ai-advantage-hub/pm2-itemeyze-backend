@@ -95,6 +95,8 @@ class ForgotPasswordSerializer(serializers.Serializer):
 
 class FileSerializer(serializers.ModelSerializer):
     manufacturer_name = serializers.SerializerMethodField()
+    created_by = serializers.CharField(source='created_by.full_name', read_only=True)
+
     class Meta:
         model = Files
         fields = ['id', 'file_name', 'thumbnail','secondary_image', 'manufacturing_number', 'manufacturer_name',
