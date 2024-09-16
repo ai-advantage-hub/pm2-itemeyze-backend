@@ -97,7 +97,9 @@ class FileSerializer(serializers.ModelSerializer):
     manufacturer_name = serializers.SerializerMethodField()
     class Meta:
         model = Files
-        fields = ['id', 'file_name', 'thumbnail','secondary_image', 'manufacturing_number', 'manufacturer_name','quantity', 'project_details', 'additional_details', 'recording', 'location','created_at', 'created_by' 'is_file_disapproved', 'disapproved_reason']
+        fields = ['id', 'file_name', 'thumbnail','secondary_image', 'manufacturing_number', 'manufacturer_name',
+                  'quantity', 'project_details', 'additional_details', 'recording', 'location','created_at',
+                  'created_by', 'is_file_disapproved', 'disapproved_reason']
     
     def get_manufacturer_name(self, obj):
         return obj.manufacturer_name.name if obj.manufacturer_name else None
