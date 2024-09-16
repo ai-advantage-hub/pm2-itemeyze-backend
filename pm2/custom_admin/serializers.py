@@ -122,13 +122,13 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
     #     except AttributeError:            
     #         return None
 
-    # Method to get 'created_by' from the Files model
-    def get_file_created_by(self, obj):
-        # Access the related files using the 'related_name' project_files
-        approved_files = obj.project_files.filter(is_deleted=False, submitted_to_admin=True, is_marked_deleted=False, is_file_disapproved=False)
-        # Extract and return the 'created_by' field for each file
-        created_by_users = [file.created_by.full_name for file in approved_files if file.created_by]
-        return created_by_users if created_by_users else None
+    # # Method to get 'created_by' from the Files model
+    # def get_file_created_by(self, obj):
+    #     # Access the related files using the 'related_name' project_files
+    #     approved_files = obj.project_files.filter(is_deleted=False, submitted_to_admin=True, is_marked_deleted=False, is_file_disapproved=False)
+    #     # Extract and return the 'created_by' field for each file
+    #     created_by_users = [file.created_by.full_name for file in approved_files if file.created_by]
+    #     return created_by_users if created_by_users else None
 
     def get_files(self, obj):
         approved_files = obj.project_files.filter(is_deleted=False, submitted_to_admin=True, is_marked_deleted=False,is_file_disapproved=False)
