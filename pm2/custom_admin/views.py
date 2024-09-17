@@ -2042,15 +2042,16 @@ class ApprovedFilesListingViewSet(mixins.ListModelMixin, mixins.RetrieveModelMix
             .order_by("-created_at")
         )
 
-        # Create a list of DownloadFiles instances (but not saving them yet)
-        download_files_instances = [
-            DownloadFiles(users=user, file=file_instance, is_downloaded=True)
-            for file_instance in approved_files
-        ]
+        if file_id:
+            # Create a list of DownloadFiles instances (but not saving them yet)
+            download_files_instances = [
+                DownloadFiles(users=user, file=file_instance, is_downloaded=True)
+                for file_instance in approved_files
+            ]
 
-        # Use bulk_create to create all the entries in a single query
-        if download_files_instances:
-            DownloadFiles.objects.bulk_create(download_files_instances)
+            # Use bulk_create to create all the entries in a single query
+            if download_files_instances:
+                DownloadFiles.objects.bulk_create(download_files_instances)
 
         approved_files_values = approved_files.values(
             "id", "file_name", "thumbnail", "created_at", "is_file_disapproved"
