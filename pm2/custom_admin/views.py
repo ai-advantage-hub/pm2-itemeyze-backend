@@ -1,51 +1,91 @@
-from django.shortcuts import render
-from django.urls.exceptions import Http404
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status, viewsets, mixins
-from custom_admin.serializers import AdminLoginSerializer,AdminResetPasswordSerializer, CreateFileDetailsSerializer, ForgotPasswordSerializer, ProjectDetailSerializer,FilesSerializer,FilesPointSerializer, UserListAdminSerializer,UserDetailSerializer, UserListingSerializer,ProjectViewSerializer, TempProjectSerializer, RequestedProjectDataSerializer
-from django.contrib.auth import authenticate
-from rest_framework.authtoken.models import Token
-from users.models import Company, TempProject, UserCompany, User,Project,Files, UserNotification, Site, ManufacturerName , Settings
-from django.contrib.auth.hashers import check_password
-from custom_admin.models import *
-from core.response import CustomResponse
-from django.db.models import Count, Sum
-from core.common_utils import generate_otp, send_verification_email, send_subadmin_credentials, send_notification_bulk, logged_out_users, subadmin_deleted, send_updated_subadmin_credentials,send_company_approve_to_user, send_images_on_email
-from core.permissions import CheckAdminRoleStatusPermission, CheckAdminOrSubAdminRoleStatusPermission
-from rest_framework.permissions import IsAuthenticated
-from users.models import OTP
-from django.utils import timezone
-from django.db.models import Prefetch
-from django.shortcuts import get_object_or_404
-import pandas as pd
-from rest_framework.decorators import action
 import os
 import csv
-from config.local import AWS_S3_ACCESS_KEY_ID, AWS_S3_SECRET_ACCESS_KEY, AWS_STORAGE_BUCKET_NAME
-import boto3
 import uuid
-from rest_framework import status as status_code
-from django.db.models import Q,F
-from core.pagination import CustomPagination
-from django.db import transaction
-from django.db.models import Count, F, IntegerField, ExpressionWrapper
-from django.db.models.functions import TruncMonth, TruncDate
-from calendar import monthrange
-from datetime import date, timedelta
+import boto3
 import logging
-from urllib.parse import urlparse
+import shutil
 import zipfile
 import requests
-from django.http import HttpResponse
-from django.core.exceptions import SuspiciousOperation
-import shutil
-import concurrent.futures
-from multiprocessing import Process
+import pandas as pd
 import threading
+import concurrent.futures
+from urllib.parse import urlparse
+from calendar import monthrange
+from datetime import date, timedelta, datetime
+from multiprocessing import Process
+
+from django.shortcuts import render, get_object_or_404
+from django.http import HttpResponse
+from django.utils import timezone
+from django.core.exceptions import SuspiciousOperation
+from django.db import transaction
+from django.db.models import Q, F, Count, Sum, Value, IntegerField, ExpressionWrapper, Prefetch, Subquery, OuterRef
+from django.db.models.functions import Coalesce, TruncMonth, TruncDate
+from django.contrib.auth import authenticate
+from django.contrib.auth.hashers import check_password
+from django_filters.rest_framework import DjangoFilterBackend
+
+from rest_framework import status, viewsets, mixins, filters
+from rest_framework import status as status_code
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import action
+from rest_framework.authtoken.models import Token
+
+from custom_admin.serializers import (
+    AdminLoginSerializer,
+    AdminResetPasswordSerializer,
+    CreateFileDetailsSerializer,
+    ForgotPasswordSerializer,
+    ProjectDetailSerializer,
+    FilesSerializer,
+    FilesPointSerializer,
+    UserListAdminSerializer,
+    UserDetailSerializer,
+    UserListingSerializer,
+    ProjectViewSerializer,
+    TempProjectSerializer,
+    RequestedProjectDataSerializer
+)
+
+from users.models import (
+    Company,
+    TempProject,
+    UserCompany,
+    User,
+    Project,
+    Files,
+    UserNotification,
+    Site,
+    ManufacturerName,
+    Settings,
+    OTP
+)
+
+from custom_admin.models import *
+from core.response import CustomResponse
+from core.common_utils import (
+    generate_otp,
+    send_verification_email,
+    send_subadmin_credentials,
+    send_notification_bulk,
+    logged_out_users,
+    subadmin_deleted,
+    send_updated_subadmin_credentials,
+    send_company_approve_to_user,
+    send_images_on_email
+)
+from core.permissions import CheckAdminRoleStatusPermission, CheckAdminOrSubAdminRoleStatusPermission
+from core.pagination import CustomPagination
+
+from config.local import AWS_S3_ACCESS_KEY_ID, AWS_S3_SECRET_ACCESS_KEY, AWS_STORAGE_BUCKET_NAME
+
 
 log = logging.getLogger(__name__)
 
+
+# Onbording
 
 class AdminLoginView(viewsets.ViewSet):
     """
@@ -465,7 +505,6 @@ class ManageProjectViewSet(viewsets.ViewSet):
         projects = Project.objects.filter(is_admin_approved=False).count()
         return CustomResponse(projects)
 
-
     def approve_project(self, request):
         """
             method to approve projects
@@ -771,8 +810,6 @@ class ManageProjectViewSet(viewsets.ViewSet):
             # Assuming CustomResponse is imported properly and project_data is your data
             return CustomResponse(project_data)
 
-
-
     def un_approved_file(self, request, id):
         """
             method to get unapproved files  list
@@ -973,7 +1010,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
 
     def save_to_csv(self, request, pk=None):
         """
-        method to export csv
+            method to export project details csv file
         """
         # Retrieve the serialized data
         queryset = Project.objects.all()
@@ -1026,7 +1063,6 @@ class ManageProjectViewSet(viewsets.ViewSet):
         else:
             return CustomResponse({"message": "No data available for exporting to CSV."},
                                 status=status_code.HTTP_400_BAD_REQUEST)
-
 
 
 class ManageSubadminViewSet(viewsets.ViewSet):
@@ -1266,10 +1302,7 @@ class AdminNameViewset(viewsets.ViewSet):
         return CustomResponse(name)
 
 
-#Manage Users
-
-from django.db.models import Subquery, OuterRef, Count, Q, Value, IntegerField, ExpressionWrapper, F
-from django.db.models.functions import Coalesce
+# Manage Users
 
 class  ManageUserAdminViewSet(viewsets.ViewSet):
     """
@@ -1646,7 +1679,6 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
             return CustomResponse(response)
 
 
-
 # CR Points
 
 class DeletedProjectsViewSet(viewsets.ViewSet):
@@ -1849,8 +1881,6 @@ class DeactivateCompanyViewSet(viewsets.ViewSet):
                 return CustomResponse({"message": "Status deactivated successfully. Users associated with this company have been logged out."}, status=status.HTTP_200_OK)
 
 
-
-
 class UserListingViewSet(viewsets.ViewSet):
     """
        UserListingViewSet for getting the list of users
@@ -1891,35 +1921,88 @@ class TotalUserCountViewSet(viewsets.ViewSet):
         return CustomResponse(data)
 
 
-#CR 2 Points
+# CR 2 Points
 
-class ApprovedFilesListingViewSet(viewsets.ViewSet):
+class ApprovedFilesListingViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     """
         ApprovedFilesListingViewSet to get the listing of approved files
     """
     permission_classes = (IsAuthenticated, CheckAdminOrSubAdminRoleStatusPermission,)
     pagination_class = CustomPagination
+    filter_backends = (DjangoFilterBackend,
+                       filters.SearchFilter, filters.OrderingFilter)
+    # search
+    search_fields = (
+        "file_name",
+        "created_at__date",
+        "manufacturing_number",
+        "manufacturer_name__name",
+        "location",
+    )
+    # sorting
+    ordering_fields = (
+        "file_name",
+        "created_at__date",
+        "manufacturing_number",
+    )
 
     def approved_files_list(self, request, id):
         """
             function to get list of approved files
         """
-        page_size = request.GET.get('page_size', '')
-        approved_files = Files.objects.filter(project_id=id, is_deleted=False, submitted_to_admin=True, is_marked_deleted=False,is_file_disapproved=False).order_by('-created_at').values('id','file_name', 'thumbnail','created_at','is_file_disapproved')
-        for file_data in approved_files:
-            thumbnail_url = file_data['thumbnail']
-            parsed_url = urlparse(thumbnail_url)
-            thumbnail_path = parsed_url.path if parsed_url.path else None
-            file_data['thumbnail']=thumbnail_path
-        page = None
-        if page_size:
-            pagination_class = self.pagination_class()
-            page = pagination_class.paginate_queryset(approved_files, request)
+        # page_size = request.GET.get('page_size', '')
+        # approved_files = Files.objects.filter(project_id=id, is_deleted=False, submitted_to_admin=True, is_marked_deleted=False,is_file_disapproved=False).order_by('-created_at').values('id','file_name', 'thumbnail','created_at','is_file_disapproved')
+        # for file_data in approved_files:
+        #     thumbnail_url = file_data['thumbnail']
+        #     parsed_url = urlparse(thumbnail_url)
+        #     thumbnail_path = parsed_url.path if parsed_url.path else None
+        #     file_data['thumbnail']=thumbnail_path
+        # page = None
+        # if page_size:
+        #     pagination_class = self.pagination_class()
+        #     page = pagination_class.paginate_queryset(approved_files, request)
 
-        if page is not None:
+        # if page is not None:
+        #     pagination_class = self.pagination_class()
+        #     page = pagination_class.paginate_queryset(approved_files, request)
+        #     return CustomResponse(pagination_class.get_paginated_response(page).data)
+        # return CustomResponse(approved_files)
+
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
+        
+        filters = {
+            'project_id': id,
+            'is_deleted': False,
+            'submitted_to_admin': True,
+            'is_marked_deleted': False,
+            'is_file_disapproved': False
+        }
+
+        if start_date and end_date:
+            date_format = '%m/%d/%Y'
+            filters.update({
+                'created_at__date__gte': datetime.strptime(start_date, date_format).strftime('%Y-%m-%d'),
+                'created_at__date__lte': datetime.strptime(end_date, date_format).strftime('%Y-%m-%d')
+            })
+
+        queryset = Files.objects.filter(**filters).order_by("-created_at")
+        queryset = self.filter_queryset(queryset)
+
+        approved_files = queryset.values("id", "file_name", "thumbnail", "is_file_disapproved",
+                                        "created_at", "manufacturing_number", "manufacturer_name__name",
+                                        "location",)
+        
+        approved_files = [
+            {**file_data, "thumbnail": urlparse(file_data["thumbnail"]).path or None} 
+            for file_data in approved_files
+        ]
+
+        if self.request.GET.get("page_size"):
             pagination_class = self.pagination_class()
             page = pagination_class.paginate_queryset(approved_files, request)
-            return CustomResponse(pagination_class.get_paginated_response(page).data)
+            approved_files = pagination_class.get_paginated_response(page).data
+
         return CustomResponse(approved_files)
 
     def download_thumbnail(self, url, filename):  # Corrected: Added self parameter
@@ -1931,6 +2014,7 @@ class ApprovedFilesListingViewSet(viewsets.ViewSet):
         except requests.exceptions.RequestException as e:
             # Log the error or handle it as per your application's needs
             print(f"Error downloading thumbnail from {url}: {e}")
+    
     def download_files(self, request, id):
         """
         Function to download approved files
@@ -2019,18 +2103,17 @@ class ApprovedFilesListingViewSet(viewsets.ViewSet):
             except Exception as e:
                 print(f"Error cleaning up temporary directory: {e}")
         return CustomResponse({"message": "Zip images link are send on email. If no. of images is large it wil take time to receive email"}, status=status_code.HTTP_200_OK)
-    
+
     def download_files_v1(self, request, id):
         def background_task():
             self.download_files_task(request, id)
-        
+
         # Start the background thread
         thread = threading.Thread(target=background_task)
         thread.start()
-        
+
         # Return an immediate response
         return CustomResponse({"message": "Your images are on their way! Since there are a large number of images, it may take a bit longer for the email to arrive in your inbox"}, status=status_code.HTTP_200_OK)
-
 
 
 class DisapproveFileViewSet(viewsets.ViewSet):
@@ -3137,6 +3220,7 @@ class UploadexcelViewSet(viewsets.ViewSet):
             # return CustomResponse({"message": e})
             print("error:", e)
         return CustomResponse({"message": "Excel file uploaded Successfully"})
+
 
 class SettingsViewSet(viewsets.ViewSet):
     """
