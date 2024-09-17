@@ -51,6 +51,7 @@ from custom_admin.serializers import (
 
 from users.models import (
     Company,
+    DownloadFiles,
     TempProject,
     UserCompany,
     User,
@@ -1950,27 +1951,10 @@ class ApprovedFilesListingViewSet(mixins.ListModelMixin, mixins.RetrieveModelMix
         """
             function to get list of approved files
         """
-        # page_size = request.GET.get('page_size', '')
-        # approved_files = Files.objects.filter(project_id=id, is_deleted=False, submitted_to_admin=True, is_marked_deleted=False,is_file_disapproved=False).order_by('-created_at').values('id','file_name', 'thumbnail','created_at','is_file_disapproved')
-        # for file_data in approved_files:
-        #     thumbnail_url = file_data['thumbnail']
-        #     parsed_url = urlparse(thumbnail_url)
-        #     thumbnail_path = parsed_url.path if parsed_url.path else None
-        #     file_data['thumbnail']=thumbnail_path
-        # page = None
-        # if page_size:
-        #     pagination_class = self.pagination_class()
-        #     page = pagination_class.paginate_queryset(approved_files, request)
-
-        # if page is not None:
-        #     pagination_class = self.pagination_class()
-        #     page = pagination_class.paginate_queryset(approved_files, request)
-        #     return CustomResponse(pagination_class.get_paginated_response(page).data)
-        # return CustomResponse(approved_files)
-
+        user = request.user
         start_date = request.query_params.get('start_date')
         end_date = request.query_params.get('end_date')
-        
+
         filters = {
             'project_id': id,
             'is_deleted': False,
@@ -1993,8 +1977,19 @@ class ApprovedFilesListingViewSet(mixins.ListModelMixin, mixins.RetrieveModelMix
                                         "created_at", "manufacturing_number", "manufacturer_name__name",
                                         "location",)
         
+        # Retrieve DownloadFiles entries for the user and files in the queryset
+        approved_file_ids = queryset.values_list('id', flat=True)
+        download_files_entries = DownloadFiles.objects.filter(
+            users=user,
+            file_id__in=approved_file_ids
+        ).values_list('file_id', flat=True)
+
         approved_files = [
-            {**file_data, "thumbnail": urlparse(file_data["thumbnail"]).path or None} 
+            {
+                **file_data,
+                "thumbnail": urlparse(file_data["thumbnail"]).path or None,
+                "is_downloaded": file_data["id"] in download_files_entries
+            } 
             for file_data in approved_files
         ]
 
@@ -2014,7 +2009,7 @@ class ApprovedFilesListingViewSet(mixins.ListModelMixin, mixins.RetrieveModelMix
         except requests.exceptions.RequestException as e:
             # Log the error or handle it as per your application's needs
             print(f"Error downloading thumbnail from {url}: {e}")
-    
+
     def download_files(self, request, id):
         """
         Function to download approved files
@@ -2025,14 +2020,45 @@ class ApprovedFilesListingViewSet(mixins.ListModelMixin, mixins.RetrieveModelMix
             files.append({'file_name':file_data['file_name'],'thumbnail':file_data['thumbnail']})
         return CustomResponse(files)
 
-    def download_files_task(self, request, id):
+    def download_files_task(self, request, id, file_id):
         """
         Function to download approved files
         """
-        approved_files = Files.objects.filter(project_id=id, is_deleted=False, submitted_to_admin=True, is_marked_deleted=False, is_file_disapproved=False).order_by('-created_at').values('id', 'file_name', 'thumbnail', 'created_at', 'is_file_disapproved')
+        user = self.request.user
+
+        filters = {
+            "project_id": id,
+            "is_deleted": False,
+            "submitted_to_admin": True,
+            "is_marked_deleted": False,
+            "is_file_disapproved": False,
+        }
+
+        if file_id:
+            filters["id__in"] = file_id
+
+        approved_files = (
+            Files.objects.filter(**filters)
+            .order_by("-created_at")
+        )
+
+        # Create a list of DownloadFiles instances (but not saving them yet)
+        download_files_instances = [
+            DownloadFiles(users=user, file=file_instance, is_downloaded=True)
+            for file_instance in approved_files
+        ]
+
+        # Use bulk_create to create all the entries in a single query
+        if download_files_instances:
+            DownloadFiles.objects.bulk_create(download_files_instances)
+
+        approved_files_values = approved_files.values(
+            "id", "file_name", "thumbnail", "created_at", "is_file_disapproved"
+        )
+
         thumbnail_urls = []
         file_names = []
-        for file_data in approved_files:
+        for file_data in approved_files_values:
             thumbnail_url = file_data['thumbnail']
             if thumbnail_url and file_data['file_name']:  # Check if thumbnail URL is not None
                 thumbnail_urls.append(thumbnail_url)
@@ -2044,7 +2070,8 @@ class ApprovedFilesListingViewSet(mixins.ListModelMixin, mixins.RetrieveModelMix
                     path = parsed_url.path
                     filename_with_extension = os.path.basename(path)
                     get_filename, extension = os.path.splitext(filename_with_extension)
-                    file_names.append(get_file_name+extension)
+                    file_names.append(get_file_name + extension)
+        
         # Define the zip filename
         zip_filename = f'{id}.zip'
 
@@ -2078,8 +2105,7 @@ class ApprovedFilesListingViewSet(mixins.ListModelMixin, mixins.RetrieveModelMix
                 link = s3_client.generate_presigned_url('get_object',
                                                     Params={'Bucket': AWS_STORAGE_BUCKET_NAME, 'Key': path_key},
                                                     ExpiresIn=3600000)
-                user_email = request.user.email
-                send_images_on_email(link,user_email)
+                send_images_on_email(link, user.email)
                 # After successful upload, delete local CSV (optional)
 
             # Serve the ZIP file as a response
@@ -2105,8 +2131,10 @@ class ApprovedFilesListingViewSet(mixins.ListModelMixin, mixins.RetrieveModelMix
         return CustomResponse({"message": "Zip images link are send on email. If no. of images is large it wil take time to receive email"}, status=status_code.HTTP_200_OK)
 
     def download_files_v1(self, request, id):
+        file_id = request.data.get('file_id')
+
         def background_task():
-            self.download_files_task(request, id)
+            self.download_files_task(request, id, file_id)
 
         # Start the background thread
         thread = threading.Thread(target=background_task)
@@ -3246,4 +3274,3 @@ class SettingsViewSet(viewsets.ViewSet):
         """
         settings = Settings.objects.filter(Q(name='ios') | Q(name='android')).values("name", "value")
         return CustomResponse(settings)
-
