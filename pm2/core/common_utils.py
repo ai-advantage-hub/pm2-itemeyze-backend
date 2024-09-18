@@ -397,3 +397,27 @@ def send_company_approve_to_user(email,company_name):
         send_html_mail_to_single_user(subject, email, html_template, ctx_dict)
     except Exception as e:
         print("error", e)
+
+
+def get_content_type(file_extension):
+    """
+    Get the content type based on the file extension.
+
+    :param file_extension: The file extension (e.g., '.jpg', '.pdf').
+    :return: The corresponding content type.
+    """
+    content_type_mapping = {
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.png': 'image/png',
+        '.gif': 'image/gif',
+        '.pdf': 'application/pdf',
+        '.doc': 'application/msword',
+        '.mp4': 'video/mp4',
+        '.mp3': 'audio/mpeg',
+        '.wav': 'audio/wav',
+        # Add more mappings as needed
+    }
+
+    # Use the mapping or default to 'application/octet-stream' if the extension is not recognized
+    return content_type_mapping.get(file_extension.lower(), 'application/octet-stream')

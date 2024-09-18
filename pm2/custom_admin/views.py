@@ -2037,13 +2037,9 @@ class ApprovedFilesListingViewSet(mixins.ListModelMixin, mixins.RetrieveModelMix
         if file_id:
             filters["id__in"] = file_id
 
-        approved_files = (
-            Files.objects.filter(**filters)
-            .order_by("-created_at")
-        )
+        approved_files = Files.objects.filter(**filters).order_by("-created_at")
 
         if file_id:
-            # Create a list of DownloadFiles instances (but not saving them yet)
             download_files_instances = [
                 DownloadFiles(users=user, file=file_instance, is_downloaded=True)
                 for file_instance in approved_files
