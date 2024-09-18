@@ -1,71 +1,59 @@
-from django.shortcuts import render
-from rest_framework import mixins, viewsets
-from rest_framework.response import Response
-from .models import (
-    User,
-    OTP,
-    Project,
-    Files,
-    Company,
-    UserCompany,
-    UserNotification,
-    Site,
-    ManufacturerName
+import os
+import uuid
+import io
+from io import BytesIO
+from urllib.parse import urlparse
 
+from PIL import Image
+from pydub import AudioSegment
+import boto3
+from botocore.exceptions import NoCredentialsError
+
+from django.shortcuts import render
+from django.http import JsonResponse
+from django.utils import timezone
+from django.utils.translation import gettext
+from django.db.models import Q, Case, Value, When, CharField
+
+from rest_framework import views, mixins, viewsets, status as status_code
+from rest_framework.parsers import MultiPartParser
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.response import Response
+from rest_framework.authtoken.models import Token
+from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
+
+from fcm_django.models import FCMDevice
+
+from .models import (
+    User, OTP, Project, Files, Company, UserCompany,
+    UserNotification, Site, ManufacturerName
 )
 from custom_admin.models import ContentManagement
 from .serializers import (
-    SignupSerializer,
-    UserLoginSerializer,
-    ForgotPasswordSerializer,
-    ResetPasswordSerializer,
-    CreateProjectSerializer,
-    CreateFileDetailsSerializer,
-    ProjectDetailsViewSerializer,
-    ContentManagementSerializer,
-    UserListingSerializer,
-    CompanyNameSerializer,
-    ViewProfileSerializer,
-    UserChangePasswordSerializer,
-    FilesSerializer,
-    UserDeviceDetailSerializer,
-    UserDeviceSerializer,
+    SignupSerializer, UserLoginSerializer, ForgotPasswordSerializer, 
+    ResetPasswordSerializer, CreateProjectSerializer, CreateFileDetailsSerializer, 
+    ProjectDetailsViewSerializer, ContentManagementSerializer, UserListingSerializer, 
+    CompanyNameSerializer, ViewProfileSerializer, UserChangePasswordSerializer, 
+    FilesSerializer, UserDeviceDetailSerializer, UserDeviceSerializer, 
     NotificationListSerializer
-
 )
-from rest_framework.authtoken.models import Token
-from core.common_utils import generate_otp, send_onboarding_request_email, send_verification_email, send_notification_bulk, send_edit_profile_verification_email
+from core.common_utils import (
+    generate_otp, send_onboarding_request_email, send_verification_email, 
+    send_notification_bulk, send_edit_profile_verification_email, check_file_size
+)
 from core.response import CustomResponse
-from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
-from rest_framework import status as status_code
-from django.utils import timezone
 from core.messages import SUCCESS_MESSAGES
-from django.utils.translation import gettext
-from rest_framework.permissions import IsAuthenticated, AllowAny
-from core.permissions import CheckUserRoleStatusPermission
-from django.db.models import Q, Case, Value, When, CharField
-from fcm_django.models import FCMDevice
 from core.pagination import CustomPagination
-from django.shortcuts import render
-from rest_framework import views
-from rest_framework.parsers import MultiPartParser
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-from rest_framework import status as status_code
-import boto3
-import uuid
-import os
-from PIL import Image
-from io import BytesIO
-import io
-from pydub import AudioSegment
-from core.common_utils import check_file_size
-from config.local import AWS_S3_ACCESS_KEY_ID, AWS_S3_SECRET_ACCESS_KEY, AWS_STORAGE_BUCKET_NAME, AWS_S3_REGION_NAME
-from botocore.exceptions import NoCredentialsError
-from urllib.parse import urlparse
+from core.permissions import CheckUserRoleStatusPermission
 from core.exception import CustomException
 
-#Onboarding
+from config.local import (
+    AWS_S3_ACCESS_KEY_ID, AWS_S3_SECRET_ACCESS_KEY, AWS_STORAGE_BUCKET_NAME, 
+    AWS_S3_REGION_NAME
+)
+
+
+# Onboarding
 
 class SignUpViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
     """
@@ -241,10 +229,7 @@ class UserNameViewSet(viewsets.ViewSet):
         return CustomResponse(name, status=status_code.HTTP_200_OK)
 
 
-#Home
-
-from django.http import JsonResponse
-
+# Home
 
 class ProjectViewSet(viewsets.ModelViewSet):
     """
@@ -849,7 +834,7 @@ class TermsAndConditionsViewSet(viewsets.ModelViewSet):
         return CustomResponse(serializer.data, status=status_code.HTTP_200_OK)
 
 
-#Settings
+# Settings
 
 class ViewProfileViewSet(viewsets.ViewSet):
     """
@@ -1037,7 +1022,8 @@ class GlobalSearchViewSet(viewsets.ViewSet):
         return CustomResponse(serializer.data, status=status_code.HTTP_200_OK)
 
 
-#Log out
+# Log out
+
 class LogoutUserViewSet(viewsets.ViewSet):
     """
         LogoutUserViewSet to Logout the User
@@ -1052,7 +1038,8 @@ class LogoutUserViewSet(viewsets.ViewSet):
         return Response({"message": "Logged out successfully"}, status=status_code.HTTP_200_OK)
 
 
-#Delete Account
+# Delete Account
+
 class DeleteUserViewSet(viewsets.GenericViewSet):
     """
         DeleteUserViewSet to delete a user's account
@@ -1073,7 +1060,7 @@ class DeleteUserViewSet(viewsets.GenericViewSet):
         return CustomResponse({"message": "Your account has been deactivated successfully."}, status=status_code.HTTP_200_OK)
 
 
-#About the App
+# About the App
 
 class AboutAppViewset(viewsets.GenericViewSet):
     """
@@ -1090,7 +1077,7 @@ class AboutAppViewset(viewsets.GenericViewSet):
         return CustomResponse(user, status=status_code.HTTP_200_OK)
 
 
-#FCM
+# FCM
 
 class UpdateDeviceDetailViewSet(viewsets.ViewSet):
     """
@@ -1238,7 +1225,6 @@ class ClearAllNotificationViewset(viewsets.ViewSet):
         return CustomResponse({"message":"All Notifications Cleared"}, status=status_code.HTTP_200_OK)
 
 
-
 class createfile(viewsets.ViewSet):
 
     def generate_signed_url(self, object_key):
@@ -1368,7 +1354,6 @@ class createfile(viewsets.ViewSet):
             c = str(project_id)+'_'+str(file.id)
             b = Files.objects.filter(id=file.id).update(file_name=c)
             return CustomResponse({"message": "File Created with existing Manufacturer Successfully", "file_id": file.id}, status=status_code.HTTP_200_OK)
-
 
 
 class CreateFileWithImage(viewsets.ViewSet):
@@ -1590,7 +1575,6 @@ class CreateFileWithImage2(viewsets.ViewSet):
             return CustomResponse({"error": str(e)}, status=status_code.HTTP_400_BAD_REQUEST)
 
 
-
 class CreateEditFileWithImage(viewsets.ViewSet):
     permission_classes = (IsAuthenticated, CheckUserRoleStatusPermission)
 
@@ -1722,7 +1706,6 @@ class CreateEditFileWithImage(viewsets.ViewSet):
 
         except Exception as e:
             return CustomResponse({"error": str(e)}, status=status_code.HTTP_500_INTERNAL_SERVER_ERROR)
-
 
 
 class UpdateFileWithImage(viewsets.ViewSet):
@@ -2043,4 +2026,3 @@ class UpdateFileWithImage(viewsets.ViewSet):
 
         except Exception as e:
             return CustomResponse({"error": str(e)}, status=status_code.HTTP_400_BAD_REQUEST)
-

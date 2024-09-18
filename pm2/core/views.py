@@ -19,7 +19,7 @@ from rest_framework import status as status_code
 from .response import CustomResponse
 from .exception import CustomException
 from core.common_utils import check_file_size, get_content_type
-from config.local import AWS_S3_ACCESS_KEY_ID, AWS_S3_SECRET_ACCESS_KEY, AWS_STORAGE_BUCKET_NAME, AWS_S3_REGION_NAME
+from config.local import AWS_S3_ACCESS_KEY_ID, AWS_S3_SECRET_ACCESS_KEY, AWS_STORAGE_BUCKET_NAME, AWS_S3_REGION_NAME, CLOUDFRONT_URL
 
 
 # Create your views here.
@@ -103,7 +103,7 @@ class UploadFileView(views.APIView):
             # print("path_key===", path_key)
             # pre_signed_url = self.generate_signed_url(path_key)
 
-            pre_signed_url = 'https://d2sbdvc4ay1to3.cloudfront.net/' + path_key
+            pre_signed_url = CLOUDFRONT_URL+ path_key
 
             # Include the pre-signed URL in the response
             data = {'name': path_key, 'url': pre_signed_url}
