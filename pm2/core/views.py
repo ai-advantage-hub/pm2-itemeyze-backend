@@ -1,23 +1,25 @@
+import os
+import uuid
+import boto3
+from io import BytesIO
+from urllib.parse import urlparse
+
+from PIL import Image
+from pydub import AudioSegment
+from pillow_heif import register_heif_opener
+from botocore.exceptions import NoCredentialsError
+
 from django.shortcuts import render
 from rest_framework import views
 from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status as status_code
+
 from .response import CustomResponse
 from .exception import CustomException
-import boto3
-import uuid
-import os
-from PIL import Image
-from io import BytesIO
-import io 
-from pydub import AudioSegment
-from core.common_utils import check_file_size
-from config.local import AWS_S3_ACCESS_KEY_ID, AWS_S3_SECRET_ACCESS_KEY, AWS_STORAGE_BUCKET_NAME, AWS_S3_REGION_NAME
-from botocore.exceptions import NoCredentialsError
-from urllib.parse import urlparse
-from pillow_heif import register_heif_opener
+from core.common_utils import check_file_size, get_content_type
+from config.local import AWS_S3_ACCESS_KEY_ID, AWS_S3_SECRET_ACCESS_KEY, AWS_STORAGE_BUCKET_NAME, AWS_S3_REGION_NAME, CLOUDFRONT_URL
 
 
 # Create your views here.
@@ -81,18 +83,27 @@ class UploadFileView(views.APIView):
             else:
                 return CustomResponse({"message": "Please provide a valid file."},
                                     status=status_code.HTTP_400_BAD_REQUEST)
+            
+            content_type = get_content_type(file_extension)
 
             try:
-                s3.Bucket(AWS_STORAGE_BUCKET_NAME).upload_fileobj(upload, path_key)
+                # s3.Bucket(AWS_STORAGE_BUCKET_NAME).upload_fileobj(upload, path_key)
+                s3.Bucket(AWS_STORAGE_BUCKET_NAME).upload_fileobj(
+                    Fileobj=upload,
+                    Key=path_key,
+                    ExtraArgs={'ContentType': content_type}
+                )
             except Exception:
                 return CustomResponse({"message": "Something went wrong during file uploading."},
                                     status=status_code.HTTP_400_BAD_REQUEST)
 
-            created_url = 'https://' + AWS_STORAGE_BUCKET_NAME + '.s3.amazonaws.com/' + path_key
+            # created_url = 'https://' + AWS_STORAGE_BUCKET_NAME + '.s3.amazonaws.com/' + path_key
 
-            # Generate a pre-signed URL for the uploaded file
-            print("path_key===", path_key)
-            pre_signed_url = self.generate_signed_url(path_key)
+            # # Generate a pre-signed URL for the uploaded file
+            # print("path_key===", path_key)
+            # pre_signed_url = self.generate_signed_url(path_key)
+
+            pre_signed_url = CLOUDFRONT_URL+ path_key
 
             # Include the pre-signed URL in the response
             data = {'name': path_key, 'url': pre_signed_url}

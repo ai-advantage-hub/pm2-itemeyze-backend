@@ -247,6 +247,20 @@ class Files(BaseModel):
         verbose_name = "Project Details"
         verbose_name_plural = "Project Details"
 
+class DownloadFiles(BaseModel):
+    """
+        Project model to save project details
+    """
+    users = models.ForeignKey(
+        User, blank=False, on_delete=models.CASCADE, related_name="downloading_user")
+    file = models.ForeignKey(Files, on_delete=models.CASCADE, related_name='project_files')
+    is_downloaded = models.BooleanField(default = True)
+
+    class Meta:
+        db_table = "DownloadFiles"
+        verbose_name = "Download File"
+        verbose_name_plural = "Download Files"
+
 
 class UserNotification(BaseModel):
     """

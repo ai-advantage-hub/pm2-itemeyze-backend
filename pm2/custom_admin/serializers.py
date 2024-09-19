@@ -1,13 +1,15 @@
-from rest_framework import serializers
-from users.models import *
 from django.contrib.auth import authenticate
+from django.contrib.auth.hashers import check_password
+from django.contrib.gis.geos import Point
 from rest_framework import serializers
 from rest_framework.authtoken.models import Token
-from django.contrib.auth.hashers import check_password
-from core.common_utils import generate_otp, send_verification_email, send_verification_link
-from django.contrib.gis.geos import Point
-from core.exception import CustomException
 
+from core.common_utils import generate_otp, send_verification_email, send_verification_link
+from core.exception import CustomException
+from users.models import *
+
+
+# Onboarding 
 
 class AdminLoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
@@ -107,7 +109,6 @@ class FileSerializer(serializers.ModelSerializer):
         return obj.manufacturer_name.name if obj.manufacturer_name else None
 
 
-
 class ProjectDetailSerializer(serializers.ModelSerializer):
     site_name = serializers.CharField(source='site_id.name', read_only=True)
     created_by = serializers.SerializerMethodField()
@@ -139,10 +140,12 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
     def get_company_name(self, obj):
         return obj.company.name if obj.company else None
 
+
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'email']
+
 
 class ProjectViewSerializer(serializers.ModelSerializer):
     site_name = serializers.CharField(source='site_id.name', read_only=True)
@@ -168,6 +171,7 @@ class ProjectViewSerializer(serializers.ModelSerializer):
         request=self.context.get('request')
         return obj.created_by == request.user
 
+
 class FilesSerializer(serializers.ModelSerializer):
     manufacturer_name = serializers.PrimaryKeyRelatedField(queryset=ManufacturerName.objects.all())
     #project = serializers.PrimaryKeyRelatedField(queryset=Project.objects.all())
@@ -182,7 +186,7 @@ class FilesSerializer(serializers.ModelSerializer):
         validated_data['is_marked_deleted'] = False
 
         return super().update(instance, validated_data)
-    
+
     
 class FilesPointSerializer(serializers.ModelSerializer):
     """
@@ -219,23 +223,26 @@ class FilesPointSerializer(serializers.ModelSerializer):
         return False
 
 
-#Manage Users 
+# Manage Users 
 
 class UserListCompanySerializer(serializers.ModelSerializer):
     class Meta:
         model = Company
         fields = ('name',)
 
+
 class UserListProjectSerializer(serializers.ModelSerializer):
     class Meta:
         model = Project
         fields = ('project_name',)
+
 
 class UserListUserCompanySerializer(serializers.ModelSerializer):
     company_user = UserListCompanySerializer()
     class Meta:
         model = UserCompany
         fields = ('company_name', 'company_user')
+
 
 class UserListAdminSerializer(serializers.ModelSerializer):
     # total_projects = serializers.SerializerMethodField()
@@ -249,7 +256,7 @@ class UserListAdminSerializer(serializers.ModelSerializer):
 
     def get_total_projects(self, obj):
         return Project.objects.filter(created_by=obj).count()
-    
+
 
 class CreateFileDetailsSerializer(serializers.ModelSerializer):
     """
@@ -296,6 +303,7 @@ class ProjectSerializer(serializers.ModelSerializer):
         model = Project
         fields = ['id', 'project_name', 'created_at','site_id','site_name']
 
+
 class UserDetailSerializer(serializers.ModelSerializer):
     company_names = serializers.SerializerMethodField()
     assigned_projects = ProjectSerializer(many=True)
@@ -307,13 +315,13 @@ class UserDetailSerializer(serializers.ModelSerializer):
 
     def get_company_names(self, obj):
         return [uc.company.name for uc in obj.user_company.all()]
-    
-    
+
 
 class UserListingSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('id', 'full_name', 'email')
+
 
 class TempProjectSerializer(serializers.ModelSerializer):
     user_email = serializers.SerializerMethodField()
@@ -328,6 +336,7 @@ class TempProjectSerializer(serializers.ModelSerializer):
     
     def get_site_name(self, obj):
         return obj.site.name if obj.site else None
+
 
 class RequestedProjectDataSerializer(serializers.ModelSerializer):
     users = serializers.SerializerMethodField()

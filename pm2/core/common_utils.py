@@ -1,64 +1,28 @@
 import logging
 import math
 import random
-import sendgrid
+import boto3
+# import sendgrid
+from firebase_admin.messaging import Message, Notification
+# from sendgrid.helpers.mail import Content, Email, Mail, To, From
 from django.template.loader import render_to_string
-from sendgrid.helpers.mail import Content, Email, Mail, To, From
-# from config.local import FROM_NAME, FROM_EMAIL, SEND_GRID_API_KEY
-from config.local import FROM_NAME, FROM_EMAIL, RESET_PASSWORD_LINK
 
-from sendgrid.helpers.mail import Content, Email, Mail, To
-from users.templates import *
-from fcm_django.models import FCMDevice
+from config.local import APP_LOGO, AWS_S3_ACCESS_KEY_ID, AWS_S3_SECRET_ACCESS_KEY,FROM_NAME, FROM_EMAIL
 from core.messages import VARIABLES
 from users.models import User
 from fcm_django.models import FCMDevice
-from firebase_admin.messaging import Message, Notification
-from config.local import *
-import logging
-log = logging.getLogger(__name__)
-from fcm_django.models import FCMDevice
-import boto3
+from users.templates import *
 
-from firebase_admin.messaging import Message, Notification
+log = logging.getLogger(__name__)
+
 
 
 def generate_otp():
     """
-        function to generate a 4 digit random OTP.
+    Function to generate a 4-digit random OTP.
     """
-    digits = [i for i in range(0, 10)]
-    random_str = ""
-    for i in range(4):
-        index = math.floor(random.random() * 10)
-        random_str += str(digits[index])
-    otp = random_str
-    return otp
+    return ''.join(random.choices('0123456789', k=4))
 
-
-# def send_html_mail_to_single_user(subject, email, html_template, ctx_dict):
-#     """
-#         method used to send the email.
-#         :param subject:
-#         :param email:
-#         :param html_template:
-#         :param ctxt_dict:
-#         :return:
-#         """
-#     email_body = render_to_string(html_template, ctx_dict)
-#     send_grid = sendgrid.SendGridAPIClient(api_key=SEND_GRID_API_KEY)
-#     from_email = Email(FROM_EMAIL)
-#     to_email = To(email)
-#     mail_subject = subject
-#     content = Content("text/html", email_body)
-#     mail = Mail(from_email, to_email, mail_subject, content)
-#     try:
-#         send_grid.client.mail.send.post(request_body=mail.get())
-#         print("success")
-#     except Exception as e:
-#         print(e)
-#         print("ERROR_IN_SENDING_MAIL")
-#     return True
 
 def send_html_mail_to_single_user(subject, email, html_template, ctx_dict):
     """
@@ -159,7 +123,7 @@ def send_verification_email(email, otp):
         method used to send verification email
     """
     try:
-        logo_link="https://d3cf36wpdph1rt.cloudfront.net/Logo.svg"
+        logo_link = APP_LOGO
         ctx_dict = {"email": email, "verification_code": otp, "logo_link": logo_link}
         html_template = "forgot_password.html"
         subject = "YOUR LOGIN OTP"
@@ -173,7 +137,7 @@ def send_onboarding_request_email(user_email, name, company_name):
         method used to send onboarding request email
     """
     try:
-        logo_link = "https://d3cf36wpdph1rt.cloudfront.net/Logo.svg"
+        logo_link = APP_LOGO
         ctx_dict = {
             "email": user_email,
             "name": name,
@@ -182,7 +146,7 @@ def send_onboarding_request_email(user_email, name, company_name):
         }
         html_template = "onboarding_request.html"
         subject = "New User || Onboarding Request"
-        admin_email = [User.objects.filter(user_role=1, is_active=True, is_deleted=False).values_list('email', flat=True)]
+        admin_email = list(User.objects.filter(user_role=1, is_active=True, is_deleted=False).values_list('email', flat=True))
         if admin_email:
             send_html_mail_to_multiple_users(subject, admin_email, html_template, ctx_dict)
         else:
@@ -197,7 +161,7 @@ def send_edit_profile_verification_email(email, otp, old_email):
         method used to send verification email 
     """
     try:
-        logo_link="https://d3cf36wpdph1rt.cloudfront.net/Logo.svg"
+        logo_link = APP_LOGO
         ctx_dict = {"email": email, "verification_code": otp, "old_email": old_email, "logo_link": logo_link}
         html_template = "edit_email_verification.html"
         subject = "YOUR OTP VERIFICATION FOR NEW EMAIL"
@@ -211,7 +175,7 @@ def send_reset_password_email(email):
         method used to send reset password email
     """
     try:
-        logo_link="https://d3cf36wpdph1rt.cloudfront.net/Logo.svg"
+        logo_link = APP_LOGO
         ctx_dict = {"email": email, "logo_link": logo_link}
         html_template = "password_reset.html"
         subject = "YOUR ACCOUNT PASSWORD WAS CHANGED"
@@ -219,18 +183,20 @@ def send_reset_password_email(email):
     except Exception as e:
         print("error", e)
 
+
 def send_images_on_email(link,email):
     """
         method used to send images link on email
     """
     try:
-        logo_link="https://d3cf36wpdph1rt.cloudfront.net/Logo.svg"
+        logo_link = APP_LOGO
         ctx_dict = {"link": link, "logo_link": logo_link}
         html_template = "images_download_template.html"
         subject = "Image download link"
         send_html_mail_to_single_user(subject, email, html_template, ctx_dict)
     except Exception as e:
         print("error", e)
+
 
 def send_verification_link(email, otp):
     """
@@ -240,7 +206,7 @@ def send_verification_link(email, otp):
     c = user.full_name
     try:
         reset_link = f"{RESET_PASSWORD_LINK}={otp}"
-        logo_link="https://d3cf36wpdph1rt.cloudfront.net/Logo.svg"
+        logo_link = APP_LOGO
         ctx_dict = {"email": c, "verification_code": otp, "reset_link": reset_link, "logo_link":logo_link}
         html_template = "forgot_password_admin.html"
         subject = "YOUR LOGIN Link"
@@ -254,7 +220,7 @@ def send_subadmin_credentials(email, temporary_password):
         method used to send email to newly created subadmins
     """
     try:
-        logo_link="https://d3cf36wpdph1rt.cloudfront.net/Logo.svg"
+        logo_link = APP_LOGO
         ctx_dict = {"email": email, "temporary_password": temporary_password, "logo_link": logo_link}
         html_template = "send_subadmin.html"
         subject = "You are Subadmin now"
@@ -269,7 +235,7 @@ def send_updated_subadmin_credentials(old_email, email):
         method used to send email to those subadmin whose credentials are changed
     """
     try:
-        logo_link="https://d3cf36wpdph1rt.cloudfront.net/Logo.svg"
+        logo_link = APP_LOGO
         ctx_dict = {"old_email": old_email, "new_email": email, "logo_link": logo_link}
         html_template = "update_subadmin.html"
         subject = "You are Subadmin now"
@@ -285,7 +251,7 @@ def logged_out_users(email):
         method used to send email to those users whose company is deactivated by admin
     """
     try:
-        logo_link="https://d3cf36wpdph1rt.cloudfront.net/Logo.svg"
+        logo_link = APP_LOGO
         ctx_dict = {"email": email, "logo_link": logo_link}
         html_template = "log_out_users.html"
         subject = "Company has been Deactivated by Admin"
@@ -300,7 +266,8 @@ def subadmin_deleted(email):
         method used to send email to deactivated subadmins
     """
     try:
-        ctx_dict = {"email" : email}
+        logo_link = APP_LOGO
+        ctx_dict = {"email": email, "logo_link": logo_link}
         html_template = "subadmin_deleted.html"
         subject = "Subadmin Account Deleted by Admin"
         send_html_mail_to_single_user(subject, email, html_template, ctx_dict)
@@ -354,7 +321,6 @@ def update_or_create_fcm_detail(user, registration_id, device_type):
     return True
 
 
-
 def send_notification_bulk(user_ids, title, message, data):
     """
     method used to send notifications in bulk.
@@ -385,15 +351,40 @@ def send_notification_bulk(user_ids, title, message, data):
         print("HEREError", e)
     return True
 
+
 def send_company_approve_to_user(email,company_name):
     """
         method used to send approve company to user
     """
     try:
-        logo_link="https://d3cf36wpdph1rt.cloudfront.net/Logo.svg"
+        logo_link = APP_LOGO
         ctx_dict = {"company_name": company_name, "logo_link": logo_link}
         html_template = "approve_company.html"
         subject = f"YOUR COMPANY {company_name} HAS BEEN APPROVED"
         send_html_mail_to_single_user(subject, email, html_template, ctx_dict)
     except Exception as e:
         print("error", e)
+
+
+def get_content_type(file_extension):
+    """
+    Get the content type based on the file extension.
+
+    :param file_extension: The file extension (e.g., '.jpg', '.pdf').
+    :return: The corresponding content type.
+    """
+    content_type_mapping = {
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.png': 'image/png',
+        '.gif': 'image/gif',
+        '.pdf': 'application/pdf',
+        '.doc': 'application/msword',
+        '.mp4': 'video/mp4',
+        '.mp3': 'audio/mpeg',
+        '.wav': 'audio/wav',
+        # Add more mappings as needed
+    }
+
+    # Use the mapping or default to 'application/octet-stream' if the extension is not recognized
+    return content_type_mapping.get(file_extension.lower(), 'application/octet-stream')
