@@ -85,6 +85,8 @@ class ReSendOtpViewSet(viewsets.ViewSet):
         if not email:
             return CustomResponse({"message": "Please enter email"})
         user = User.objects.filter(email=email.lower()).first()
+        if not user:
+            return CustomResponse({"message": "User not found"})
         otp = generate_otp()
         OTP.objects.create(user=user, otp_type=1, otp=otp, is_used=False)
         try:
@@ -107,30 +109,27 @@ class VerifyOTPViewSet(viewsets.ViewSet):
         email = data.get('email')
         type = data.get('type')
 
-        # will remove in future
-        if otp == "1234":
-            user = User.objects.filter(email=email.lower()).first()
-            user.is_email_verified = True
-            user.save()
-            
-            #send onboarding request email to admin
-            try:
-                send_onboarding_request_email(user.email, user.full_name, user.company_name)
-            except Exception as e:
-                print("Error:", e)
-
-
-            return CustomResponse({"message": "OTP Verified, User created Successfully", "user_id": user.id}, status=status_code.HTTP_200_OK)
-
-        user = OTP.objects.filter(otp=otp, otp_type=type, is_used=False).first()
+        user = OTP.objects.filter(
+            otp=otp, otp_type=type, is_used=False, user__email=email).first()
         if not user:
             return CustomResponse({"message": "Wrong OTP"})
         if user.expired_at and user.expired_at < timezone.now():
             return CustomResponse({"message": "OTP expired"})
         else:
             user_id = user.user_id
+            email = user.user.email
+            full_name = user.user.full_name
+            company_name =  user.user.company_name
+            
             User.objects.filter(email=email.lower()).update(is_email_verified=True)
             OTP.objects.filter(otp=otp, otp_type=type).update(is_used=True)
+
+            # send onboarding request email to admin
+            try:
+                send_onboarding_request_email(email, full_name, company_name)
+            except Exception as e:
+                print("Error:", e)
+
             return CustomResponse({"message": "OTP Verified, User created Successfully", "user_id": user_id}, status=status_code.HTTP_200_OK)
 
 
