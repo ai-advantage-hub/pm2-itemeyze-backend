@@ -79,26 +79,35 @@ class SignupSerializer(serializers.ModelSerializer):
 
         return data
 
+    
     def create(self, validated_data):
         """
-        Create method to create user and generate otp
+            create method to create a user and generate an OTP.
         """
         with transaction.atomic():
-            self.validate_email(validated_data.get('email'))
 
+            self.validate_email(validated_data.get('email'))
             company_name = validated_data['company_name']
-            user = User(email=validated_data['email'], full_name=validated_data['full_name'],
-                        profile_pic=validated_data['profile_pic'])
+
+            # Create the user object
+            user = User(
+                email=validated_data['email'],
+                full_name=validated_data['full_name'],
+                profile_pic=validated_data['profile_pic'],
+                company_name=company_name
+            )
             user.set_password(validated_data['password'])
             user.save()
-            if Company.objects.filter(name=company_name).exists():
-                c = Company.objects.filter(name=company_name).first()
-                UserCompany.objects.create(company=c, user_id=user.id)
-            else:
-                user.company_name=company_name
-                user.save()
+
+            # Get existing company and associate it with the user if found
+            if company := Company.objects.filter(name=company_name).first():
+                UserCompany.objects.create(company=company, user=user)
+
+            # Generate and save OTP
             otp = generate_otp()
             OTP.objects.create(user=user, otp=otp, otp_type=1)
+
+            # Send verification email
             send_verification_email(user.email, otp)
 
             return user
