@@ -109,9 +109,8 @@ class VerifyOTPViewSet(viewsets.ViewSet):
         email = data.get('email')
         type = data.get('type')
 
-        # Temporary OTP verification(Remove in future)
         user = OTP.objects.filter(
-            otp=otp, otp_type=type, is_used=False, user__email=email
+            otp=otp, otp_type=type, is_used=False, user__email=email.lower()
         ).last()
 
         if not user:
