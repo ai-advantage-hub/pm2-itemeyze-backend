@@ -107,22 +107,16 @@ class VerifyOTPViewSet(viewsets.ViewSet):
         data = request.data
         otp = data.get('otp')
         email = data.get('email')
-        otp_type = data.get('type')
+        type = data.get('type')
 
-        # Temporary OTP verification(Remove in future)
-        if otp == "1234":
-            user = User.objects.filter(email=email.lower()).first()
-            user.is_email_verified = True
-            user.save()
-        else:
-            user = OTP.objects.filter(
-                otp=otp, otp_type=otp_type, is_used=False, user__email=email
-            ).last()
+        user = OTP.objects.filter(
+            otp=otp, otp_type=type, is_used=False, user__email=email.lower()
+        ).last()
 
-            if not user:
-                return CustomResponse({"message": "Wrong OTP"})
-            if user.expired_at and user.expired_at < timezone.now():
-                return CustomResponse({"message": "OTP expired"})
+        if not user:
+            return CustomResponse({"message": "Wrong OTP"})
+        if user.expired_at and user.expired_at < timezone.now():
+            return CustomResponse({"message": "OTP expired"})
         
         user_id = user.user_id
         email = user.user.email
