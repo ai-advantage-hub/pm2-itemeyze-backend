@@ -7,14 +7,21 @@ from firebase_admin.messaging import Message, Notification
 # from sendgrid.helpers.mail import Content, Email, Mail, To, From
 from django.template.loader import render_to_string
 
-from config.local import APP_LOGO, AWS_S3_ACCESS_KEY_ID, AWS_S3_SECRET_ACCESS_KEY,FROM_NAME, FROM_EMAIL
+from config.local import (
+    APP_LOGO,
+    AWS_S3_ACCESS_KEY_ID,
+    AWS_S3_SECRET_ACCESS_KEY,
+    FROM_NAME,
+    FROM_EMAIL,
+    MANAGE_REQUEST_LINK,
+    RESET_PASSWORD_LINK,
+)
 from core.messages import VARIABLES
 from users.models import User
 from fcm_django.models import FCMDevice
 from users.templates import *
 
 log = logging.getLogger(__name__)
-
 
 
 def generate_otp():
@@ -138,11 +145,13 @@ def send_onboarding_request_email(user_email, name, company_name):
     """
     try:
         logo_link = APP_LOGO
+        admin_url = MANAGE_REQUEST_LINK
         ctx_dict = {
             "email": user_email,
             "name": name,
             "company_name": company_name,
             "logo_link": logo_link,
+            "admin_url": admin_url
         }
         html_template = "onboarding_request.html"
         subject = "New User || Onboarding Request"
