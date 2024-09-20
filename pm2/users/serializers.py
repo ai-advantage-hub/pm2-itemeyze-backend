@@ -1,29 +1,33 @@
+from datetime import datetime, timedelta
+
+from django.contrib.auth import authenticate
+from django.contrib.auth.hashers import check_password
+from django.db import transaction
+from django.db.models import Q
+from django.utils import timezone
 from rest_framework import serializers
+from fcm_django.models import FCMDevice
+
 from .models import (
     User, 
     Company, 
     UserCompany, 
     OTP, 
     Project, 
-    Files,
-    UserNotification,
-    Site,
-    ManufacturerName,
+    Files, 
+    UserNotification, 
+    Site, 
+    ManufacturerName, 
     Settings
-
 )
 from custom_admin.models import ContentManagement
-from core.common_utils import generate_otp, send_verification_email, update_or_create_fcm_detail, send_reset_password_email
-from django.contrib.auth import authenticate
-import re
+from core.common_utils import (
+    generate_otp, 
+    send_verification_email, 
+    update_or_create_fcm_detail, 
+    send_reset_password_email
+)
 from core.exception import CustomException
-from django.utils import timezone
-from django.db import transaction
-from django.contrib.auth.hashers import check_password
-from fcm_django.models import FCMDevice
-from datetime import datetime, timedelta
-from django.db.models import Q
-
 
 
 class UserSerializer():
@@ -33,13 +37,7 @@ class UserSerializer():
         """meta class"""
 
         model = User
-        fields = (
-            "email",
-            "id",
-            "phone_number",
-            "full_name",
-            "verification_code",
-        )
+        fields = ("email", "id", "phone_number", "full_name", "verification_code",)
 
 
 class SignupSerializer(serializers.ModelSerializer):
@@ -196,7 +194,8 @@ class ResetPasswordSerializer(serializers.Serializer):
         return user
     
 
-#Home
+# Home
+
 class SiteSerializer(serializers.ModelSerializer):
     """
     Serializer for Site model
@@ -258,6 +257,7 @@ class ProjectUserSerializer(serializers.ModelSerializer):
         model = User
         fields = ("id", "full_name")
 
+
 class ProjectManufacturerSerializer(serializers.ModelSerializer):
     """
         ProjectUserSerializer serializer to serialize through user model
@@ -318,6 +318,7 @@ class ViewUserCompanySerializer(serializers.ModelSerializer):
     class Meta:
         model = Company
         fields = ('name',)
+
 
 class UserCompanySerializer(serializers.ModelSerializer):
     company = ViewUserCompanySerializer()
@@ -393,8 +394,8 @@ class UserChangePasswordSerializer(serializers.Serializer):
         user.set_password(new_password)
         user.save()
 
-# FCM Device
 
+# FCM Device
 
 class UserDeviceDetailSerializer(serializers.ModelSerializer):
     """
@@ -428,7 +429,6 @@ class UserDeviceSerializer(serializers.Serializer):
                                         validated_data.get('device_type'))
             return True
         
-
 
 class NotificationListSerializer(serializers.ModelSerializer):
     """
