@@ -109,31 +109,34 @@ class VerifyOTPViewSet(viewsets.ViewSet):
         email = data.get('email')
         type = data.get('type')
 
-        user = OTP.objects.filter(
+        otp_record = OTP.objects.filter(
             otp=otp, otp_type=type, is_used=False, user__email=email.lower()
         ).last()
 
-        if not user:
+        if not otp_record:
             return CustomResponse({"message": "Wrong OTP"})
-        if user.expired_at and user.expired_at < timezone.now():
+        if otp_record.expired_at and otp_record.expired_at < timezone.now():
             return CustomResponse({"message": "OTP expired"})
         
-        user_id = user.user_id
-        email = user.user.email
-        full_name = user.user.full_name
-        company_name =  user.user.company_name
+        user = otp_record.user
         
-        User.objects.filter(email=email.lower()).update(is_email_verified=True)
-        OTP.objects.filter(otp=otp, otp_type=type).update(is_used=True)
+        # Send onboarding email if user is not verified and not admin-approved
+        if not user.is_email_verified and not user.is_admin_approved:
+            try:
+                send_onboarding_request_email(user.email, user.full_name, user.company_name)
+            except Exception as e:
+                print(f"Error sending onboarding email: {e}")
+        
+        user.is_email_verified = True
+        user.save(update_fields=["is_email_verified"])
+        
+        otp_record.is_used = True
+        otp_record.save(update_fields=["is_used"])
 
-        # send onboarding request email to admin
-        try:
-            send_onboarding_request_email(email, full_name, company_name)
-        except Exception as e:
-            print("Error:", e)
-
-        return CustomResponse({"message": "OTP Verified, User created Successfully", "user_id": user_id}, status=status_code.HTTP_200_OK)
-
+        return CustomResponse(
+            {"message": "OTP Verified, User created successfully", "user_id": user.id},
+            status=status_code.HTTP_200_OK
+        )
 
 class UserLoginViewSet(viewsets.ViewSet):
     """
