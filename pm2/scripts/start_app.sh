@@ -3,6 +3,8 @@
 sed -i 's/\[]/\["52.54.174.98"]/' /home/ubuntu/pm2-backend-prod/config/settings.py
 
 pwd
+cd /home/ubuntu/pm2-backend-prod
+pwd
 source venv/bin/activate
 
 python manage.py migrate 
