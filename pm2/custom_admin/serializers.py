@@ -85,7 +85,7 @@ class ForgotPasswordSerializer(serializers.Serializer):
 
         # Generate forgot password OTP
         otp = generate_otp()
-        # OTP.objects.update_or_create(user=instance,otp=otp,otp_type=3)
+        OTP.objects.update_or_create(user=instance,otp=otp,otp_type=3)
         print(otp,instance.email)
         try:
             send_verification_link(instance.email, otp)
