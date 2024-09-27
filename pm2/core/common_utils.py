@@ -219,7 +219,7 @@ def send_verification_link(email, otp):
         ctx_dict = {"email": c, "verification_code": otp, "reset_link": reset_link, "logo_link":logo_link}
         html_template = "forgot_password_admin.html"
         subject = "YOUR LOGIN Link"
-        send_html_mail_to_single_user(subject, "atul.goyal.algoworks@gmail.com", html_template, ctx_dict)
+        send_html_mail_to_single_user(subject, email, html_template, ctx_dict)
     except Exception as e:
         print("error", e)
 
