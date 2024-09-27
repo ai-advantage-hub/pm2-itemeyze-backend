@@ -109,6 +109,15 @@ class FileSerializer(serializers.ModelSerializer):
         return obj.manufacturer_name.name if obj.manufacturer_name else None
 
 
+class UserSerializer(serializers.ModelSerializer):
+    """
+    Serializer for user details.
+    """
+    class Meta:
+        model = User
+        fields = ['id', 'full_name', 'email']
+
+
 class ProjectDetailSerializer(serializers.ModelSerializer):
     site_name = serializers.CharField(source='site_id.name', read_only=True)
     created_by = serializers.SerializerMethodField()
@@ -116,6 +125,7 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
     files_count=serializers.SerializerMethodField()
     company_name = serializers.SerializerMethodField()
     users_count = serializers.SerializerMethodField()
+    users = UserSerializer(many=True, read_only=True)
 
     class Meta:
         model = Project
@@ -147,12 +157,6 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
     
     def get_company_name(self, obj):
         return obj.company.name if obj.company else None
-
-
-class UserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ['id', 'email']
 
 
 class ProjectViewSerializer(serializers.ModelSerializer):
