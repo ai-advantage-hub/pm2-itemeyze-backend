@@ -1487,6 +1487,7 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
         user = User.all_objects.filter(id=id).first()
         if not user:
             return CustomResponse({"message": "User not found"}, status=status.HTTP_400_BAD_REQUEST)
+        user.email = None
         user.is_deleted=True
         user.save()
         Token.objects.filter(user=user).delete()

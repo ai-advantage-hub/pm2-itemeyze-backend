@@ -155,6 +155,8 @@ urlpatterns = [
         {"get": "download_files"}), name="download_files"),
     path("download_files_background/<int:id>", views.ApprovedFilesListingViewSet.as_view(
         {"get": "download_files_v1"}), name="download_files_v1"),
+    path("download_selected_files/<int:id>", views.ApprovedFilesListingViewSet.as_view(
+        {"post": "download_files_v1"}), name="download_files_v1"),
     path("disapprove_file", views.DisapproveFileViewSet.as_view(
         {"put": "disapprove_file"}), name="disapprove_file"),
     path("list_disapproved_file/<int:id>", views.DisapproveFileViewSet.as_view(

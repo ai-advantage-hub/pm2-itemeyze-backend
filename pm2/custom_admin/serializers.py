@@ -115,11 +115,19 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
     files = serializers.SerializerMethodField()
     files_count=serializers.SerializerMethodField()
     company_name = serializers.SerializerMethodField()
+    users_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Project
-        fields = ['id','project_name', 'project_number','created_by', 'created_at','site_id_id','site_name', 'files','company_name','files_count']
+        fields = ['id', 'users', 'users_count', 'project_name', 'project_number',
+                  'created_by', 'created_at','site_id_id','site_name', 'files',
+                  'company_name','files_count']
 
+    
+    def get_users_count(self, obj):
+        """Get the count of users associated with the project."""
+        return obj.users.count()
+    
     def get_created_by(self, obj):
         try:
             return obj.created_by.full_name
