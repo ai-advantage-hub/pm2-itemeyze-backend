@@ -2155,6 +2155,7 @@ class DisapproveFileViewSet(viewsets.ViewSet):
         """
         data = request.data
         file_id = data.get("file_id")
+        user_id = data.get("user_id")
         status_value = data.get("status_value")
         disapprove_reason = data.get("disapprove_reason")
         file = Files.objects.filter(id=file_id).first()
@@ -2183,7 +2184,10 @@ class DisapproveFileViewSet(viewsets.ViewSet):
             # notifyer = user
             # if notifyer.is_notification_enabled == True:
             print("line 1664 disapproved file created by=====",disapproved_file.created_by)
-            notification = UserNotification.objects.create(user=disapproved_file.created_by, title=title, message=message)
+
+            # notification = UserNotification.objects.create(user=disapproved_file.created_by, title=title, message=message)
+            notification = UserNotification.objects.create(user=user_id, title=title, message=message)
+            
             notification.save()
             data.update({"notification_id": str(notification.id)})
             print("notification id", notification.id)
