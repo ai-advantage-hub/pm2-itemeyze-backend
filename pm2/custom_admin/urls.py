@@ -181,6 +181,8 @@ urlpatterns = [
         {"get": "project_list"}), name="project_list"),
     path("project_details/<int:pk>", views.ProjectViewSet.as_view(
         {"get": "project_details"}), name="project_details"),
+    path('project_users/<int:pk>', views.ProjectViewSet.as_view(
+        {'get': 'project_details_with_users'}), name="projects_users"),
     path("project_view/<int:pk>", views.ProjectViewSet.as_view(
         {"get": "project_view"}), name="project_view"),
     path("project_update/<int:pk>", views.ProjectViewSet.as_view(
