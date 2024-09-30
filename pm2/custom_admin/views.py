@@ -1487,6 +1487,7 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
         user = User.all_objects.filter(id=id).first()
         if not user:
             return CustomResponse({"message": "User not found"}, status=status.HTTP_400_BAD_REQUEST)
+        user.email = None
         user.is_deleted=True
         user.save()
         Token.objects.filter(user=user).delete()
@@ -2154,6 +2155,7 @@ class DisapproveFileViewSet(viewsets.ViewSet):
         """
         data = request.data
         file_id = data.get("file_id")
+        user_id = data.get("user_id")
         status_value = data.get("status_value")
         disapprove_reason = data.get("disapprove_reason")
         file = Files.objects.filter(id=file_id).first()
@@ -2182,7 +2184,10 @@ class DisapproveFileViewSet(viewsets.ViewSet):
             # notifyer = user
             # if notifyer.is_notification_enabled == True:
             print("line 1664 disapproved file created by=====",disapproved_file.created_by)
-            notification = UserNotification.objects.create(user=disapproved_file.created_by, title=title, message=message)
+
+            # notification = UserNotification.objects.create(user=disapproved_file.created_by, title=title, message=message)
+            notification = UserNotification.objects.create(user=user_id, title=title, message=message)
+            
             notification.save()
             data.update({"notification_id": str(notification.id)})
             print("notification id", notification.id)
@@ -2517,6 +2522,7 @@ class ProjectViewSet(viewsets.ViewSet):
     """
     permission_classes = (IsAuthenticated, CheckAdminOrSubAdminRoleStatusPermission,)
     pagination_class = CustomPagination
+    queryset = Project.objects.all()
 
     def create(self, request):
         """
@@ -2603,7 +2609,6 @@ class ProjectViewSet(viewsets.ViewSet):
 
         return CustomResponse({"message": "Project created successfully", "project_id": project.id}, status=status.HTTP_200_OK)
 
-
     def project_list(self, request):
         """
             method to search and list projects
@@ -2677,8 +2682,6 @@ class ProjectViewSet(viewsets.ViewSet):
             return CustomResponse(pagination_class.get_paginated_response(page).data)
 
         return CustomResponse(projects)
-
-    queryset = Project.objects.all()
 
     def project_details(self, request, pk=None):
         """
@@ -2977,6 +2980,27 @@ class ProjectViewSet(viewsets.ViewSet):
                                 user_ids=[created_by_id.id], title=title, message=message, data=data)
                             print("notification sent")
                         return CustomResponse({"message": "Project approved successfully"})
+    
+    def project_details_with_users(self, request, pk=None):
+        """
+            Retrieve project details with users only.
+        """
+        project = get_object_or_404(self.queryset, pk=pk)
+        users = project.users.values('id', 'full_name', 'email')
+        users_count = users.count()
+        
+        # Construct the response data manually
+        project_data = {
+            'id': project.id,
+            'project_name': project.project_name,
+            'project_number': project.project_number,
+            'users_count': users_count,
+            'users': list(users)
+        }
+        
+        # Return the custom response
+        return CustomResponse(project_data)
+
 
 
 class AssignToUsersViewSet(viewsets.ViewSet):
