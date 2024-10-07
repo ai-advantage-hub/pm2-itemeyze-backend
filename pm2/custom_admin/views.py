@@ -94,6 +94,7 @@ class AdminLoginView(viewsets.ViewSet):
     """
 
     def create(self, request):
+        logging.info("user", request.data)
         serializer = AdminLoginSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.validated_data['user']
@@ -1319,6 +1320,8 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
         name = request.GET.get('name', '')
         page_size = request.GET.get('page_size', '')
         is_active = request.GET.get('is_active', None)
+
+        logging.info("user", request.user)
 
         exclude_created_projects = Project.objects.filter(
             created_by=OuterRef('pk')
