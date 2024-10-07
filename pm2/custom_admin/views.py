@@ -1321,8 +1321,6 @@ class  ManageUserAdminViewSet(viewsets.ViewSet):
         page_size = request.GET.get('page_size', '')
         is_active = request.GET.get('is_active', None)
 
-        log.info("user {request.user}")
-
         exclude_created_projects = Project.objects.filter(
             created_by=OuterRef('pk')
         ).values('id')

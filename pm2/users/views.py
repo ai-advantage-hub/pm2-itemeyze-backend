@@ -1500,7 +1500,8 @@ class CreateFileWithImage2(viewsets.ViewSet):
             function to upload files
         """
         log.info("in create_and_upload_file function")
-        log.info("temp file id:", temp_file_id)
+        log.info("temp file id:")
+        log.info(temp_file_id)
 
         def process_image(image):
             if image:
@@ -1557,7 +1558,8 @@ class CreateFileWithImage2(viewsets.ViewSet):
             file = Files.objects.create(created_by=request.user, manufacturer_name_id=new_manufacturer.id, manual_manufacturer_name=manual_manufacturer_name, project_id=project_id, thumbnail=thumbnail, manufacturing_number=manufacturing_number, quantity=quantity, project_details=project_details, additional_details=additional_details, recording=recording, location=location, location_points=location_points, is_admin_approved=True, submitted_to_admin=True,secondary_image=secondary_image)
             c = f"{project_id}_{file.id}"
             e = ManufacturerName.objects.filter(id=new_manufacturer.id).first()
-            log.info("eee",e.name)
+            log.info("eee")
+            log.info(e.name)
             b = Files.objects.filter(id=file.id).update(file_name=c, name_manufacturer= e.name)
             # b = Files.objects.filter(id=file.id).update(file_name=c)
             return {"message": "File Created with new Manufacturer Successfully","temp_file_id": temp_file_id ,"file_id": file.id, "thumbnail_url": thumbnail,'secondary_image': secondary_image}
@@ -1565,7 +1567,8 @@ class CreateFileWithImage2(viewsets.ViewSet):
             file = Files.objects.create(created_by=request.user, manufacturer_name_id=manufacturer_name, manual_manufacturer_name=manual_manufacturer_name, project_id=project_id, thumbnail=thumbnail, manufacturing_number=manufacturing_number, quantity=quantity, project_details=project_details, additional_details=additional_details, recording=recording, location=location, location_points=location_points, is_admin_approved=True, submitted_to_admin=True,secondary_image=secondary_image)
             c = f"{project_id}_{file.id}"
             e = ManufacturerName.objects.filter(id=manufacturer_name).first()
-            log.info("eee",e.name)
+            log.info("eee")
+            log.info(e.name)
             b = Files.objects.filter(id=file.id).update(file_name=c, name_manufacturer= e.name)
             # b = Files.objects.filter(id=file.id).update(file_name=c)
             return {"message": "File created with existing Manufacturer Successfully","temp_file_id": temp_file_id ,"file_id": file.id, "thumbnail_url": thumbnail,'secondary_image': secondary_image}
@@ -1577,17 +1580,22 @@ class CreateFileWithImage2(viewsets.ViewSet):
         try:
             temp_file_ids = request.data.getlist('temp_file_id')
             response_data = []
-            log.info("\n\n\nuser", request.user)
-            log.info("Received temp_file_ids:", temp_file_ids)
+            log.info("\n\n\nuser")
+            log.info(request.user)
+            log.info("Received temp_file_ids:")
+            log.info(temp_file_ids)
 
             for temp_file_id in temp_file_ids:
-                log.info("Processing temp_file_id:", temp_file_id)
+                log.info("Processing temp_file_id:")
+                log.info(temp_file_id)
                 log.info("calling create_and_upload_file function")
                 result = self.create_and_upload_file(request, temp_file_id)
                 log.info("create_and_upload_file function called")
-                log.info("response data", response_data)
+                log.info("response data")
+                log.info(response_data)
                 response_data.append(result)
-                log.info("result", result)
+                log.info("result")
+                log.info(result)
 
             return CustomResponse({"message": "Files uploaded successfully", "data": response_data}, status=status_code.HTTP_200_OK)
 
