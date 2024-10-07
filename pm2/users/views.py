@@ -1,4 +1,5 @@
 import os
+import logging
 import uuid
 from io import BytesIO
 from urllib.parse import urlparse
@@ -48,9 +49,10 @@ from core.exception import CustomException
 
 from config.local import (
     AWS_S3_ACCESS_KEY_ID, AWS_S3_SECRET_ACCESS_KEY, AWS_STORAGE_BUCKET_NAME, 
-    AWS_S3_REGION_NAME
+    AWS_S3_REGION_NAME, CLOUDFRONT_URL
 )
 
+log = logging.getLogger(__name__)
 
 # Onboarding
 
@@ -1479,25 +1481,26 @@ class CreateFileWithImage2(viewsets.ViewSet):
             function to compress image
         """
         try:
-            print("Compressing image...")
+            log.info("Compressing image...")
             img = Image.open(image)
             img.thumbnail((800, 800))
-            print("Compressing image 2...")
+            log.info("Compressing image 2...")
             output_buffer = BytesIO()
-            print("Compressing image 3...")
+            log.info("Compressing image 3...")
             img.save(output_buffer, format="png")
             output_buffer.seek(0)
-            print("Image compressed...")
+            log.info("Image compressed...")
             return output_buffer
-        except Exception:
+        except Exception as e:
+            log.info(f"Error compressing image: {str(e)}")
             return None
 
     def create_and_upload_file(self, request, temp_file_id):
         """
             function to upload files
         """
-        print("in create_and_upload_file function")
-        print("temp file id:", temp_file_id)
+        log.info("in create_and_upload_file function")
+        log.info("temp file id:", temp_file_id)
 
         def process_image(image):
             if image:
@@ -1507,14 +1510,26 @@ class CreateFileWithImage2(viewsets.ViewSet):
 
                 # Upload compressed image to S3
                 s3 = boto3.resource('s3', aws_access_key_id=AWS_S3_ACCESS_KEY_ID, aws_secret_access_key=AWS_S3_SECRET_ACCESS_KEY)
-                s3.Bucket(AWS_STORAGE_BUCKET_NAME).upload_fileobj(compressed_image, path_key)
+                # s3.Bucket(AWS_STORAGE_BUCKET_NAME).upload_fileobj(compressed_image, path_key, 'image/png')
+                #                 # s3.Bucket(AWS_STORAGE_BUCKET_NAME).upload_fileobj(upload, path_key)
+                try:
+                    s3.Bucket(AWS_STORAGE_BUCKET_NAME).upload_fileobj(
+                        Fileobj=compressed_image,
+                        Key=path_key,
+                        ExtraArgs={'ContentType': 'image/png'}
+                    )
+                except Exception:
+                    return CustomResponse({"message": "Something went wrong during file uploading."},
+                                    status=status_code.HTTP_400_BAD_REQUEST)
 
                 # Generate signed URL for the uploaded image
-                thumbnail_url = self.generate_signed_url(path_key)
-                print("thumbnail", thumbnail_url)
+                # thumbnail_url = self.generate_signed_url(path_key)
+                thumbnail_url = CLOUDFRONT_URL + path_key
+
+                log.info("thumbnail", thumbnail_url)
                 return thumbnail_url
             else:
-                print("No image provided.")
+                log.info("No image provided.")
                 return None
 
         upload = request.data.get(f'file_{temp_file_id}')
@@ -1535,14 +1550,14 @@ class CreateFileWithImage2(viewsets.ViewSet):
         location = request.data.get(f'location_{temp_file_id}')
         location_points = request.data.get(f'location_points_{temp_file_id}')
 
-        print("creating file")
+        log.info("creating file")
 
         if manual_manufacturer_name:
             new_manufacturer = ManufacturerName.objects.create(users=request.user, name=manual_manufacturer_name, added_by=2, is_read=False)
             file = Files.objects.create(created_by=request.user, manufacturer_name_id=new_manufacturer.id, manual_manufacturer_name=manual_manufacturer_name, project_id=project_id, thumbnail=thumbnail, manufacturing_number=manufacturing_number, quantity=quantity, project_details=project_details, additional_details=additional_details, recording=recording, location=location, location_points=location_points, is_admin_approved=True, submitted_to_admin=True,secondary_image=secondary_image)
             c = f"{project_id}_{file.id}"
             e = ManufacturerName.objects.filter(id=new_manufacturer.id).first()
-            print("eee",e.name)
+            log.info("eee",e.name)
             b = Files.objects.filter(id=file.id).update(file_name=c, name_manufacturer= e.name)
             # b = Files.objects.filter(id=file.id).update(file_name=c)
             return {"message": "File Created with new Manufacturer Successfully","temp_file_id": temp_file_id ,"file_id": file.id, "thumbnail_url": thumbnail,'secondary_image': secondary_image}
@@ -1550,7 +1565,7 @@ class CreateFileWithImage2(viewsets.ViewSet):
             file = Files.objects.create(created_by=request.user, manufacturer_name_id=manufacturer_name, manual_manufacturer_name=manual_manufacturer_name, project_id=project_id, thumbnail=thumbnail, manufacturing_number=manufacturing_number, quantity=quantity, project_details=project_details, additional_details=additional_details, recording=recording, location=location, location_points=location_points, is_admin_approved=True, submitted_to_admin=True,secondary_image=secondary_image)
             c = f"{project_id}_{file.id}"
             e = ManufacturerName.objects.filter(id=manufacturer_name).first()
-            print("eee",e.name)
+            log.info("eee",e.name)
             b = Files.objects.filter(id=file.id).update(file_name=c, name_manufacturer= e.name)
             # b = Files.objects.filter(id=file.id).update(file_name=c)
             return {"message": "File created with existing Manufacturer Successfully","temp_file_id": temp_file_id ,"file_id": file.id, "thumbnail_url": thumbnail,'secondary_image': secondary_image}
@@ -1562,16 +1577,17 @@ class CreateFileWithImage2(viewsets.ViewSet):
         try:
             temp_file_ids = request.data.getlist('temp_file_id')
             response_data = []
-            print("Received temp_file_ids:", temp_file_ids)
+            log.info("\n\n\nuser", request.user)
+            log.info("Received temp_file_ids:", temp_file_ids)
 
             for temp_file_id in temp_file_ids:
-                print("Processing temp_file_id:", temp_file_id)
-                print("calling create_and_upload_file function")
+                log.info("Processing temp_file_id:", temp_file_id)
+                log.info("calling create_and_upload_file function")
                 result = self.create_and_upload_file(request, temp_file_id)
-                print("create_and_upload_file function called")
-                print("response data", response_data)
+                log.info("create_and_upload_file function called")
+                log.info("response data", response_data)
                 response_data.append(result)
-                print("result", result)
+                log.info("result", result)
 
             return CustomResponse({"message": "Files uploaded successfully", "data": response_data}, status=status_code.HTTP_200_OK)
 
