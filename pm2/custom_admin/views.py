@@ -94,6 +94,7 @@ class AdminLoginView(viewsets.ViewSet):
     """
 
     def create(self, request):
+        logging.info("user", request.data)
         serializer = AdminLoginSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.validated_data['user']
