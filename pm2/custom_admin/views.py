@@ -3222,6 +3222,8 @@ class FilesViewSet(viewsets.ViewSet):
         else:
             file = Files.objects.filter(id=id).update(thumbnail=thumbnail, manufacturing_number=manufacturing_number, location=location, manufacturer_name_id=manufacturer_name, quantity=quantity, project_details=project_details, additional_details=additional_details, location_points=location_points)
             e = ManufacturerName.objects.filter(id=manufacturer_name).first()
+            if not e:
+                return CustomResponse({"message": "This Manufacturer doesn't exists"}, status=status_code.HTTP_400_BAD_REQUEST)
             project_id = Files.objects.filter(id=id).values('project_id').first()['project_id']
             create_file_name = str(project_id)+'_'+str(id)
             Files.objects.filter(id=id).update(file_name=create_file_name)
