@@ -2160,6 +2160,7 @@ class DisapproveFileViewSet(viewsets.ViewSet):
         status_value = data.get("status_value")
         disapprove_reason = data.get("disapprove_reason")
         file = Files.objects.filter(id=file_id).first()
+        user = User.objects.filter(id=user_id).first()
         if not disapprove_reason:
             return CustomResponse({"message": "Please give reason of disapproval."}, status=status.HTTP_400_BAD_REQUEST)
         if not file:
@@ -2171,7 +2172,7 @@ class DisapproveFileViewSet(viewsets.ViewSet):
             print("disss", disapproved_file.disapproved_count)
             disapproved_file.disapproved_count=1
             disapproved_file.disapproved_on=timezone.now()
-            disapproved_file.assigned_to = user_id
+            disapproved_file.assigned_to = user
             disapproved_file.status=1
             disapproved_file.disapproved_status=1
             disapproved_file.save()
