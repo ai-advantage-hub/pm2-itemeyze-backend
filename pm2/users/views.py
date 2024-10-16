@@ -568,8 +568,8 @@ class FileDetailsViewSet(viewsets.ModelViewSet):
                 )
             elif list_type == '3':
                 # type  3 for those files which are submitted to admin and created by requested user
-                # base_filters &= Q(submitted_to_admin=True) & Q(created_by_id=request.user)
-                base_filters &= Q(submitted_to_admin=True) & (Q(created_by_id=request.user) | Q(assigned_to=request.user))
+                base_filters &= Q(submitted_to_admin=True) & Q(created_by_id=request.user)
+                # base_filters &= Q(submitted_to_admin=True) & (Q(created_by_id=request.user) | Q(assigned_to=request.user))
             else:
                 return CustomResponse({"message": "Invalid filter type"}, status=status_code.HTTP_400_BAD_REQUEST)
 
