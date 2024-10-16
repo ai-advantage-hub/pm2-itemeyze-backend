@@ -2171,6 +2171,7 @@ class DisapproveFileViewSet(viewsets.ViewSet):
             print("disss", disapproved_file.disapproved_count)
             disapproved_file.disapproved_count=1
             disapproved_file.disapproved_on=timezone.now()
+            disapproved_file.assigned_to = user_id
             disapproved_file.status=1
             disapproved_file.disapproved_status=1
             disapproved_file.save()
