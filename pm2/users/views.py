@@ -1559,7 +1559,10 @@ class CreateFileWithImage2(viewsets.ViewSet):
         log.info("creating file")
 
         if manual_manufacturer_name:
-            new_manufacturer = ManufacturerName.objects.create(users=request.user, name=manual_manufacturer_name, added_by=2, is_read=False)
+            if ManufacturerName.objects.filter(name = manual_manufacturer_name).exists():
+                new_manufacturer = ManufacturerName.objects.filter(name = manual_manufacturer_name).first()
+            else:
+                new_manufacturer = ManufacturerName.objects.create(users=request.user, name=manual_manufacturer_name, added_by=2, is_read=False)
             file = Files.objects.create(created_by=request.user, manufacturer_name_id=new_manufacturer.id, manual_manufacturer_name=manual_manufacturer_name, project_id=project_id, thumbnail=thumbnail, manufacturing_number=manufacturing_number, quantity=quantity, project_details=project_details, additional_details=additional_details, recording=recording, location=location, location_points=location_points, is_admin_approved=True, submitted_to_admin=True,secondary_image=secondary_image)
             c = f"{project_id}_{file.id}"
             e = ManufacturerName.objects.filter(id=new_manufacturer.id).first()
