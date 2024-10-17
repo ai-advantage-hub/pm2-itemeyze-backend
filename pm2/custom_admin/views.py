@@ -3192,7 +3192,6 @@ class FilesViewSet(viewsets.ViewSet):
             f = Files.objects.filter(id=file.id).update(name_manufacturer= e.name)
             return CustomResponse({"message": "File created with existing Manufacturer Successfully", "file_id": file.id}, status=status_code.HTTP_200_OK)
 
-
     def update_file(self, request, id):
         """
             function to update file
@@ -3212,6 +3211,7 @@ class FilesViewSet(viewsets.ViewSet):
             return CustomResponse({"message": "File not found"}, status=status_code.HTTP_400_BAD_REQUEST)
 
         if manual_manufacturer_name:
+            log.info("manual_manufacturer_name")
             if ManufacturerName.objects.filter(name = manual_manufacturer_name).exists():
                 return CustomResponse({"message": "This manufacturer name already exists, please select from list"}, status=status_code.HTTP_400_BAD_REQUEST)
             manufacturer = ManufacturerName.objects.create(name=manual_manufacturer_name, added_by=1, is_read=True)
@@ -3226,11 +3226,24 @@ class FilesViewSet(viewsets.ViewSet):
             f = Files.objects.filter(id=id).update(name_manufacturer= e.name)
             return CustomResponse({"message": "File updated Successfully with new Manufacturer"}, status=status_code.HTTP_200_OK)
         else:
-            file = Files.objects.filter(id=id).update(thumbnail=thumbnail, manufacturing_number=manufacturing_number, location=location, manufacturer_name_id=manufacturer_name, quantity=quantity, project_details=project_details, additional_details=additional_details, location_points=location_points)
+            log.info("else block")
             e = ManufacturerName.objects.filter(name=manufacturer_name).first()
+            log.info("ManufacturerName")
+            log.info(e)
             if not e:
                 return CustomResponse({"message": "This Manufacturer doesn't exists"}, 
                                       status=status_code.HTTP_400_BAD_REQUEST)
+            file = Files.objects.filter(id=id).update(
+                thumbnail=thumbnail,
+                manufacturing_number=manufacturing_number,
+                location=location,
+                manufacturer_name_id=e.id,
+                quantity=quantity,
+                project_details=project_details,
+                additional_details=additional_details,
+                location_points=location_points,
+            )
+
             project_id = Files.objects.filter(id=id).values('project_id').first()['project_id']
             create_file_name = str(project_id)+'_'+str(id)
             Files.objects.filter(id=id).update(file_name=create_file_name)
