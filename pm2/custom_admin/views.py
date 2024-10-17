@@ -3227,7 +3227,11 @@ class FilesViewSet(viewsets.ViewSet):
             return CustomResponse({"message": "File updated Successfully with new Manufacturer"}, status=status_code.HTTP_200_OK)
         else:
             log.info("else block")
-            e = ManufacturerName.objects.filter(name=manufacturer_name).first()
+            if str(manufacturer_name).isdigit():
+                e = ManufacturerName.objects.filter(id=int(manufacturer_name)).first()
+            else:
+                return CustomResponse({"message": "This Manufacturer doesn't exists"}, 
+                                      status=status_code.HTTP_400_BAD_REQUEST)
             log.info("ManufacturerName")
             log.info(e)
             if not e:
@@ -3237,7 +3241,7 @@ class FilesViewSet(viewsets.ViewSet):
                 thumbnail=thumbnail,
                 manufacturing_number=manufacturing_number,
                 location=location,
-                manufacturer_name_id=e.id,
+                manufacturer_name_id=manufacturer_name,
                 quantity=quantity,
                 project_details=project_details,
                 additional_details=additional_details,
