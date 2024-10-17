@@ -3227,7 +3227,7 @@ class FilesViewSet(viewsets.ViewSet):
             return CustomResponse({"message": "File updated Successfully with new Manufacturer"}, status=status_code.HTTP_200_OK)
         else:
             file = Files.objects.filter(id=id).update(thumbnail=thumbnail, manufacturing_number=manufacturing_number, location=location, manufacturer_name_id=manufacturer_name, quantity=quantity, project_details=project_details, additional_details=additional_details, location_points=location_points)
-            e = ManufacturerName.objects.filter(id=manufacturer_name).first()
+            e = ManufacturerName.objects.filter(name=manufacturer_name).first()
             if not e:
                 return CustomResponse({"message": "This Manufacturer doesn't exists"}, 
                                       status=status_code.HTTP_400_BAD_REQUEST)
