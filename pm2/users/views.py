@@ -512,7 +512,7 @@ class FileDetailsViewSet(viewsets.ModelViewSet):
 
         for i in file_id:
             print("i",i)
-            Files.objects.filter(id=i).update(submitted_to_admin=True,disapproved_status=2)
+            Files.objects.filter(id=i).update(submitted_to_admin=True,disapproved_status=2, assigned_to=None)
         return CustomResponse({"message": "Files submitted to admin"}, status=status_code.HTTP_200_OK)
 
     def submitted_to_admin_list(self, request, id):
