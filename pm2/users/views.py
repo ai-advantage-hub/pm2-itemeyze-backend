@@ -512,7 +512,7 @@ class FileDetailsViewSet(viewsets.ModelViewSet):
 
         for i in file_id:
             print("i",i)
-            Files.objects.filter(id=i).update(submitted_to_admin=True,disapproved_status=2)
+            Files.objects.filter(id=i).update(submitted_to_admin=True,disapproved_status=2, assigned_to=None)
         return CustomResponse({"message": "Files submitted to admin"}, status=status_code.HTTP_200_OK)
 
     def submitted_to_admin_list(self, request, id):
@@ -560,11 +560,16 @@ class FileDetailsViewSet(viewsets.ModelViewSet):
                 base_filters &= Q(submitted_to_admin=True)
             elif list_type == '2':
                 # type  2 for those files which are not submitted to admin and created by requested user
-                base_filters &= (Q(is_admin_approved=True) & Q(submitted_to_admin=False) & Q(created_by_id=request.user) |
-                     Q(is_file_disapproved=True) & Q(submitted_to_admin=False) & Q(is_admin_approved=False) & Q(created_by_id=request.user) & Q(disapproved_status=1))
+                # base_filters &= (Q(is_admin_approved=True) & Q(submitted_to_admin=False) & Q(created_by_id=request.user) |
+                #      Q(is_file_disapproved=True) & Q(submitted_to_admin=False) & Q(is_admin_approved=False) & Q(created_by_id=request.user) & Q(disapproved_status=1))
+                base_filters &= (
+                    (Q(is_admin_approved=True) & Q(submitted_to_admin=False) & (Q(created_by_id=request.user) | Q(assigned_to=request.user))) |
+                    (Q(is_file_disapproved=True) & Q(submitted_to_admin=False) & Q(is_admin_approved=False) & (Q(created_by_id=request.user) | Q(assigned_to=request.user)) & Q(disapproved_status=1))
+                )
             elif list_type == '3':
                 # type  3 for those files which are submitted to admin and created by requested user
                 base_filters &= Q(submitted_to_admin=True) & Q(created_by_id=request.user)
+                # base_filters &= Q(submitted_to_admin=True) & (Q(created_by_id=request.user) | Q(assigned_to=request.user))
             else:
                 return CustomResponse({"message": "Invalid filter type"}, status=status_code.HTTP_400_BAD_REQUEST)
 
@@ -1554,7 +1559,10 @@ class CreateFileWithImage2(viewsets.ViewSet):
         log.info("creating file")
 
         if manual_manufacturer_name:
-            new_manufacturer = ManufacturerName.objects.create(users=request.user, name=manual_manufacturer_name, added_by=2, is_read=False)
+            if ManufacturerName.objects.filter(name = manual_manufacturer_name).exists():
+                new_manufacturer = ManufacturerName.objects.filter(name = manual_manufacturer_name).first()
+            else:
+                new_manufacturer = ManufacturerName.objects.create(users=request.user, name=manual_manufacturer_name, added_by=2, is_read=False)
             file = Files.objects.create(created_by=request.user, manufacturer_name_id=new_manufacturer.id, manual_manufacturer_name=manual_manufacturer_name, project_id=project_id, thumbnail=thumbnail, manufacturing_number=manufacturing_number, quantity=quantity, project_details=project_details, additional_details=additional_details, recording=recording, location=location, location_points=location_points, is_admin_approved=True, submitted_to_admin=True,secondary_image=secondary_image)
             c = f"{project_id}_{file.id}"
             e = ManufacturerName.objects.filter(id=new_manufacturer.id).first()
