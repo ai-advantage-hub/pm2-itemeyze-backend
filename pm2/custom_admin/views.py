@@ -81,7 +81,7 @@ from core.common_utils import (
 from core.permissions import CheckAdminRoleStatusPermission, CheckAdminOrSubAdminRoleStatusPermission
 from core.pagination import CustomPagination
 
-from config.local import AWS_S3_ACCESS_KEY_ID, AWS_S3_SECRET_ACCESS_KEY, AWS_STORAGE_BUCKET_NAME
+from config.local import AWS_S3_ACCESS_KEY_ID, AWS_S3_SECRET_ACCESS_KEY, AWS_STORAGE_BUCKET_NAME, CLOUDFRONT_URL
 
 
 log = logging.getLogger(__name__)
@@ -1077,7 +1077,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
                 return CustomResponse({"message": f"Something went wrong during file uploading. Error: {str(e)}"},
                                     status=status_code.HTTP_400_BAD_REQUEST)
 
-            created_url = f'https://{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com/{path_key}'
+            created_url = f'{CLOUDFRONT_URL}/{path_key}'
             return CustomResponse({"file_path": created_url})
         else:
             return CustomResponse({"message": "No data available for exporting to CSV."},
