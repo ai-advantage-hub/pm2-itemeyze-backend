@@ -37,6 +37,7 @@ from custom_admin.serializers import (
     AdminLoginSerializer,
     AdminResetPasswordSerializer,
     CreateFileDetailsSerializer,
+    FileSerializer,
     ForgotPasswordSerializer,
     ProjectDetailSerializer,
     FilesSerializer,
@@ -1015,11 +1016,26 @@ class ManageProjectViewSet(viewsets.ViewSet):
             method to export project details csv file
         """
         # Retrieve the serialized data
-        file_id = request.data.get('file_id')
-        queryset = Project.objects.all()
-        project = get_object_or_404(queryset, pk=pk, project_files__in = file_id)
+        file_ids = request.data.get('file_id')
+        if not file_ids:
+            return CustomResponse({"message": "File IDs are required for exporting to CSV."},
+                              status=status_code.HTTP_400_BAD_REQUEST)
+        
+        project = get_object_or_404(Project, pk=pk)
+
+        # Filter project files to include only the specified file IDs
+        selected_files = project.project_files.filter(id__in=file_ids, is_deleted=False, 
+                                                    submitted_to_admin=True, 
+                                                    is_marked_deleted=False, 
+                                                    is_file_disapproved=False)
+        
+        # Serialize the project data
         serializer = ProjectDetailSerializer(project)
         project_data = serializer.data
+
+        # Overwrite the `files` field with only selected files
+        project_data['files'] = FileSerializer(selected_files, many=True).data
+        
         files_data = project_data.pop('files')
 
         # Check if there is any data before creating the DataFrame

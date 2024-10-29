@@ -159,6 +159,13 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
         return obj.company.name if obj.company else None
 
 
+class FileSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Files
+        fields = ['id', 'project', 'thumbnail', 'secondary_image', 'recording']
+
+
 class ProjectViewSerializer(serializers.ModelSerializer):
     site_name = serializers.CharField(source='site_id.name', read_only=True)
     created_by = serializers.SerializerMethodField()
