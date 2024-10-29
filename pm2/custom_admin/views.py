@@ -1015,8 +1015,9 @@ class ManageProjectViewSet(viewsets.ViewSet):
             method to export project details csv file
         """
         # Retrieve the serialized data
+        file_id = request.data.get('file_id')
         queryset = Project.objects.all()
-        project = get_object_or_404(queryset, pk=pk)
+        project = get_object_or_404(queryset, pk=pk, project_files__in = file_id)
         serializer = ProjectDetailSerializer(project)
         project_data = serializer.data
         files_data = project_data.pop('files')
@@ -1981,16 +1982,16 @@ class ApprovedFilesListingViewSet(mixins.ListModelMixin, mixins.RetrieveModelMix
         
         # Retrieve DownloadFiles entries for the user and files in the queryset
         approved_file_ids = queryset.values_list('id', flat=True)
-        download_files_entries = DownloadFiles.objects.filter(
-            users=user,
-            file_id__in=approved_file_ids
-        ).values_list('file_id', flat=True)
+        # download_files_entries = DownloadFiles.objects.filter(
+        #     users=user,
+        #     file_id__in=approved_file_ids
+        # ).values_list('file_id', flat=True)
 
         approved_files = [
             {
                 **file_data,
                 "thumbnail": urlparse(file_data["thumbnail"]).path or None,
-                "is_downloaded": file_data["id"] in download_files_entries
+                # "is_downloaded": file_data["id"] in download_files_entries
             } 
             for file_data in approved_files
         ]
@@ -2041,15 +2042,15 @@ class ApprovedFilesListingViewSet(mixins.ListModelMixin, mixins.RetrieveModelMix
 
         approved_files = Files.objects.filter(**filters).order_by("-created_at")
 
-        if file_id:
-            download_files_instances = [
-                DownloadFiles(users=user, file=file_instance, is_downloaded=True)
-                for file_instance in approved_files
-            ]
+        # if file_id:
+        #     download_files_instances = [
+        #         DownloadFiles(users=user, file=file_instance, is_downloaded=True)
+        #         for file_instance in approved_files
+        #     ]
 
-            # Use bulk_create to create all the entries in a single query
-            if download_files_instances:
-                DownloadFiles.objects.bulk_create(download_files_instances)
+        #     # Use bulk_create to create all the entries in a single query
+        #     if download_files_instances:
+        #         DownloadFiles.objects.bulk_create(download_files_instances)
 
         approved_files_values = approved_files.values(
             "id", "file_name", "thumbnail", "created_at", "is_file_disapproved"
