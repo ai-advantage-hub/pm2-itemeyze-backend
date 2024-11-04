@@ -125,7 +125,7 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
     files_count=serializers.SerializerMethodField()
     company_name = serializers.SerializerMethodField()
     users_count = serializers.SerializerMethodField()
-    users = UserSerializer(many=True, read_only=True)
+    users = serializers.SerializerMethodField()
 
     class Meta:
         model = Project
@@ -157,6 +157,10 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
     
     def get_company_name(self, obj):
         return obj.company.name if obj.company else None
+    
+    def get_users(self, obj):
+        """Get a comma-separated string of user emails associated with the project."""
+        return ', '.join(obj.users.values_list('email', flat=True))
 
 
 class FileSerializer(serializers.ModelSerializer):
