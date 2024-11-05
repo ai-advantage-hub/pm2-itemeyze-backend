@@ -562,12 +562,34 @@ class FileDetailsViewSet(viewsets.ModelViewSet):
                 # type  2 for those files which are not submitted to admin and created by requested user
                 # base_filters &= (Q(is_admin_approved=True) & Q(submitted_to_admin=False) & Q(created_by_id=request.user) |
                 #      Q(is_file_disapproved=True) & Q(submitted_to_admin=False) & Q(is_admin_approved=False) & Q(created_by_id=request.user) & Q(disapproved_status=1))
-                base_filters &= (
-                    (Q(is_admin_approved=True) & Q(submitted_to_admin=False) & (Q(created_by_id=request.user) | Q(assigned_to=request.user))) |   
-                    (Q(is_file_disapproved=True) & Q(submitted_to_admin=False) & Q(is_admin_approved=False) & (Q(created_by_id=request.user) | Q(assigned_to=request.user)) & Q(disapproved_status=1))
-                    # (Q(is_admin_approved=True) & Q(submitted_to_admin=False) & Q(assigned_to=request.user)) |
-                    # (Q(is_file_disapproved=True) & Q(submitted_to_admin=False) & Q(is_admin_approved=False) & Q(created_by_id=request.user) & Q(disapproved_status=1))
+                
+                # base_filters &= (
+                #     (Q(is_admin_approved=True) & Q(submitted_to_admin=False) & (Q(created_by_id=request.user) | Q(assigned_to=request.user))) |   
+                #     (Q(is_file_disapproved=True) & Q(submitted_to_admin=False) & Q(is_admin_approved=False) & (Q(created_by_id=request.user) | Q(assigned_to=request.user)) & Q(disapproved_status=1))
+                #     # (Q(is_admin_approved=True) & Q(submitted_to_admin=False) & Q(assigned_to=request.user)) |
+                #     # (Q(is_file_disapproved=True) & Q(submitted_to_admin=False) & Q(is_admin_approved=False) & Q(created_by_id=request.user) & Q(disapproved_status=1))
+                # )
+
+                # Define the first condition
+                first_condition = (
+                    Q(is_admin_approved=True) &
+                    Q(submitted_to_admin=True) &
+                    Q(created_by_id=request.user)
                 )
+
+                # Define the second condition
+                second_condition = (
+                    Q(disapproved_status=1) &
+                    Q(assigned_to=request.user) &
+                    Q(is_file_disapproved=True) &
+                    Q(submitted_to_admin=False) &
+                    Q(disapproved_file_is_edited=False) &
+                    Q(is_admin_approved=False)
+                )
+
+                # Combine both conditions with OR logic
+                base_filters &= (first_condition | second_condition)
+
             elif list_type == '3':
                 # type  3 for those files which are submitted to admin and created by requested user
                 base_filters &= Q(submitted_to_admin=True) & Q(created_by_id=request.user)
