@@ -583,8 +583,7 @@ class FileDetailsViewSet(viewsets.ModelViewSet):
                     Q(assigned_to=request.user) &
                     Q(is_file_disapproved=True) &
                     Q(submitted_to_admin=False) &
-                    Q(disapproved_file_is_edited=False) &
-                    Q(is_admin_approved=False)
+                    Q(disapproved_file_is_edited=False)
                 )
 
                 # Combine both conditions with OR logic
