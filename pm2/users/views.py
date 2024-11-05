@@ -573,7 +573,7 @@ class FileDetailsViewSet(viewsets.ModelViewSet):
                 # Define the first condition
                 first_condition = (
                     Q(is_admin_approved=True) &
-                    Q(submitted_to_admin=True) &
+                    Q(submitted_to_admin=False) &
                     Q(created_by_id=request.user)
                 )
 
