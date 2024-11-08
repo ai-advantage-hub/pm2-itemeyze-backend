@@ -77,6 +77,8 @@ urlpatterns = [
         {"get": "view_file_unapproved"}), name="view_file_unapproved"),
     path("project/<int:pk>/download_csv/", views.ManageProjectViewSet.as_view(
         {"get": "save_to_csv"}), name="save_to_csv"),
+    path("project/<int:pk>/download_selected_csv/", views.ManageProjectViewSet.as_view(
+        {"post": "save_to_csv"}), name="save_to_csv"),
 
     # ManageSubAdmin
     path("search_sub_admin", views.ManageSubadminViewSet.as_view(

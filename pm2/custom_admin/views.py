@@ -37,6 +37,7 @@ from custom_admin.serializers import (
     AdminLoginSerializer,
     AdminResetPasswordSerializer,
     CreateFileDetailsSerializer,
+    FileSerializer,
     ForgotPasswordSerializer,
     ProjectDetailSerializer,
     FilesSerializer,
@@ -80,7 +81,7 @@ from core.common_utils import (
 from core.permissions import CheckAdminRoleStatusPermission, CheckAdminOrSubAdminRoleStatusPermission
 from core.pagination import CustomPagination
 
-from config.local import AWS_S3_ACCESS_KEY_ID, AWS_S3_SECRET_ACCESS_KEY, AWS_STORAGE_BUCKET_NAME
+from config.local import AWS_S3_ACCESS_KEY_ID, AWS_S3_SECRET_ACCESS_KEY, AWS_STORAGE_BUCKET_NAME, CLOUDFRONT_URL
 
 
 log = logging.getLogger(__name__)
@@ -1015,10 +1016,26 @@ class ManageProjectViewSet(viewsets.ViewSet):
             method to export project details csv file
         """
         # Retrieve the serialized data
-        queryset = Project.objects.all()
-        project = get_object_or_404(queryset, pk=pk)
+        file_ids = request.data.get('file_id')
+        if not file_ids:
+            return CustomResponse({"message": "File IDs are required for exporting to CSV."},
+                              status=status_code.HTTP_400_BAD_REQUEST)
+        
+        project = get_object_or_404(Project, pk=pk)
+
+        # Filter project files to include only the specified file IDs
+        selected_files = project.project_files.filter(id__in=file_ids, is_deleted=False, 
+                                                    submitted_to_admin=True, 
+                                                    is_marked_deleted=False, 
+                                                    is_file_disapproved=False)
+        
+        # Serialize the project data
         serializer = ProjectDetailSerializer(project)
         project_data = serializer.data
+
+        # Overwrite the `files` field with only selected files
+        project_data['files'] = FileSerializer(selected_files, many=True).data
+        
         files_data = project_data.pop('files')
 
         # Check if there is any data before creating the DataFrame
@@ -1060,7 +1077,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
                 return CustomResponse({"message": f"Something went wrong during file uploading. Error: {str(e)}"},
                                     status=status_code.HTTP_400_BAD_REQUEST)
 
-            created_url = f'https://{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com/{path_key}'
+            created_url = f'{CLOUDFRONT_URL}/{path_key}'
             return CustomResponse({"file_path": created_url})
         else:
             return CustomResponse({"message": "No data available for exporting to CSV."},
@@ -1981,16 +1998,16 @@ class ApprovedFilesListingViewSet(mixins.ListModelMixin, mixins.RetrieveModelMix
         
         # Retrieve DownloadFiles entries for the user and files in the queryset
         approved_file_ids = queryset.values_list('id', flat=True)
-        download_files_entries = DownloadFiles.objects.filter(
-            users=user,
-            file_id__in=approved_file_ids
-        ).values_list('file_id', flat=True)
+        # download_files_entries = DownloadFiles.objects.filter(
+        #     users=user,
+        #     file_id__in=approved_file_ids
+        # ).values_list('file_id', flat=True)
 
         approved_files = [
             {
                 **file_data,
                 "thumbnail": urlparse(file_data["thumbnail"]).path or None,
-                "is_downloaded": file_data["id"] in download_files_entries
+                # "is_downloaded": file_data["id"] in download_files_entries
             } 
             for file_data in approved_files
         ]
@@ -2041,15 +2058,15 @@ class ApprovedFilesListingViewSet(mixins.ListModelMixin, mixins.RetrieveModelMix
 
         approved_files = Files.objects.filter(**filters).order_by("-created_at")
 
-        if file_id:
-            download_files_instances = [
-                DownloadFiles(users=user, file=file_instance, is_downloaded=True)
-                for file_instance in approved_files
-            ]
+        # if file_id:
+        #     download_files_instances = [
+        #         DownloadFiles(users=user, file=file_instance, is_downloaded=True)
+        #         for file_instance in approved_files
+        #     ]
 
-            # Use bulk_create to create all the entries in a single query
-            if download_files_instances:
-                DownloadFiles.objects.bulk_create(download_files_instances)
+        #     # Use bulk_create to create all the entries in a single query
+        #     if download_files_instances:
+        #         DownloadFiles.objects.bulk_create(download_files_instances)
 
         approved_files_values = approved_files.values(
             "id", "file_name", "thumbnail", "created_at", "is_file_disapproved"
