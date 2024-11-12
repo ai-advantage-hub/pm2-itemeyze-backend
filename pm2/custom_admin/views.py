@@ -2184,7 +2184,12 @@ class DisapproveFileViewSet(viewsets.ViewSet):
             return CustomResponse({"message": "File not found."}, status=status.HTTP_400_BAD_REQUEST)
         if status_value == 1:
             # c = Files.objects.filter(id=file_id).update(is_file_disapproved=True,is_admin_approved=False, disapproved_reason=disapprove_reason)
-            c = Files.objects.filter(id=file_id).update(disapproved_file_is_edited=False, is_file_disapproved=True,submitted_to_admin=False, disapproved_reason=disapprove_reason, is_edited=False)
+            # c = Files.objects.filter(id=file_id).update(disapproved_file_is_edited=False, is_file_disapproved=True,submitted_to_admin=False, disapproved_reason=disapprove_reason, is_edited=False)
+            c = Files.objects.filter(id=file_id).update(
+                disapproved_file_is_edited=False, is_admin_approved=False, 
+                is_file_disapproved=True, submitted_to_admin=False, 
+                disapproved_reason=disapprove_reason, is_edited=False
+            )
             disapproved_file = Files.objects.filter(id=file_id).first()
             print("disss", disapproved_file.disapproved_count)
             disapproved_file.disapproved_count=1
