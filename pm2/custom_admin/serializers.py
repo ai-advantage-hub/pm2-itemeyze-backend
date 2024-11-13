@@ -165,9 +165,17 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
 
 class FileSerializer(serializers.ModelSerializer):
 
+    created_by = serializers.SerializerMethodField()
+
+    def get_created_by(self, obj):
+        try:
+            return obj.created_by.full_name
+        except AttributeError:            
+            return None
+
     class Meta:
         model = Files
-        fields = ['id', 'project', 'thumbnail', 'secondary_image', 'recording']
+        fields = ['id', 'project', 'thumbnail', 'secondary_image', 'recording', 'created_by']
 
 
 class ProjectViewSerializer(serializers.ModelSerializer):
