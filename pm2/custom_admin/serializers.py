@@ -130,7 +130,7 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Project
         fields = ['id', 'users', 'users_count', 'project_name', 'project_number',
-                  'created_by', 'created_at','site_id_id','site_name', 'files',
+                  'created_by', 'created_at','site_id','site_name', 'files',
                   'company_name','files_count']
 
     
@@ -166,10 +166,18 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
 class FileSerializer(serializers.ModelSerializer):
 
     created_by = serializers.SerializerMethodField()
+    manufacturer_name = serializers.SerializerMethodField()
+    created_at = serializers.DateField(format="%Y-%m-%d")
 
     def get_created_by(self, obj):
         try:
             return obj.created_by.full_name
+        except AttributeError:            
+            return None
+    
+    def get_manufacturer_name(self, obj):
+        try:
+            return obj.manufacturer_name.name
         except AttributeError:            
             return None
 
