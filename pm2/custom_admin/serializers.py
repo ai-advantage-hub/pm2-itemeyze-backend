@@ -247,7 +247,9 @@ class ExportProjectDetailSerializer(serializers.ModelSerializer):
         return FileSerializer(approved_files, many=True).data
     
     def get_files_count(self, obj):
-        total_count = Files.objects.filter(project_id=obj.id).count()
+        total_count = Files.objects.filter(project_id=obj.id, is_deleted=False,
+                            submitted_to_admin=True, is_file_disapproved=False,
+                            is_marked_deleted=False).count()
         return total_count 
     
     def get_company_name(self, obj):
