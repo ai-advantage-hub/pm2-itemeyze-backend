@@ -175,7 +175,9 @@ class FileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Files
-        fields = ['id', 'project', 'thumbnail', 'secondary_image', 'recording', 'created_by']
+        fields = ['id', 'project', 'thumbnail', 'secondary_image', 'recording', 'created_by',
+                  "created_at", "manufacturer_name", "manufacturing_number", "quantity",
+                   "project_details", "additional_details", "recording" ]
 
 
 class ProjectViewSerializer(serializers.ModelSerializer):
