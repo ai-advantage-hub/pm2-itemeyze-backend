@@ -166,6 +166,24 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
 class FileSerializer(serializers.ModelSerializer):
 
     created_by = serializers.SerializerMethodField()
+
+    def get_created_by(self, obj):
+        try:
+            return obj.created_by.full_name
+        except AttributeError:            
+            return None
+
+    class Meta:
+        model = Files
+        fields = ['id', 'project', 'thumbnail', 'secondary_image', 'recording', 'created_by']
+
+
+class ExportFileCSVSerializer(serializers.ModelSerializer):
+    """
+        ExportFileCSVSerializer to export file data
+    """
+
+    created_by = serializers.SerializerMethodField()
     manufacturer_name = serializers.SerializerMethodField()
     created_at = serializers.DateField(format="%Y-%m-%d")
 
@@ -186,6 +204,7 @@ class FileSerializer(serializers.ModelSerializer):
         fields = ['id', 'project', 'created_by', "created_at", "manufacturer_name", 
                   "manufacturing_number", "quantity", "location", "project_details", "additional_details",
                   'thumbnail', 'secondary_image', 'recording',]
+
 
 
 class ProjectViewSerializer(serializers.ModelSerializer):
