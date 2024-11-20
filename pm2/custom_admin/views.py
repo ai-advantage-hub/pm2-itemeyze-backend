@@ -38,6 +38,7 @@ from custom_admin.serializers import (
     AdminResetPasswordSerializer,
     CreateFileDetailsSerializer,
     ExportFileCSVSerializer,
+    ExportProjectDetailSerializer,
     FileSerializer,
     ForgotPasswordSerializer,
     ProjectDetailSerializer,
@@ -1031,7 +1032,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
                                                     is_file_disapproved=False)
         
         # Serialize the project data
-        serializer = ProjectDetailSerializer(project)
+        serializer = ExportProjectDetailSerializer(project)
         project_data = serializer.data
 
         # Overwrite the `files` field with only selected files

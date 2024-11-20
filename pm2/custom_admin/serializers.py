@@ -213,6 +213,51 @@ class ExportFileCSVSerializer(serializers.ModelSerializer):
                   'thumbnail', 'secondary_image', 'recording',]
 
 
+class ExportProjectDetailSerializer(serializers.ModelSerializer):
+    """
+        ExportProjectDetailSerializer to export the project details
+    """
+    site_name = serializers.CharField(source='site_id.name', read_only=True)
+    created_by = serializers.SerializerMethodField()
+    files = serializers.SerializerMethodField()
+    files_count=serializers.SerializerMethodField()
+    company_name = serializers.SerializerMethodField()
+    users_count = serializers.SerializerMethodField()
+    users = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Project
+        fields = ['id', 'users', 'users_count', 'project_name', 'project_number',
+                  'created_by', 'created_at','site_id','site_name', 'files',
+                  'company_name','files_count']
+
+    
+    def get_users_count(self, obj):
+        """Get the count of users associated with the project."""
+        return obj.users.count()
+    
+    def get_created_by(self, obj):
+        try:
+            return obj.created_by.full_name
+        except AttributeError:            
+            return None
+    
+    def get_files(self, obj):
+        approved_files = obj.project_files.filter(is_deleted=False, submitted_to_admin=True, is_marked_deleted=False,is_file_disapproved=False)
+        return FileSerializer(approved_files, many=True).data
+    
+    def get_files_count(self, obj):
+        total_count = Files.objects.filter(project_id=obj.id).count()
+        return total_count 
+    
+    def get_company_name(self, obj):
+        return obj.company.name if obj.company else None
+    
+    def get_users(self, obj):
+        """Get a comma-separated string of user emails associated with the project."""
+        return ', '.join(obj.users.values_list('email', flat=True))
+
+
 
 class ProjectViewSerializer(serializers.ModelSerializer):
     site_name = serializers.CharField(source='site_id.name', read_only=True)
