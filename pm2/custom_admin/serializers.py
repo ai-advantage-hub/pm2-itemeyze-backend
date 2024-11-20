@@ -185,7 +185,7 @@ class ExportFileCSVSerializer(serializers.ModelSerializer):
 
     created_by = serializers.SerializerMethodField()
     manufacturer_name = serializers.SerializerMethodField()
-    created_at = serializers.DateField(format="%Y-%m-%d")
+    created_at = serializers.SerializerMethodField()
 
     def get_created_by(self, obj):
         try:
@@ -197,6 +197,13 @@ class ExportFileCSVSerializer(serializers.ModelSerializer):
         try:
             return obj.manufacturer_name.name
         except AttributeError:            
+            return None
+    
+    def get_created_at(self, obj):
+        try:
+            # Format the DateTimeField as date (YYYY-MM-DD)
+            return obj.created_at.date().isoformat()
+        except AttributeError:
             return None
 
     class Meta:
