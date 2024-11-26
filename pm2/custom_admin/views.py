@@ -1029,7 +1029,7 @@ class ManageProjectViewSet(viewsets.ViewSet):
         selected_files = project.project_files.filter(id__in=file_ids, is_deleted=False, 
                                                     submitted_to_admin=True, 
                                                     is_marked_deleted=False, 
-                                                    is_file_disapproved=False)
+                                                    is_file_disapproved=False).order_by('-created_at') 
         
         # Serialize the project data
         serializer = ExportProjectDetailSerializer(project)
